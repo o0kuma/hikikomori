@@ -21,10 +21,10 @@ Notes:
 - Q1~Q7 in `decision-log.md` are **제안 (tentative)**, not final meeting
   decisions. Do not silently reverse them. If a change is required, update
   `decision-log.md` and all derived docs in the same change.
-- `PLANNING.md` §2 may still show empty checkboxes (`☐`). That is stale
-  template state — prefer `decision-log.md` for current working answers.
-- Stale wording such as “OS 레이어 → 자체 앱” is wrong. The working order is
-  **자체 앱 클로즈드 베타 first → OS 레이어 later** (`decision-log.md` Q7).
+- Prefer `decision-log.md` (and the synced summary in `PLANNING.md` §2) for
+  current working answers.
+- Working delivery order is **자체 앱 클로즈드 베타 first → OS 레이어 later**
+  (`decision-log.md` Q7). Do not reverse that sequence.
 
 ## Product identity (v1 working assumptions)
 
