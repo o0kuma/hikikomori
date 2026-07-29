@@ -37,13 +37,25 @@ PoC #1의 "응답 초안 생성" 단계를 채우는 프로토타입. 말투 예
 
 ```bash
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=...
+export GEMINI_API_KEY=...
 python3 generate_draft.py --style style_examples.txt --context context.txt
 ```
 
-`ANTHROPIC_API_KEY`가 없으면 실제 전송될 프롬프트만 stdout에 찍고 끝난다 — 이 세션에는 그
-키가 없어서, 실제 호출 대신 이 코퍼스의 실제 대화 하나로 프롬프트 구성만 확인하고 초안은
-직접 사람이 작성해 아래처럼 대조해봤다.
+Gemini(`google-genai`)를 쓴다 — 기본 모델은 `--model`로 바꿀 수 있고 기본값은
+`gemini-2.5-flash`. `GEMINI_API_KEY`가 없으면 실제 전송될 프롬프트만 stdout에 찍고 끝난다.
+이 세션에는 그 키가 없어서, 실제 호출 대신 이 코퍼스의 실제 대화 하나로 프롬프트 구성만
+확인하고 초안은 직접 사람이 작성해 아래처럼 대조해봤다.
+
+### `GEMINI_API_KEY`는 어디에 설정하나
+
+- **본인 로컬 환경에서 이 스크립트를 실제로 돌릴 거라면**: 그쪽 터미널에서
+  `export GEMINI_API_KEY=...`(임시) 또는 셸 프로필/`.env` 파일(영구)에 등록. Google AI Studio에서
+  발급한 키를 그대로 쓰면 된다.
+- **이 Claude Code 세션/환경에서 직접 실행해보고 싶다면**: 이 대화창에 `export GEMINI_API_KEY=실제키`를
+  실행해달라고 하면 되는데, 그러면 **키 값이 이 대화 기록에 그대로 남는다** — 무제한 결제 키가 아니라
+  사용량 제한을 걸어둔 테스트용 키를 쓰는 걸 권장한다. 대화 기록에 남기고 싶지 않다면, 이 환경(Claude
+  Code on the web)의 환경설정에서 환경변수로 등록하는 방법도 있다 — 다만 이미 실행 중인 이 세션에
+  즉시 반영되는지는 환경 재시작이 필요할 수 있어 확실치 않다.
 
 **샘플 검증** (검증셋 `id=003820`, "고교학점제" 대화, B의 마지막 답장을 가리고 앞 6개 발화만
 스타일 예시로 사용):

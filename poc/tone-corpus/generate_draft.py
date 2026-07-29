@@ -10,7 +10,7 @@ that voice. This is the server-fallback path described in
 prompt contract (exemplars + context in, one draft out) stays the same.
 
 Usage:
-    export ANTHROPIC_API_KEY=...
+    export GEMINI_API_KEY=...
     python3 generate_draft.py --style style_examples.txt --context context.txt
 
 style_examples.txt: one example message per line, written by the target person.
@@ -41,7 +41,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--style", required=True, help="말투 예시 파일 (한 줄에 한 문장)")
     ap.add_argument("--context", required=True, help="대화 맥락 파일 (한 줄에 한 발화)")
-    ap.add_argument("--model", default="claude-sonnet-5")
+    ap.add_argument("--model", default="gemini-2.5-flash")
     args = ap.parse_args()
 
     with open(args.style, encoding="utf-8") as f:
@@ -49,22 +49,23 @@ def main():
     with open(args.context, encoding="utf-8") as f:
         context_lines = [l.strip() for l in f if l.strip()]
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ANTHROPIC_API_KEY가 설정되지 않았습니다. 아래는 실제로 전송될 프롬프트입니다:\n",
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("GEMINI_API_KEY가 설정되지 않았습니다. 아래는 실제로 전송될 프롬프트입니다:\n",
               file=sys.stderr)
         print(build_user_prompt(style_examples, context_lines))
         return
 
-    import anthropic  # pip install anthropic
+    from google import genai  # pip install google-genai
+    from google.genai import types
 
-    client = anthropic.Anthropic()
-    resp = client.messages.create(
+    client = genai.Client(api_key=api_key)
+    resp = client.models.generate_content(
         model=args.model,
-        max_tokens=300,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": build_user_prompt(style_examples, context_lines)}],
+        contents=build_user_prompt(style_examples, context_lines),
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, max_output_tokens=300),
     )
-    print(resp.content[0].text.strip())
+    print(resp.text.strip())
 
 
 if __name__ == "__main__":
