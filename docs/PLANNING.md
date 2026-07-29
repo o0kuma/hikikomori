@@ -123,6 +123,8 @@
 - [x] PoC #1 기반 코퍼스 확보 및 전처리 파이프라인 — AI-Hub "한국어 SNS 멀티턴 대화" 14.2만 건
   확보, `poc/tone-corpus/prepare_dataset.py`로 학습/검증 JSONL 정제 완료 (개인화 검증 자체는
   아직 별개로 필요 — `poc-plan.md` "필요한 것" 참고)
+- [x] 라벨 없는 원천 대화 34,030건 추가 확보 — `poc/tone-corpus/build_unlabeled_corpus.py`로
+  `unlabeled.jsonl` 정리 (화행/슬롯 라벨 없음, 순수 언어모델링용)
 - [x] 응답 초안 생성기 프로토타입 — `poc/tone-corpus/generate_draft.py` (말투 예시 + 대화 맥락 →
   LLM 호출로 초안 생성, 에스컬레이션 케이스는 `[ESCALATE]`로 거절). API 키 없이 코퍼스 실제
   대화로 프롬프트 구성까지만 확인함 — 실제 자동 호출은 `ANTHROPIC_API_KEY` 설정 후 가능
