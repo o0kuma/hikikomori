@@ -13,6 +13,11 @@
 - 리스크 로그: [`docs/risk-log.md`](./docs/risk-log.md)
 - 로드맵: [`docs/roadmap.md`](./docs/roadmap.md)
 
+## AI 에이전트 규칙
+
+- Cursor / 공통: [`AGENTS.md`](./AGENTS.md)
+- Claude Code 진입점: [`CLAUDE.md`](./CLAUDE.md)
+
 ## 현재 단계
 
 아이디어 발산 → 컨셉 심화 → 기획 문서 세트(Vision/PRD/기술설계/리스크/로드맵) 초안 작성까지 완료.
