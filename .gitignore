@@ -1,0 +1,5 @@
+# PoC data — large, and AI-Hub source data may not be redistributed.
+# Keep scripts in git; keep the actual datasets out.
+poc/tone-corpus/data/
+*.jsonl
+*.zip
