@@ -13,10 +13,14 @@ Usage:
     # Prefer repo-root .env (GEMINI_API_KEY=...), or:
     export GEMINI_API_KEY=...
     python3 generate_draft.py --style style_examples.txt --context context.txt
+    # or, to auto-pick exemplars from a person's message history instead of
+    # a hand-curated style file (retrieve_style.py, tech-design.md §2-1):
+    python3 generate_draft.py --history history.txt --context context.txt
 
 style_examples.txt: one example message per line, written by the target person.
 context.txt: one line per turn, formatted as "상대: ..." or "나: ...", ending
 with the incoming message that needs a reply.
+history.txt: the person's past messages, one per line, oldest first.
 """
 import argparse
 import os
@@ -24,6 +28,7 @@ import sys
 from pathlib import Path
 
 from escalation_filter import check as check_escalation
+from retrieve_style import retrieve as retrieve_style_examples
 
 
 def load_dotenv_if_present():
@@ -73,45 +78,65 @@ def last_incoming_text(context_lines):
     return last.split(": ", 1)[1] if ": " in last else last
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--style", required=True, help="말투 예시 파일 (한 줄에 한 문장)")
-    ap.add_argument("--context", required=True, help="대화 맥락 파일 (한 줄에 한 발화)")
-    ap.add_argument("--model", default="gemini-2.5-flash")
-    args = ap.parse_args()
+def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key=None):
+    """Returns (status, text). status is one of "escalate" | "no_key" | "ok".
 
-    load_dotenv_if_present()
-
-    with open(args.style, encoding="utf-8") as f:
-        style_examples = [l.strip() for l in f if l.strip()]
-    with open(args.context, encoding="utf-8") as f:
-        context_lines = [l.strip() for l in f if l.strip()]
-
+    "escalate": text is the escalation reason (금전/약속 확정/감정적으로 무거운 주제).
+    "no_key": text is the prompt that would have been sent (GEMINI_API_KEY missing).
+    "ok": text is the generated draft.
+    """
     gate = check_escalation(last_incoming_text(context_lines))
     if gate.escalate:
-        # Hard gate -- no LLM call at all. tech-design.md §3: money, appointment
-        # confirmation, and emotionally heavy content escalate at every level,
-        # with no exception.
-        print(f"[ESCALATE:{gate.reason}] 이 내용은 본인 확인이 필요합니다.")
-        return
+        return "escalate", gate.reason
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        print("GEMINI_API_KEY가 설정되지 않았습니다. 아래는 실제로 전송될 프롬프트입니다:\n",
-              file=sys.stderr)
-        print(build_user_prompt(style_examples, context_lines))
-        return
+        return "no_key", build_user_prompt(style_examples, context_lines)
 
     from google import genai  # pip install google-genai
     from google.genai import types
 
     client = genai.Client(api_key=api_key)
     resp = client.models.generate_content(
-        model=args.model,
+        model=model,
         contents=build_user_prompt(style_examples, context_lines),
         config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, max_output_tokens=300),
     )
-    print(resp.text.strip())
+    return "ok", resp.text.strip()
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    style_group = ap.add_mutually_exclusive_group(required=True)
+    style_group.add_argument("--style", help="말투 예시 파일 (한 줄에 한 문장, 직접 큐레이션)")
+    style_group.add_argument("--history", help="과거 발화 전체 파일 (한 줄에 하나) -- 맥락과 비슷한 것을 자동 검색")
+    ap.add_argument("--k", type=int, default=6, help="--history 사용 시 검색해올 예시 개수")
+    ap.add_argument("--context", required=True, help="대화 맥락 파일 (한 줄에 한 발화)")
+    ap.add_argument("--model", default="gemini-2.5-flash")
+    args = ap.parse_args()
+
+    load_dotenv_if_present()
+
+    with open(args.context, encoding="utf-8") as f:
+        context_lines = [l.strip() for l in f if l.strip()]
+
+    if args.style:
+        with open(args.style, encoding="utf-8") as f:
+            style_examples = [l.strip() for l in f if l.strip()]
+    else:
+        with open(args.history, encoding="utf-8") as f:
+            history = [l.strip() for l in f if l.strip()]
+        style_examples = retrieve_style_examples(history, last_incoming_text(context_lines), k=args.k)
+
+    status, text = draft_reply(style_examples, context_lines, model=args.model)
+    if status == "escalate":
+        print(f"[ESCALATE:{text}] 이 내용은 본인 확인이 필요합니다.")
+    elif status == "no_key":
+        print("GEMINI_API_KEY가 설정되지 않았습니다. 아래는 실제로 전송될 프롬프트입니다:\n",
+              file=sys.stderr)
+        print(text)
+    else:
+        print(text)
 
 
 if __name__ == "__main__":

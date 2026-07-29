@@ -130,9 +130,18 @@
 - [x] 에스컬레이션 판정기(규칙 기반) 구현 — `poc/tone-corpus/escalation_filter.py`, LLM 호출
   전에 먼저 거는 하드 게이트. 자체 테스트 10/10, 검증셋 82,305개 발화 기준 트리거율 0.93%
 - [x] 응답 초안 생성기 프로토타입 — `poc/tone-corpus/generate_draft.py` (말투 예시 + 대화 맥락 →
-  LLM 호출로 초안 생성, 에스컬레이션 케이스는 `[ESCALATE]`로 거절). API 키 없이 코퍼스 실제
-  대화로 프롬프트 구성까지만 확인함 — 실제 자동 호출은 `ANTHROPIC_API_KEY` 설정 후 가능
+  Gemini 호출로 초안 생성, 에스컬레이션 케이스는 하드 게이트로 거절). Cursor 환경에서 실제
+  `GEMINI_API_KEY`로 라이브 호출 성공 확인함 (스타일 예시 반말·ㅋ톤에 맞는 짧은 답장 초안 생성)
+- [x] 블라인드 평가 자동화 스크립트 — `poc/tone-corpus/blind_eval.py`, 검증셋 대화를 자동으로
+  held-out 처리해 초안 생성 + 실제 답장을 나란히 리포트. 이 세션의 실행 도구 제한으로 직접
+  돌려보진 못함 — 실행 전 가벼운 샘플(`--n 5`)로 먼저 확인할 것
+- [x] 말투 검색기(retrieval) 구현 — `poc/tone-corpus/retrieve_style.py` (키워드 자카드 유사도 +
+  최근성 가중치, 임베딩 없이 v1 설계 그대로). `generate_draft.py --history`로 연결해 스타일
+  예시를 손으로 안 골라도 자동 검색되게 함
 - [ ] PoC #1·#3 실제 실행 (참가자 모집, 대화 샘플 수집, 역할극 인터뷰) 및 Go/No-Go 판정
+- [x] `blind_eval.py`, `retrieve_style.py`, `generate_draft.py --history` 연동 실제 실행 검증 —
+  검색기의 recency 가중치가 키워드 겹침을 압도하는 버그 발견·수정함 (`poc/tone-corpus/README.md`
+  "말투 검색기" 참고)
 - [x] 클릭 가능한 프로토타입 제작, 뱃지·거부권 UX 포함 — 읽씹 종결/거부권/에스컬레이션/자율성 설정
   4개 장면을 실제로 눌러볼 수 있는 프로토타입으로 제작 (Claude 아티팩트, 필요 시 공유 링크로 배포).
   PoC #3 역할극 진행 시 이 프로토타입을 그대로 자극재로 사용 가능
