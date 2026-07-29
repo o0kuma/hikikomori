@@ -3,3 +3,8 @@
 poc/tone-corpus/data/
 *.jsonl
 *.zip
+
+# Local secrets (API keys). Commit .env.example only.
+.env
+.env.*
+!.env.example

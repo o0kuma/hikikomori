@@ -52,8 +52,9 @@ Gemini(`google-genai`)를 쓴다 — 기본 모델은 `--model`로 바꿀 수 �
 
 ### `GEMINI_API_KEY`는 어디에 설정하나
 
-- **본인 로컬 환경에서 이 스크립트를 실제로 돌릴 거라면**: 그쪽 터미널에서
-  `export GEMINI_API_KEY=...`(임시) 또는 셸 프로필/`.env` 파일(영구)에 등록. Google AI Studio에서
+- **권장**: 저장소 루트 `.env`에 `GEMINI_API_KEY=...`를 넣는다 (템플릿은 `.env.example`).
+  `generate_draft.py`가 실행 시 이 파일을 읽는다. `.env`는 `.gitignore`로 커밋되지 않는다.
+- **대안**: 터미널에서 `export GEMINI_API_KEY=...`(임시) 또는 셸 프로필에 등록. Google AI Studio에서
   발급한 키를 그대로 쓰면 된다.
 - **이 Claude Code 세션/환경에서 직접 실행해보고 싶다면**: 이 대화창에 `export GEMINI_API_KEY=실제키`를
   실행해달라고 하면 되는데, 그러면 **키 값이 이 대화 기록에 그대로 남는다** — 무제한 결제 키가 아니라
