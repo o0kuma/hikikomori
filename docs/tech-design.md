@@ -68,6 +68,11 @@ v1에서는 커스텀 모델을 새로 학습하지 않는다. 대신 **검색 �
 시작하고, 오탐/누락 사례를 베타 로그로 계속 튜닝한다. 100% 정확도를 목표하지 않는다 — 애매하면
 항상 에스컬레이션 쪽으로 fail-safe.
 
+규칙 기반 1차 게이트는 [`poc/tone-corpus/escalation_filter.py`](../poc/tone-corpus/escalation_filter.py)로
+구현해뒀다 — `generate_draft.py`가 LLM을 부르기 전에 먼저 통과해야 하며, 걸리면 LLM 호출 자체를
+건너뛴다. 검증셋 82,305개 발화로 측정한 트리거율은 0.93% (`poc/tone-corpus/README.md` 참고) — 실제
+1:1 사적 대화가 아닌 일반 SNS 코퍼스 기준이라 상한선 참고용이다.
+
 ## 4. 투명성 구현
 
 - **분신 뱃지**: 메시지 객체에 `sender_mode: human | twin` 필드, 클라이언트가 이를 렌더링에만 사용

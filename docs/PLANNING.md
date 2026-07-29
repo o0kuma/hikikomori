@@ -127,6 +127,8 @@
   `unlabeled.jsonl` 정리 (화행/슬롯 라벨 없음, 순수 언어모델링용)
 - [x] 개인화 레이어 설계 구체화 — `tech-design.md` §2-1 (v1은 커스텀 학습 없이 과거 발화 검색 +
   few-shot, 기반 코퍼스는 평가/v2 온디바이스 증류용으로 역할 한정)
+- [x] 에스컬레이션 판정기(규칙 기반) 구현 — `poc/tone-corpus/escalation_filter.py`, LLM 호출
+  전에 먼저 거는 하드 게이트. 자체 테스트 10/10, 검증셋 82,305개 발화 기준 트리거율 0.93%
 - [x] 응답 초안 생성기 프로토타입 — `poc/tone-corpus/generate_draft.py` (말투 예시 + 대화 맥락 →
   LLM 호출로 초안 생성, 에스컬레이션 케이스는 `[ESCALATE]`로 거절). API 키 없이 코퍼스 실제
   대화로 프롬프트 구성까지만 확인함 — 실제 자동 호출은 `ANTHROPIC_API_KEY` 설정 후 가능

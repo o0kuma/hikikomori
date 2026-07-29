@@ -23,6 +23,8 @@ import os
 import sys
 from pathlib import Path
 
+from escalation_filter import check as check_escalation
+
 
 def load_dotenv_if_present():
     """Load KEY=VALUE pairs from the nearest .env (repo root preferred)."""
@@ -51,13 +53,24 @@ SYSTEM_PROMPT = """너는 어떤 사람의 '분신'이다. 아래 예시 발화�
 - 답장 초안만 출력한다. 설명, 인사말, 따옴표를 덧붙이지 않는다.
 - 금전, 약속 시간 확정, 감정적으로 무거운 주제라고 판단되면 초안 대신 정확히 이 문장만 출력한다: \
 [ESCALATE] 이 내용은 본인 확인이 필요합니다.
-- 예시에 없는 존댓말/반말을 새로 만들지 말고, 예시의 격식 수준을 그대로 유지한다."""
+- 예시에 없는 존댓말/반말을 새로 만들지 말고, 예시의 격식 수준을 그대로 유지한다.
+
+(이 지침은 2차 방어선이다 -- 1차는 escalation_filter.py의 규칙 기반 하드 게이트로, 이미 걸러진
+내용은 여기까지 오지 않는다. 이 지침이 남아있는 이유는 규칙이 놓친 케이스를 위한 것이다.)"""
 
 
 def build_user_prompt(style_examples, context_lines):
     examples = "\n".join(f"- {s}" for s in style_examples)
     context = "\n".join(context_lines)
     return f"""[말투 예시]\n{examples}\n\n[최근 대화]\n{context}\n\n위 대화의 마지막 메시지에 대한 답장 초안:"""
+
+
+def last_incoming_text(context_lines):
+    """The message needing a reply -- last line, minus its '상대: '/'나: ' prefix."""
+    if not context_lines:
+        return ""
+    last = context_lines[-1]
+    return last.split(": ", 1)[1] if ": " in last else last
 
 
 def main():
@@ -73,6 +86,14 @@ def main():
         style_examples = [l.strip() for l in f if l.strip()]
     with open(args.context, encoding="utf-8") as f:
         context_lines = [l.strip() for l in f if l.strip()]
+
+    gate = check_escalation(last_incoming_text(context_lines))
+    if gate.escalate:
+        # Hard gate -- no LLM call at all. tech-design.md §3: money, appointment
+        # confirmation, and emotionally heavy content escalate at every level,
+        # with no exception.
+        print(f"[ESCALATE:{gate.reason}] 이 내용은 본인 확인이 필요합니다.")
+        return
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
