@@ -109,6 +109,7 @@
 7. [`poc-plan.md`](./poc-plan.md) — PoC #1(말투 학습)·#3(사칭/신뢰 수용성) 실행 계획과 Go/No-Go 기준
 8. [`poc-materials.md`](./poc-materials.md) — 모집 문구, 동의 안내, 역할극 스크립트, 인터뷰 질문지 초안
 9. [`user-interview-guide.md`](./user-interview-guide.md) — Q3 자율성 수용성 인터뷰 (분신 사용자 관점)
+10. [`meeting-review-summary.md`](./meeting-review-summary.md) — 회의에서 Q1~Q7을 확정할 때 쓰는 1페이지 요약
 
 ## 8. 다음 액션 체크리스트
 
@@ -126,4 +127,5 @@
 - [x] "AI 대리 응답 수용성"(Q3) 인터뷰 질문지 작성 — `user-interview-guide.md`
   (질문지만 완료. 5~10명 실제 인터뷰는 아직 미착수 — PoC#3과 이어서 진행 권장)
 - [ ] 위 인터뷰 실제 진행 (참가자 5~10명, 스크리닝 → 본 인터뷰 → 결과 반영)
-- [ ] 실제 회의에서 이 문서 세트 전체를 리뷰하고 Q1~Q7을 정식 확정
+- [x] 회의 리뷰용 1페이지 요약 자료 작성 — `meeting-review-summary.md`
+- [ ] 실제 회의에서 위 요약 자료로 문서 세트 전체를 리뷰하고 Q1~Q7을 정식 확정
