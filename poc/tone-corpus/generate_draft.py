@@ -10,6 +10,7 @@ that voice. This is the server-fallback path described in
 prompt contract (exemplars + context in, one draft out) stays the same.
 
 Usage:
+    # Prefer repo-root .env (GEMINI_API_KEY=...), or:
     export GEMINI_API_KEY=...
     python3 generate_draft.py --style style_examples.txt --context context.txt
 
@@ -20,6 +21,28 @@ with the incoming message that needs a reply.
 import argparse
 import os
 import sys
+from pathlib import Path
+
+
+def load_dotenv_if_present():
+    """Load KEY=VALUE pairs from the nearest .env (repo root preferred)."""
+    if os.environ.get("GEMINI_API_KEY"):
+        return
+    here = Path(__file__).resolve()
+    candidates = [here.parent / ".env", here.parent.parent.parent / ".env", Path.cwd() / ".env"]
+    for env_path in candidates:
+        if not env_path.is_file():
+            continue
+        for raw in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key, value = key.strip(), value.strip().strip("'").strip('"')
+            if key and key not in os.environ:
+                os.environ[key] = value
+        break
+
 
 SYSTEM_PROMPT = """너는 어떤 사람의 '분신'이다. 아래 예시 발화들의 말투(어휘, 문장 길이, 이모티콘 습관, 격식 정도)를 \
 그대로 따라서, 대화의 마지막 메시지에 대한 답장 '초안 하나만' 자연스러운 한국어로 작성해라.
@@ -43,6 +66,8 @@ def main():
     ap.add_argument("--context", required=True, help="대화 맥락 파일 (한 줄에 한 발화)")
     ap.add_argument("--model", default="gemini-2.5-flash")
     args = ap.parse_args()
+
+    load_dotenv_if_present()
 
     with open(args.style, encoding="utf-8") as f:
         style_examples = [l.strip() for l in f if l.strip()]
