@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>msn 메신저 아이디어 · 회의 자료</title>
+<style>
+  :root{
+    --bg:#0c0e1a; --card:#15182a; --card2:#1c2038; --line:#2a2f4a;
+    --text:#e9ebf5; --muted:#9aa0c0;
+    --violet:#a78bfa; --cyan:#5ad1e6; --pink:#ff7eb6; --green:#5fe0a8; --amber:#ffcb6b; --red:#ff7a7a; --orange:#ffb056;
+    --accent:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Segoe UI","Malgun Gothic",system-ui,sans-serif;
+    background:
+      radial-gradient(900px 500px at 15% -5%,#241a4a,transparent),
+      radial-gradient(800px 500px at 90% 0%,#10303a,transparent),
+      var(--bg);
+    color:var(--text); line-height:1.55;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+  /* sticky nav */
+  .topnav{
+    position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
+    background:rgba(12,14,26,.82);border-bottom:1px solid var(--line);
+  }
+  .topnav .inner{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .brand{font-weight:800;font-size:15px;letter-spacing:.02em}
+  .brand .dot{color:var(--violet)}
+  .navlinks{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+  .navlinks a{
+    color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:600;
+    padding:7px 13px;border-radius:999px;border:1px solid transparent;transition:.15s;
+  }
+  .navlinks a:hover{color:var(--text);border-color:var(--line);background:var(--card)}
+
+  /* hero */
+  .hero{text-align:center;padding:56px 20px 30px}
+  .kicker{
+    display:inline-block;letter-spacing:.18em;font-size:12px;color:var(--violet);
+    border:1px solid #33305e;background:rgba(167,139,250,.08);
+    padding:6px 14px;border-radius:999px;text-transform:uppercase;margin-bottom:18px;font-weight:700;
+  }
+  h1{font-size:42px;font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
+  h1 .hl{background:linear-gradient(90deg,var(--violet),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{color:var(--muted);font-size:16px;max-width:680px;margin:0 auto}
+  .goalbar{
+    display:inline-flex;gap:10px;align-items:center;margin-top:22px;flex-wrap:wrap;justify-content:center;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 20px;font-size:14px;color:var(--muted);
+  }
+  .goalbar b{color:var(--text)}
+
+  /* journey strip */
+  .journey{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:26px auto 0;max-width:900px}
+  .jstep{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:13.5px;color:var(--muted);flex:1;min-width:180px}
+  .jstep b{color:var(--text);display:block;margin-bottom:2px}
+  .jarrow{display:grid;place-items:center;color:var(--violet);font-weight:800;font-size:20px;animation:nudge 1.2s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:translateX(0);opacity:.55}50%{transform:translateX(5px);opacity:1}}
+
+  /* section frame */
+  section{padding:42px 0;border-top:1px solid var(--line);margin-top:8px}
+  .sec-title{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .sec-title .num{font-size:13px;font-weight:800;color:var(--bg);background:var(--violet);width:28px;height:28px;border-radius:8px;display:grid;place-items:center}
+  .sec-title h2{font-size:26px;font-weight:800}
+  .sec-desc{color:var(--muted);font-size:14.5px;margin:0 0 22px 40px}
+
+  .sub-h{display:flex;align-items:center;gap:10px;margin:30px 0 16px}
+  .sub-h .n{font-size:12px;font-weight:800;color:var(--bg);background:var(--cyan);width:24px;height:24px;border-radius:7px;display:grid;place-items:center}
+  .sub-h h3{font-size:19px;font-weight:800}
+  .sub-h .note{color:var(--muted);font-size:13px;margin-left:auto}
+
+  /* idea cards grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 22px 12px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s}
+  .card:hover{transform:translateY(-3px);border-color:#3a4150}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
+  .card .tag{font-size:12px;font-weight:800;color:var(--c);letter-spacing:.04em;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .card .cdot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+  .card h4{font-size:18px;font-weight:800;margin-bottom:12px}
+  .card ul{list-style:none}
+  .card li{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:3px}
+  .card li:first-of-type{border-top:none}
+  .name{font-weight:700;font-size:14.5px}
+  .desc{color:var(--muted);font-size:13px}
+  .cA{--c:var(--amber)} .cB{--c:var(--pink)} .cC{--c:var(--cyan)} .cD{--c:var(--green)} .cE{--c:var(--violet)}
+
+  .winners{margin-top:26px;background:linear-gradient(135deg,#231f0e,#1a1d24);border:1px solid #4a431d;border-radius:20px;padding:28px}
+  .winners h3{font-size:20px;margin-bottom:6px}
+  .winners h3 .star{color:var(--amber)}
+  .winners .lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+  .wrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+  .wcard{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .wnum{font-size:13px;font-weight:800;color:var(--amber);margin-bottom:8px}
+  .wcard .name{font-size:15.5px;margin-bottom:6px}
+  .wcard .why{color:var(--muted);font-size:13px}
+
+  /* highlight callout */
+  .pick{background:rgba(167,139,250,.08);border:1px solid #33305e;border-left:3px solid var(--violet);border-radius:12px;padding:16px 20px;margin-top:24px;font-size:14.5px}
+  .pick b{color:var(--violet)}
+
+  /* autonomy ladder */
+  .ladder{display:flex;flex-direction:column;gap:10px}
+  .rung{display:grid;grid-template-columns:60px 1.1fr 2fr 1.1fr;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;position:relative;overflow:hidden}
+  .rung::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--rc)}
+  .rung .lv{font-size:17px;font-weight:800;color:var(--rc)}
+  .rung .rname{font-weight:700;font-size:14.5px}
+  .rung .rdo{color:var(--muted);font-size:13px}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .pill.no{background:rgba(154,160,192,.14);color:var(--muted)}
+  .pill.yes{background:rgba(95,224,168,.14);color:var(--green)}
+  .pill.both{background:rgba(90,209,230,.14);color:var(--cyan)}
+  .r0{--rc:#7c83a8}.r1{--rc:var(--cyan)}.r2{--rc:var(--green)}.r3{--rc:var(--amber)}.r4{--rc:var(--violet)}
+  .guard{margin-top:14px;background:rgba(255,122,122,.08);border:1px solid #5a3340;border-radius:12px;padding:14px 18px;font-size:13.5px;color:#ffd9d9;display:flex;gap:10px;align-items:flex-start}
+  .guard b{color:#fff}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+  .box h5{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;gap:8px;align-items:center}
+  .box ul{list-style:none}
+  .box li{padding:9px 0;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  .box li:first-child{border-top:none}
+  .box li b{color:var(--text)}
+
+  .mock{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .bubble{padding:10px 14px;border-radius:14px;margin:8px 0;font-size:13.5px;max-width:88%}
+  .b-them{background:var(--card2);border:1px solid var(--line)}
+  .b-me{background:linear-gradient(135deg,#6d5dd3,#4a8fd6);margin-left:auto;color:#fff}
+  .b-twin{background:rgba(167,139,250,.12);border:1px dashed var(--violet);margin-left:auto}
+  .twinbadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--violet);margin-bottom:4px}
+  .mocknote{color:var(--muted);font-size:12px;margin-top:10px;text-align:center}
+
+  .vsbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:6px}
+  .vsbar .side{padding:22px 24px}
+  .vsbar .mid{display:grid;place-items:center;padding:0 8px;background:var(--card2);font-weight:800;color:var(--muted)}
+  .vsbar h6{font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:700}
+  .vsbar p{font-size:16px;font-weight:700}
+  .vsbar .l p{color:var(--cyan)} .vsbar .r p{color:var(--violet)}
+
+  .risks{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .risk{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .risk .q{font-weight:700;font-size:14px;color:#ffb4b4;margin-bottom:8px}
+  .risk .a{font-size:13px;color:var(--muted)}
+  .risk .a b{color:var(--green)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:14px}
+  .chip b{color:var(--violet)}
+
+  /* animated flow diagram */
+  .flowdiag{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px 14px}
+  .flowsvg{width:100%;height:auto;display:block;overflow:visible}
+  .flowsvg .lane{fill:none;stroke-width:2.5;stroke-dasharray:8 7;animation:flowdash 1s linear infinite}
+  .flowsvg .lane.cyan{stroke:var(--cyan)}
+  .flowsvg .lane.violet{stroke:var(--violet)}
+  .flowsvg .lane.thin{stroke:#3a4060;stroke-width:2;stroke-dasharray:3 5;animation:none;opacity:.7}
+  @keyframes flowdash{to{stroke-dashoffset:-15}}
+  .flowsvg .dot{r:5}
+  .flowsvg .dot.cyan{fill:var(--cyan);filter:drop-shadow(0 0 5px var(--cyan))}
+  .flowsvg .dot.violet{fill:var(--violet);filter:drop-shadow(0 0 5px var(--violet))}
+  .flowsvg .lbl{fill:var(--muted);font-size:14px;font-weight:700;text-anchor:middle;font-family:inherit}
+  .flowsvg .nemoji{font-size:30px;text-anchor:middle}
+  .flowsvg .nlabel{fill:var(--text);font-size:15px;font-weight:800;text-anchor:middle;font-family:inherit}
+  .flowsvg .ncircle{fill:var(--card2);stroke:var(--line);stroke-width:2}
+  .flowsvg .ncircle.twin{stroke:var(--violet);stroke-width:2.5;filter:drop-shadow(0 0 8px rgba(167,139,250,.35))}
+  .flowsvg .centerlbl{fill:var(--amber);font-size:13.5px;font-weight:800;text-anchor:middle;font-family:inherit}
+  .flow-legend{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .flow-legend span{display:inline-flex;align-items:center;gap:7px}
+  .lg-c,.lg-v{width:16px;height:3px;border-radius:2px;display:inline-block}
+  .lg-c{background:var(--cyan)}.lg-v{background:var(--violet)}
+  .diag-cap{text-align:center;color:var(--muted);font-size:13px;margin-top:12px}
+  .diag-cap b{color:var(--green)}
+
+  /* discussion */
+  .disc{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .qcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .qcard .qn{font-size:12px;font-weight:800;color:var(--cyan);margin-bottom:8px;letter-spacing:.05em}
+  .qcard .qt{font-size:15px;font-weight:700;margin-bottom:6px}
+  .qcard .qh{font-size:13px;color:var(--muted)}
+
+  /* OS layer section — layer-cake diagram */
+  .oslayer-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(167,139,250,.16),rgba(90,209,230,.12));border:1px solid #3a3670;border-radius:999px;padding:7px 16px;font-size:12.5px;font-weight:800;color:var(--violet);margin-bottom:16px}
+  .stackwrap{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:38px 26px 30px;position:relative}
+  .stack-row{display:flex;justify-content:center}
+  .stack-user{background:linear-gradient(135deg,#2a2340,#1c2038);border:1px solid #3a3670;border-radius:14px;padding:14px 30px;text-align:center;font-weight:800;font-size:15px}
+  .stack-user span{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:3px}
+  .stack-arrow{display:flex;justify-content:center;color:var(--violet);font-size:20px;font-weight:800;margin:2px 0;opacity:.75}
+  .stack-twin{width:100%;max-width:640px;margin:0 auto;background:linear-gradient(90deg,rgba(167,139,250,.16),rgba(90,209,230,.16));border:1.5px solid var(--violet);border-radius:16px;padding:16px 22px;text-align:center;box-shadow:0 0 24px rgba(167,139,250,.18)}
+  .stack-twin b{font-size:15.5px}
+  .stack-twin span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+  .stack-apps{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+  .app-chip{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 16px;text-align:center;font-size:13px;font-weight:700;min-width:96px}
+  .app-chip .ico{font-size:20px;display:block;margin-bottom:4px}
+  .stack-cap{text-align:center;color:var(--muted);font-size:13px;margin-top:18px}
+  .stack-cap b{color:var(--green)}
+
+  /* roadmap (horizontal) */
+  .roadmap{display:flex;position:relative;gap:0;margin-top:6px}
+  .roadmap::before{content:"";position:absolute;top:19px;left:6%;right:6%;height:2px;background:var(--line);z-index:0}
+  .rstep{flex:1;text-align:center;padding:0 10px;position:relative;z-index:1}
+  .rstep .rnum{width:38px;height:38px;border-radius:50%;background:var(--violet);color:var(--bg);font-weight:800;font-size:14px;display:grid;place-items:center;margin:0 auto 12px}
+  .rstep .rtitle{font-weight:800;font-size:14px;margin-bottom:6px}
+  .rstep .rdesc{font-size:12.5px;color:var(--muted);line-height:1.5}
+
+  /* point cards (impact) */
+  .impactgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .impact{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .impact .iico{font-size:22px;margin-bottom:8px}
+  .impact h6{font-size:14.5px;font-weight:800;margin-bottom:6px}
+  .impact p{font-size:13px;color:var(--muted)}
+
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px 70px;border-top:1px solid var(--line);margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="topnav">
+  <div class="inner">
+    <div class="brand">msn<span class="dot">.</span> 메신저 회의 자료</div>
+    <nav class="navlinks">
+      <a href="#overview">개요</a>
+      <a href="#board">아이디어 보드</a>
+      <a href="#twin">AI 분신 설계</a>
+      <a href="#oslayer">OS 레이어 확장</a>
+      <a href="#discuss">회의 논점</a>
+    </nav>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero" id="overview">
+  <div class="wrap">
+    <span class="kicker">Idea Meeting · 2026.06.29</span>
+    <h1>카카오톡 대안 <span class="hl">메신저</span> 기획</h1>
+    <p class="sub">브레인스토밍한 전체 아이디어와, 그중 가장 특색 있는 <b>AI 분신 메신저</b> 설계를 한 곳에 모았습니다. 회의 진행용 자료입니다.</p>
+    <div class="goalbar">🎯 <span><b>최종 목표</b> — 대중·회사까지 아우르는 대표 메신저 &nbsp;|&nbsp; <b>핵심 축</b> — 메시지가 곧 행동이 되는 / 나를 대신하는 AI</span></div>
+
+    <div class="journey">
+      <div class="jstep"><b>1. 넓게 발산</b>5개 카테고리로 아이디어 브레인스토밍</div>
+      <div class="jarrow">→</div>
+      <div class="jstep"><b>2. 특색 탐색</b>"한 문장으로 정의되는" 컨셉 4종 비교</div>
+      <div class="jarrow">→</div>
+      <div class="jstep"><b>3. 선택 & 고도화</b>AI 분신 메신저로 좁혀 설계 심화</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 1: IDEA BOARD -->
+<section id="board">
+  <div class="wrap">
+    <div class="sec-title"><span class="num">1</span><h2>아이디어 보드</h2></div>
+    <p class="sec-desc">카톡에 없거나 카톡이 못 하는 것들. 발산 단계에서 모은 전체 후보입니다.</p>
+
+    <div class="grid">
+      <div class="card cA">
+        <div class="tag"><span class="cdot"></span>A · 대화가 기록이 된다</div>
+        <h4>핵심 차별 축</h4>
+        <ul>
+          <li><span class="name">메시지 → 할일/결정/일정 승격</span><span class="desc">말풍선을 꾹 누르면 업무 데이터로 변환</span></li>
+          <li><span class="name">결정 로그 자동 누적</span><span class="desc">"그때 뭐로 정했지?"가 방마다 타임라인으로</span></li>
+          <li><span class="name">번복 추적</span><span class="desc">결정이 바뀌면 "이전: A" 히스토리가 따라붙음</span></li>
+          <li><span class="name">약속 자동 캘린더화</span><span class="desc">"금요일 3시 ㄱㄱ"에서 일정 후보 추출</span></li>
+        </ul>
+      </div>
+      <div class="card cB">
+        <div class="tag"><span class="cdot"></span>B · 읽씹·눈치 스트레스</div>
+        <h4>관계 피로 줄이기</h4>
+        <ul>
+          <li><span class="name">읽음 표시를 응답으로</span><span class="desc">"1" 대신 확인 / 할게요 / 나중에 버튼</span></li>
+          <li><span class="name">나만의 답장 마감 알림</span><span class="desc">"이따 답장" 누르면 본인에게만 리마인드</span></li>
+          <li><span class="name">나중에 모아보기</span><span class="desc">안 급한 방은 정해진 시간에 묶어 알림</span></li>
+          <li><span class="name">상태 자동화</span><span class="desc">회의 중·이동 중을 캘린더·위치로 자동</span></li>
+        </ul>
+      </div>
+      <div class="card cC">
+        <div class="tag"><span class="cdot"></span>C · 프라이버시·관계</div>
+        <h4>부담 없는 연결</h4>
+        <ul>
+          <li><span class="name">전화번호 없는 메신저</span><span class="desc">초대코드·링크로만 연결, 번호 노출 0</span></li>
+          <li><span class="name">관계별 분리 ID</span><span class="desc">회사용 나 / 친구용 나를 한 앱에서 분리</span></li>
+          <li><span class="name">종료 시한 대화방</span><span class="desc">프로젝트 끝나면 자동 보관·삭제</span></li>
+          <li><span class="name">사라지는 민감 메시지</span><span class="desc">비번·주소 등 읽고 나면 소멸</span></li>
+        </ul>
+      </div>
+      <div class="card cD">
+        <div class="tag"><span class="cdot"></span>D · AI 활용</div>
+        <h4>똑똑한 비서</h4>
+        <ul>
+          <li><span class="name">안 본 동안 요약</span><span class="desc">"자리 비운 사이 뭐 정해짐?" 3줄</span></li>
+          <li><span class="name">번역 없는 대화</span><span class="desc">한국어로 치면 상대는 영어로 수신</span></li>
+          <li><span class="name">톤 코치</span><span class="desc">공격적인 메시지 보내기 전 한 번 확인</span></li>
+          <li><span class="name">자료 찾아주기</span><span class="desc">"지난주 그 PDF 어딨지?" 자연어 검색</span></li>
+        </ul>
+      </div>
+      <div class="card cE">
+        <div class="tag"><span class="cdot"></span>E · 카톡이 못 박는 한 방</div>
+        <h4>기능 내장</h4>
+        <ul>
+          <li><span class="name">자료가 안 사라짐</span><span class="desc">파일·링크·사진을 방별 자료함에 자동 정리</span></li>
+          <li><span class="name">투표·정산 기본 내장</span><span class="desc">장소·시간 투표, n빵 정산을 앱 안에서</span></li>
+          <li><span class="name">가벼운 스레드</span><span class="desc">한 방에서 주제 섞여 난장판 되는 것 방지</span></li>
+          <li><span class="name">우리만의 검색</span><span class="desc">특정 친구와 나눈 것만 따로 검색·앨범화</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="winners">
+      <h3><span class="star">★</span> "오 이건 카톡에 없네" 가 터지는 한 방 후보</h3>
+      <p class="lead">회사든 대중이든 모두가 공감하는 페인을 정확히 때리는 셋.</p>
+      <div class="wrow">
+        <div class="wcard"><div class="wnum">01</div><div class="name">번복 추적 결정 로그</div><div class="why">회의 뒤집기 짜증을 정확히 때림</div></div>
+        <div class="wcard"><div class="wnum">02</div><div class="name">읽씹을 응답 버튼으로</div><div class="why">전 국민이 겪는 눈치 스트레스 해소</div></div>
+        <div class="wcard"><div class="wnum">03</div><div class="name">나중에 모아보기 알림</div><div class="why">알림 폭격 피로를 근본적으로 해결</div></div>
+      </div>
+    </div>
+
+    <div class="pick">💡 <b>회의 결론(현재):</b> 위 아이디어들은 "기능 묶음"이라 정체성이 약하다는 판단 → 한 문장으로 정의되는 특색이 필요. 그래서 <b>"나 대신 말하는 AI 분신이 있는 메신저"</b>로 좁혀 아래에서 설계를 고도화함.</div>
+  </div>
+</section>
+
+<!-- SECTION 2: AI TWIN DESIGN -->
+<section id="twin">
+  <div class="wrap">
+    <div class="sec-title"><span class="num">2</span><h2>AI 분신 메신저 · 설계 고도화</h2></div>
+    <p class="sec-desc">정체성 한 줄 — 챗GPT가 <b>나와 대화하는</b> AI라면, 분신은 <b>나를 대신해 남과 대화하는 나</b>다.</p>
+
+    <!-- 2-0 flow diagram (everyday loop) -->
+    <div class="sub-h"><span class="n">▶</span><h3>연결 구조 ① — 메시지는 이렇게 흐른다</h3><span class="note">화살표 방향으로 흐름이 움직입니다</span></div>
+    <div class="flowdiag">
+      <svg class="flowsvg" viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg">
+        <!-- lanes -->
+        <path class="lane cyan"   d="M180,120 L416,120" marker-end="url(#ahc1)"/>
+        <path class="lane violet" d="M420,205 L184,205" marker-end="url(#ahv1)"/>
+        <path class="lane cyan"   d="M540,120 L776,120" marker-end="url(#ahc1)"/>
+        <path class="lane violet" d="M780,205 L544,205" marker-end="url(#ahv1)"/>
+        <defs>
+          <marker id="ahc1" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5ad1e6"/></marker>
+          <marker id="ahv1" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker>
+        </defs>
+        <!-- labels -->
+        <text class="lbl" x="300" y="104">① 메시지 도착</text>
+        <text class="lbl" x="300" y="232">④ 나다운 응답</text>
+        <text class="lbl" x="660" y="104">② 요약·에스컬레이션</text>
+        <text class="lbl" x="660" y="232">③ 지시·승인</text>
+        <!-- moving dots -->
+        <circle class="dot cyan"   r="5"><animateMotion dur="2.1s" repeatCount="indefinite" path="M180,120 L416,120"/></circle>
+        <circle class="dot cyan"   r="5"><animateMotion dur="2.1s" begin="1.05s" repeatCount="indefinite" path="M180,120 L416,120"/></circle>
+        <circle class="dot violet" r="5"><animateMotion dur="2.1s" repeatCount="indefinite" path="M420,205 L184,205"/></circle>
+        <circle class="dot violet" r="5"><animateMotion dur="2.1s" begin="1.05s" repeatCount="indefinite" path="M420,205 L184,205"/></circle>
+        <circle class="dot cyan"   r="5"><animateMotion dur="2.1s" begin="0.5s" repeatCount="indefinite" path="M540,120 L776,120"/></circle>
+        <circle class="dot violet" r="5"><animateMotion dur="2.1s" begin="0.5s" repeatCount="indefinite" path="M780,205 L544,205"/></circle>
+        <!-- nodes -->
+        <g><circle class="ncircle" cx="120" cy="162" r="52"/><text class="nemoji" x="120" y="156">🧑</text><text class="nlabel" x="120" y="184">상대</text></g>
+        <g><circle class="ncircle twin" cx="480" cy="162" r="52"/><text class="nemoji" x="480" y="156">✨</text><text class="nlabel" x="480" y="184">내 분신</text></g>
+        <g><circle class="ncircle" cx="840" cy="162" r="52"/><text class="nemoji" x="840" y="156">🙂</text><text class="nlabel" x="840" y="184">나</text></g>
+      </svg>
+      <div class="flow-legend">
+        <span><i class="lg-c"></i> 들어오는 흐름 (상대 → 분신 → 나)</span>
+        <span><i class="lg-v"></i> 나가는 흐름 (나 → 분신 → 상대)</span>
+      </div>
+      <p class="diag-cap">분신이 1차로 받아 정리하고, <b>민감·중요한 건만 나에게 올린다</b>. 가벼운 건 ④에서 분신이 바로 응답.</p>
+    </div>
+
+    <!-- 2-0b flow diagram (twin negotiation, L4) -->
+    <div class="sub-h"><span class="n">▶</span><h3>연결 구조 ② — 분신끼리 약속을 조율한다 (L4)</h3><span class="note">두 분신이 직접 협상</span></div>
+    <div class="flowdiag">
+      <svg class="flowsvg" viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ahc2" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5ad1e6"/></marker>
+          <marker id="ahv2" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker>
+        </defs>
+        <!-- outer static links -->
+        <path class="lane thin" d="M158,135 L312,135"/>
+        <path class="lane thin" d="M648,135 L802,135"/>
+        <!-- center negotiation lanes -->
+        <path class="lane cyan"   d="M412,108 L548,108" marker-end="url(#ahc2)"/>
+        <path class="lane violet" d="M548,162 L412,162" marker-end="url(#ahv2)"/>
+        <!-- center label -->
+        <text class="centerlbl" x="480" y="58">📅 서로의 캘린더를 보고 시간 조율</text>
+        <!-- moving dots -->
+        <circle class="dot cyan"   r="5"><animateMotion dur="1.8s" repeatCount="indefinite" path="M412,108 L548,108"/></circle>
+        <circle class="dot violet" r="5"><animateMotion dur="1.8s" begin="0.9s" repeatCount="indefinite" path="M548,162 L412,162"/></circle>
+        <!-- nodes -->
+        <g><circle class="ncircle" cx="110" cy="135" r="46"/><text class="nemoji" x="110" y="130">🙂</text><text class="nlabel" x="110" y="156">나</text></g>
+        <g><circle class="ncircle twin" cx="360" cy="135" r="46"/><text class="nemoji" x="360" y="130">✨</text><text class="nlabel" x="360" y="156">내 분신</text></g>
+        <g><circle class="ncircle twin" cx="600" cy="135" r="46"/><text class="nemoji" x="600" y="130">✨</text><text class="nlabel" x="600" y="156">상대 분신</text></g>
+        <g><circle class="ncircle" cx="850" cy="135" r="46"/><text class="nemoji" x="850" y="130">🧑</text><text class="nlabel" x="850" y="156">상대</text></g>
+      </svg>
+      <p class="diag-cap">두 분신이 협상한 뒤 <b>양쪽 본인에게 후보 시간만 제안</b> → 최종 확정은 사람이. (둘 다 앱이 있어야 작동 = 초대 동기)</p>
+    </div>
+
+    <!-- 2-1 ladder -->
+    <div class="sub-h"><span class="n">1</span><h3>분신 자율성 5단계</h3><span class="note">통제권은 항상 사용자에게 — 켜는 만큼만 일한다</span></div>
+    <div class="ladder">
+      <div class="rung r0"><div class="lv">L0</div><div class="rname">비서 모드</div><div class="rdo">나에게만 요약·할 일 정리·초안 제안. 발송은 안 함</div><div><span class="pill no">상대 모름</span></div></div>
+      <div class="rung r1"><div class="lv">L1</div><div class="rname">제안 모드</div><div class="rdo">답장 초안 생성 → 내가 한 탭으로 검토·발송</div><div><span class="pill no">상대 모름</span></div></div>
+      <div class="rung r2"><div class="lv">L2</div><div class="rname">부분 위임</div><div class="rdo">허락한 주제만 자동 응대 (약속 조율·택배 문의·간단 안내)</div><div><span class="pill yes">상대 표시</span></div></div>
+      <div class="rung r3"><div class="lv">L3</div><div class="rname">자리비움 응대</div><div class="rdo">자는 중·운전 중 가벼운 대화를 맥락에 맞게 대신</div><div><span class="pill yes">상대 표시</span></div></div>
+      <div class="rung r4"><div class="lv">L4</div><div class="rname">분신 협상</div><div class="rdo">상대 분신과 직접 조율 (캘린더 보고 약속 시간 잡기 등)</div><div><span class="pill both">양쪽 제안</span></div></div>
+    </div>
+    <div class="guard">🛡️ <div><b>절대 안전선:</b> 금전, 약속 확정, 감정적·민감한 내용은 어떤 단계에서도 자동 처리하지 않고 <b>무조건 본인에게 에스컬레이션</b>. 모든 위임 행동은 사후 알림 + 되돌리기 가능.</div></div>
+
+    <!-- 2-2 trust -->
+    <div class="sub-h"><span class="n">2</span><h3>신뢰·정체성 설계</h3><span class="note">"사칭 아니냐"는 의심을 투명성으로 정면 돌파</span></div>
+    <div class="grid2">
+      <div class="box">
+        <h5>🔎 투명성 원칙</h5>
+        <ul>
+          <li><b>분신 뱃지</b> — 분신 발화는 말풍선에 표식이 붙어 사람 발화와 시각 구분</li>
+          <li><b>실시간 확인</b> — 상대는 언제든 "지금 본인? 분신?" 물어볼 수 있음</li>
+          <li><b>확정 불가</b> — 분신은 금전·약속을 확정 못 하고 "본인 확인 필요"로 보류</li>
+          <li><b>거부권</b> — 상대가 "분신 말고 본인이랑만" 요청하면 자동 응대 중단</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="bubble b-them">자료 언제 줄 수 있어?</div>
+        <div class="bubble b-twin"><span class="twinbadge">✦ 지우님의 분신</span>지금 자리 비우셨고 보통 오전에 작업하세요. 내일 10시쯤 가능할 것 같아요 — 확정은 본인 확인 후 알려드릴게요!</div>
+        <div class="bubble b-them">ㅇㅋ 고마워</div>
+        <div class="bubble b-me">(지우 본인) 내일 10시 맞아요 :)</div>
+        <div class="mocknote">분신은 점선·뱃지로 구분, 확정은 본인이 마무리</div>
+      </div>
+    </div>
+
+    <!-- 2-3 personalization -->
+    <div class="sub-h"><span class="n">3</span><h3>"나다운" 분신 만들기</h3><span class="note">분신이 어색하면 컨셉 전체가 무너진다</span></div>
+    <div class="grid2">
+      <div class="box"><h5>🎨 말투 학습</h5><ul>
+        <li><b>온디바이스 우선</b> — 말투·표현·이모지 습관을 기기 안에서 학습</li>
+        <li><b>5분 온보딩</b> — 가입 시 기존 대화 임포트 or 질문 몇 개로 초기 세팅</li>
+        <li><b>교정 학습</b> — 분신 답을 고치면 학습해 점점 나다워짐</li>
+      </ul></div>
+      <div class="box"><h5>🎭 관계별 페르소나</h5><ul>
+        <li><b>톤 자동 전환</b> — 엄마엔 다정, 상사엔 정중, 친구엔 편하게</li>
+        <li><b>관계 메모</b> — 상대별 맥락(호칭·금기어·관계 온도) 기억</li>
+        <li><b>경계 설정</b> — "이 사람엔 분신 응대 끄기" 같은 관계별 규칙</li>
+      </ul></div>
+    </div>
+
+    <!-- 2-4 killer scenarios -->
+    <div class="sub-h"><span class="n">4</span><h3>분신이 빛나는 순간 (킬러 시나리오)</h3></div>
+    <div class="grid2">
+      <div class="box"><h5>🌙 읽씹 종결</h5><ul><li>자는 동안 온 메시지에 분신이 "지금 자는 중, 내일 답할게" 맥락 응대 → <b>읽씹·답장 압박 소멸</b></li></ul></div>
+      <div class="box"><h5>📅 약속 자동 조율</h5><ul><li>분신끼리 서로 캘린더를 보고 가능한 시간을 좁혀 <b>양쪽에 후보만 제안</b></li></ul></div>
+      <div class="box"><h5>🚫 비호감 대화 방어</h5><ul><li>영업·번호 캐묻기·치근덕거림을 분신이 정중히 막아 <b>감정 노동 대신</b></li></ul></div>
+      <div class="box"><h5>📚 단톡 따라잡기</h5><ul><li>밀린 단톡에서 <b>나 언급된 것만</b> 골라 요약 + 답장 초안 제시</li></ul></div>
+    </div>
+
+    <!-- 2-5 differentiation -->
+    <div class="sub-h"><span class="n">5</span><h3>기존 AI 비서와의 결정적 차이</h3></div>
+    <div class="vsbar">
+      <div class="side l"><h6>챗GPT · 시리 등</h6><p>나와 대화하는 AI</p></div>
+      <div class="mid">VS</div>
+      <div class="side r"><h6>분신 메신저</h6><p>나를 대신해 남과 대화하는 나</p></div>
+    </div>
+
+    <!-- 2-6 risks -->
+    <div class="sub-h"><span class="n">6</span><h3>리스크 & 안전장치</h3><span class="note">컨셉을 무너뜨릴 질문에 미리 답한다</span></div>
+    <div class="risks">
+      <div class="risk"><div class="q">분신이 틀린 약속을 잡으면?</div><div class="a">모든 위임 행동은 <b>사후 알림 + 원클릭 되돌리기</b>. 확정성 있는 건 본인 승인 전까지 "보류".</div></div>
+      <div class="risk"><div class="q">상대가 자동응대를 악용(스팸)?</div><div class="a">분신이 <b>스팸·도배 감지 시 응대 중단</b>하고 본인에게 보고. 무한 응답하지 않음.</div></div>
+      <div class="risk"><div class="q">두 분신이 무한 대화 루프?</div><div class="a">분신끼리 대화는 <b>목적·턴 수 제한</b>. 결론 안 나면 양쪽 본인에게 넘김.</div></div>
+      <div class="risk"><div class="q">프라이버시는?</div><div class="a">말투 학습은 <b>온디바이스/암호화</b>. 분신 끄기 항상 가능, 상대도 분신 거부 가능.</div></div>
+    </div>
+
+    <!-- 2-7 growth & revenue -->
+    <div class="sub-h"><span class="n">7</span><h3>확산 훅 & 수익 모델</h3></div>
+    <div class="grid2">
+      <div class="box"><h5>🌱 네트워크 효과</h5><ul>
+        <li><b>분신 협상(L4)은 둘 다 앱이 있어야 작동</b> → "네 분신이랑 약속 잡게 하자"가 초대 동기</li>
+        <li>나다운 분신은 쓸수록 똑똑해져 <b>이탈 비용</b> 발생</li>
+      </ul></div>
+      <div class="box"><h5>💳 수익 모델</h5><ul>
+        <li>기본 분신 <b>무료</b> (L0~L2)</li>
+        <li>고급 구독 — 더 똑똑한 모델, 더 넓은 위임(L3·L4), 다중 페르소나</li>
+        <li>기업용 — 고객 응대 분신 (B2B 확장)</li>
+      </ul></div>
+    </div>
+
+    <!-- 2-8 naming -->
+    <div class="sub-h"><span class="n">8</span><h3>이름 후보</h3><span class="note">"또 하나의 나"라는 정체성을 담은</span></div>
+    <div class="chips">
+      <div class="chip"><b>Echo</b> · 나를 따라 울리는</div>
+      <div class="chip"><b>Twin</b> · 또 하나의 나</div>
+      <div class="chip"><b>분신</b> · 직관적 한국어</div>
+      <div class="chip"><b>Aka</b> · 또 다른 이름(alias)</div>
+      <div class="chip"><b>둘이서</b> · 나와 분신이 함께</div>
+      <div class="chip"><b>Mirror</b> · 나를 비추는</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2.5: OS LAYER IDEA -->
+<section id="oslayer">
+  <div class="wrap">
+    <div class="sec-title"><span class="num">💡</span><h2>획기적 아이디어 · 분신을 OS 레이어로</h2></div>
+    <p class="sec-desc">"새 메신저 앱"이 아니라 <b>지금 쓰는 모든 대화 위에 얹히는 AI 레이어</b>로 재정의하면 어떨까. 채택 장벽 자체를 없애는 접근.</p>
+
+    <span class="oslayer-badge">✦ 카톡 대안이 아니라 — 모든 대화의 AI 비서</span>
+
+    <!-- before/after reframe -->
+    <div class="vsbar">
+      <div class="side l"><h6>지금 설계</h6><p>새 메신저 앱을 설치하고 옮겨와야 함</p></div>
+      <div class="mid">→</div>
+      <div class="side r"><h6>OS 레이어 확장</h6><p>카톡·문자·DM 위에 분신만 얹으면 끝</p></div>
+    </div>
+
+    <!-- layer stack diagram -->
+    <div class="sub-h" style="margin-top:34px"><span class="n">1</span><h3>구조 — 분신이 관통하는 레이어</h3><span class="note">앱을 옮기는 게 아니라, 앱 위에 얹는다</span></div>
+    <div class="stackwrap">
+      <div class="stack-row"><div class="stack-user">🙂 나<span>모든 채널의 알림·초안·결정을 한곳에서 확인</span></div></div>
+      <div class="stack-arrow">↑ ↓</div>
+      <div class="stack-row"><div class="stack-twin"><b>✨ AI 분신 레이어</b><span>읽기·요약·초안·자동응대를 채널 구분 없이 동일하게 수행</span></div></div>
+      <div class="stack-arrow">↑ ↑ ↑ ↑ ↑</div>
+      <div class="stack-apps">
+        <div class="app-chip"><span class="ico">💬</span>카카오톡</div>
+        <div class="app-chip"><span class="ico">✉️</span>문자(SMS)</div>
+        <div class="app-chip"><span class="ico">📷</span>인스타 DM</div>
+        <div class="app-chip"><span class="ico">📧</span>이메일</div>
+        <div class="app-chip"><span class="ico">💼</span>슬랙</div>
+      </div>
+      <p class="stack-cap">각 앱은 그대로 두고, 분신이 <b>알림 접근 권한으로 관통</b>해 동일한 경험을 제공. 자체 메신저는 "완전판"으로 나중에 자연스럽게 유도.</p>
+    </div>
+
+    <!-- why this changes the game -->
+    <div class="sub-h"><span class="n">2</span><h3>왜 판이 바뀌는가</h3></div>
+    <div class="impactgrid">
+      <div class="impact"><div class="iico">🚪</div><h6>채택 장벽 제거</h6><p>"메신저 옮기기"라는 가장 큰 진입 장벽이 사라짐. 앱 설치 후 권한만 허용하면 바로 가치 체감.</p></div>
+      <div class="impact"><div class="iico">📈</div><h6>시장 크기 확대</h6><p>"카톡 대안 메신저" 시장이 아니라 "모든 대화의 AI 비서" 시장으로 — 타깃 인구 자체가 훨씬 커짐.</p></div>
+      <div class="impact"><div class="iico">🔗</div><h6>네트워크 효과 재설계</h6><p>상대가 앱이 없어도 나는 즉시 가치를 얻음(L0~L1). 분신 협상(L4)만 "둘 다 앱 있어야" 유효 — 압박감 없는 자연 확산.</p></div>
+      <div class="impact"><div class="iico">🏆</div><h6>독점적 진입점</h6><p>모든 채널의 요약·결정 로그가 한곳에 모이는 "허브"가 되면, 이후 자체 메신저·B2B 확장의 자연스러운 발판이 됨.</p></div>
+    </div>
+
+    <!-- rollout roadmap -->
+    <div class="sub-h"><span class="n">3</span><h3>단계적 도입 로드맵</h3><span class="note">권한이 큰 만큼, 신뢰를 먼저 쌓고 넓힌다</span></div>
+    <div class="roadmap">
+      <div class="rstep"><div class="rnum">1</div><div class="rtitle">읽기 전용 허브</div><div class="rdesc">알림만 모아 요약. 발송 권한 없음 — 가장 낮은 신뢰 비용으로 시작</div></div>
+      <div class="rstep"><div class="rnum">2</div><div class="rtitle">초안 제안</div><div class="rdesc">답장 초안을 만들어 각 앱으로 넘겨줌. 발송은 사람이 원래 앱에서</div></div>
+      <div class="rstep"><div class="rnum">3</div><div class="rtitle">제한적 자동응대</div><div class="rdesc">허락한 채널·주제에서만 분신이 직접 응답 (L2 수준 그대로 확장)</div></div>
+      <div class="rstep"><div class="rnum">4</div><div class="rtitle">자체 앱으로 유도</div><div class="rdesc">분신 협상(L4) 등 완전한 기능은 자체 메신저로 넘어와야 가능 — 자연스러운 업그레이드 동기</div></div>
+    </div>
+
+    <!-- technical/policy challenges -->
+    <div class="sub-h"><span class="n">4</span><h3>기술·정책 도전 과제</h3><span class="note">이 아이디어의 진짜 리스크는 여기에 있다</span></div>
+    <div class="risks">
+      <div class="risk"><div class="q">각 앱이 접근을 막으면?</div><div class="a">카톡·인스타는 자동화·크롤링을 정책상 막는 경우가 많음. <b>알림 접근 권한(안드로이드 Notification Access) 기반</b>으로 시작 — 읽기는 가능하나 발송은 각 앱 자체 API/자동입력에 의존해 범위가 제한적일 수 있음.</div></div>
+      <div class="risk"><div class="q">OS·플랫폼 정책 리스크는?</div><div class="a">iOS는 안드로이드보다 훨씬 제한적. <b>안드로이드 우선 출시</b>로 검증 후, iOS는 자체 메신저 전환을 유도하는 전략이 현실적.</div></div>
+      <div class="risk"><div class="q">권한 요청이 과도해 보이지 않을까?</div><div class="a">"모든 메시지를 읽는 앱"은 프라이버시 우려를 키움. <b>온디바이스 처리 원칙</b>을 이 레이어에도 그대로 적용하고, 어떤 데이터가 어디로 가는지 실시간 대시보드로 공개.</div></div>
+      <div class="risk"><div class="q">각 앱 UI가 바뀌면 깨지지 않을까?</div><div class="a">앱 업데이트마다 파싱 로직이 깨질 수 있음. 초기엔 <b>안정적인 API가 있는 채널(문자·이메일) 우선</b>으로 검증하고, 카톡·인스타 등은 이후 확장.</div></div>
+    </div>
+
+    <div class="pick">💡 <b>정리:</b> 이 아이디어는 "새 메신저를 만든다"에서 "지금 쓰는 대화 위에 AI 자아를 얹는다"로 제품 정의 자체를 바꾼다. 자체 메신저(현재 설계)는 <b>완전한 분신 경험(L4 협상 등)을 위한 최종 목적지</b>로 남기고, OS 레이어는 그곳으로 가는 <b>저마찰 진입점</b> 역할을 하는 투트랙 전략이 가능.</div>
+  </div>
+</section>
+
+<!-- SECTION 3: DISCUSSION -->
+<section id="discuss">
+  <div class="wrap">
+    <div class="sec-title"><span class="num">3</span><h2>회의 논점</h2></div>
+    <p class="sec-desc">이 자료를 띄워놓고 함께 결정하면 좋을 질문들입니다.</p>
+    <div class="disc">
+      <div class="qcard"><div class="qn">Q1 · 방향</div><div class="qt">AI 분신으로 확정할까?</div><div class="qh">아이디어 보드의 다른 축(기록/관계)과 비교해 최종 컨셉을 정한다.</div></div>
+      <div class="qcard"><div class="qn">Q2 · 타깃</div><div class="qt">대중 vs 회사, 어디부터?</div><div class="qh">첫 사용자층을 정해야 기능 우선순위가 잡힌다.</div></div>
+      <div class="qcard"><div class="qn">Q3 · 수용성</div><div class="qt">사람들이 AI 대리 응답을 받아들일까?</div><div class="qh">자율성 어느 단계(L0~L4)까지 현실적으로 켤지 토론.</div></div>
+      <div class="qcard"><div class="qn">Q4 · 신뢰</div><div class="qt">사칭 우려를 충분히 막았나?</div><div class="qh">투명성 장치가 사용자를 납득시키는지 점검.</div></div>
+      <div class="qcard"><div class="qn">Q5 · MVP</div><div class="qt">데모로 보여줄 한 시나리오는?</div><div class="qh">읽씹 종결 / 약속 조율 / 대화 방어 중 하나를 고른다.</div></div>
+      <div class="qcard"><div class="qn">Q6 · 이름</div><div class="qt">서비스 이름을 뭐로?</div><div class="qh">정체성을 가장 잘 담는 후보를 추린다.</div></div>
+      <div class="qcard"><div class="qn">Q7 · 전략</div><div class="qt">자체 앱 vs OS 레이어, 어디서 시작?</div><div class="qh">채택 장벽을 낮추는 OS 레이어 선출시 vs 완전한 경험의 자체 메신저 선출시, 투트랙 순서를 정한다.</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>msn 메신저 아이디어 회의 자료 · 아이디어 보드 + AI 분신 설계 통합본 — 회의 결과에 따라 선택 컨셉을 더 고도화하거나 MVP 범위를 좁혀갑니다.</footer>
+
+</body>
+</html>
