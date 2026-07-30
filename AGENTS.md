@@ -96,7 +96,9 @@ changes it.
   discover a new sub-task, add it there rather than tracking it elsewhere.
 - Items under Phase 1 §3 ("PoC 결과가 있어야 정할 수 있는 것") stay unresolved
   until real PoC data comes in — don't guess a default to unblock yourself;
-  leave a placeholder and move on to other checklist items instead.
+  leave a placeholder and move on to other checklist items instead. Do not
+  start §3 early even if PoC data happens to arrive mid-way — finish all of
+  §4's items 1-5 (the rest of the build order) first, then come back to §3.
 
 Do not invent frameworks, folder layouts, or CI conventions beyond what
 `docs/tech-design.md` §8 and `docs/roadmap.md` already specify.
