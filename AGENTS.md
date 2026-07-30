@@ -18,9 +18,10 @@ When documents disagree, follow this order:
 
 Notes:
 
-- Q1~Q7 in `decision-log.md` are **제안 (tentative)**, not final meeting
-  decisions. Do not silently reverse them. If a change is required, update
-  `decision-log.md` and all derived docs in the same change.
+- Q1~Q7 in `decision-log.md` are **확정** (Phase 1 C, 2026-07-30). PoC-dependent
+  sub-questions (default autonomy level, whitelist defaults, final branding)
+  stay open — do not invent those. To reverse a Q, update `decision-log.md` and
+  derived docs in the same change.
 - Prefer `decision-log.md` (and the synced summary in `PLANNING.md` §2) for
   current working answers.
 - Working delivery order is **자체 앱 클로즈드 베타 first → OS 레이어 later**
