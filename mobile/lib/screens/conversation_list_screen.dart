@@ -103,7 +103,13 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('분신'),
+        title: Text(
+          '분신',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.6,
+          ),
+        ),
         actions: [
           IconButton(
             tooltip: '사후 알림',
@@ -161,10 +167,13 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                     child: Text(
-                      session.user == null ? '' : '안녕하세요, ${session.user!.displayName}님',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      session.user == null ? '' : '${session.user!.displayName}의 대화',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   if (_error != null)

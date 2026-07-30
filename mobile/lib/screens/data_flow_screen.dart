@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
 
 /// Shows what stays on-device vs what may leave the device (roadmap B / privacy).
 class DataFlowScreen extends StatelessWidget {
@@ -29,7 +30,7 @@ class DataFlowScreen extends StatelessWidget {
             width: 36,
             height: 36,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: tint.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: tint.withValues(alpha: 0.15), shape: BoxShape.circle),
             child: Icon(icon, size: 18, color: tint),
           ),
           const SizedBox(width: 12),
@@ -65,7 +66,7 @@ class DataFlowScreen extends StatelessWidget {
           _section(
             context,
             icon: Icons.lock_outline,
-            tint: Colors.green.shade600,
+            tint: TwinTokens.forest,
             title: '기기 안에만 둡니다',
             body: '말투 샘플·온보딩 입력은 이 기기의 로컬 저장소에만 보관합니다. '
                 '원문 대화 전체를 서버로 올리지 않는 것이 기본 원칙입니다.',
@@ -89,7 +90,7 @@ class DataFlowScreen extends StatelessWidget {
           _section(
             context,
             icon: Icons.cloud_upload_outlined,
-            tint: Colors.amber.shade800,
+            tint: TwinTokens.twinMark,
             title: '서버로 보낼 수 있는 것',
             body: '초안이 필요할 때: 최근 대화 몇 줄 + 말투 샘플 일부(최소 컨텍스트)\n'
                 '채팅 릴레이: 보낸 메시지 본문\n'
