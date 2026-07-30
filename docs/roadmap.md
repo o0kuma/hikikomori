@@ -115,8 +115,8 @@
 - [x] 초대 기반 베타 가입 플로우 — **발견**: 기존 가입은 "아무 문자열이나 처음 쓰면 통과"라
   실제로는 초대 기반이 아니었음. `InviteCode` 테이블 + `POST /invites`(발급) 추가하고
   `/auth/signup`이 미리 발급된 미사용 코드인지 검증하도록 변경(모르는 코드 400, 이미 쓴 코드
-  409). 계정 삭제 시 코드는 "사용됨" 상태를 유지한 채 유저 참조만 지움. **아직 없는 것**: 발급자
-  인증(`/invites`를 지금은 누구나 호출 가능 — 세션/인증 도입 시 같이 잠글 것)
+  409). 계정 삭제 시 코드는 "사용됨" 상태를 유지한 채 유저 참조만 지움. 발급자 인증은
+  `ADMIN_API_TOKEN`(A2). 운영 절차·만료/회수는 C (`docs/invite-ops.md`)
 - [~] `vision.md` 성공 지표(자연스러움·거부율·안전선 위반) 계측용 분석/피드백 수집 — 거부율은
   `/admin/metrics`의 `peer_veto_rate`로 1차 근사 가능해짐(대화방 단위, 확정 정의 아님). 자연스러움
   피드백 수집 UI는 Flutter 클라이언트 책임이라 보류. 안전선 위반 0건은 런타임에 "수집"하는 지표라기
@@ -155,7 +155,8 @@ PoC 데이터 없이 기본값을 추측해 채우지 않는다.
    - 5-1. [x] 2.6 베타 배포 준비(서버 쪽) — 초대 코드·`/admin/metrics`. **실제 베타 오픈은
      §3(사람 PoC) 이후**
    - 5-2. [x] 화이트리스트 규칙 CRUD API
-6. [ ] §3 사람 PoC 실행 + 확정 값 반영 → 2.6 실제 베타 오픈 (**맨 마지막**)
+6. [x] Phase 1 C 베타 직전 — Q1~Q7 확정, 초대 운영, 프로토타입 앵커, Android 릴리즈 경로
+7. [ ] §3 사람 PoC 실행 + 확정 값 반영 → 실제 베타 오픈 (**맨 마지막 / D**)
 
 
 #### 5. 앞으로의 개발 계획 (우선순위 체크리스트)
@@ -200,10 +201,14 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 - [x] 본인확인 응답 문구 고정/검증 — `ai-service/app/identity.py` + draft 경로 테스트
 
 ##### C. 베타 직전
-- [ ] Android 릴리즈 빌드·서명·배포 경로
-- [ ] 초대 코드 운영 절차(발급자 권한)
-- [ ] Q1~Q7 회의 확정 (제안 → 확정)
-- [ ] 클릭 프로토타입 공유 링크 docs 고정
+- [x] Android 릴리즈 빌드·서명·배포 경로 — `docs/android-release.md`,
+  `scripts/build_release_apk.sh` / `build_release_aab.sh`, `key.properties` 서명 훅.
+  keystore는 Master 로컬 전용(내부 APK 우선)
+- [x] 초대 코드 운영 절차(발급자 권한) — `docs/invite-ops.md` + note/만료/배치/회수 API
+  (`GET|POST /invites`, `POST /invites/:code/revoke`)
+- [x] Q1~Q7 회의 확정 (제안 → 확정) — `docs/decision-log.md` (2026-07-30). PoC 의존 하위
+  질문만 열어둠
+- [x] 클릭 프로토타입 공유 링크 docs 고정 — `docs/prototype.md` 앵커. `SHARE_URL`은 Master 기입
 
 ##### D. 맨 마지막 — 사람 PoC (지금 안 함)
 - §3 항목과 동일. A~C 완료 후에만 착수.
