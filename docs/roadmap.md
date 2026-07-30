@@ -58,7 +58,8 @@
   생성은 이미 있는 `/draft` 흐름을 그대로 쓰면 되므로 새로 만들지 않았고, 화이트리스트는
   `ContactID`(상대별) 무시하고 전역 키워드 매칭만 지원 — 대화방↔연락처 연결 모델이 아직 없어서
   (Flutter 클라이언트의 연락처 모델이 생긴 뒤 다시 설계 필요, `core-backend/README.md` 참고)
-- [ ] 온디바이스 말투 이력 저장 + 서버 최소 전송 원칙 구현
+- [x] 온디바이스 말투 이력 저장 + 서버 최소 전송 원칙 구현 — drift+SQLCipher(`mobile/lib/db/`),
+  draft에 샘플만 전달, `DataFlowScreen`으로 원칙 노출
 - [x] 사후 알림 + 되돌리기 로그 스키마/API — `escalation_logs`는 이미 쌓임(사후 알림용 로그).
   되돌리기(one-tap undo, AGENTS.md 안전 불변식)는 `Message.Retracted` 필드 +
   `POST /messages/:id/retract` 추가: 트윈이 자동발송한(L2) 메시지만 대상, 사람이 쓴 메시지는 400,
