@@ -138,7 +138,7 @@
 - [x] 말투 검색기(retrieval) 구현 — `poc/tone-corpus/retrieve_style.py` (키워드 자카드 유사도 +
   최근성 가중치, 임베딩 없이 v1 설계 그대로). `generate_draft.py --history`로 연결해 스타일
   예시를 손으로 안 골라도 자동 검색되게 함
-- [ ] PoC #1·#3 실제 실행 (참가자 모집, 대화 샘플 수집, 역할극 인터뷰) 및 Go/No-Go 판정
+- [ ] PoC #1·#3 실제 실행 (참가자 모집, 대화 샘플 수집, 역할극 인터뷰) 및 Go/No-Go 판정 — **맨 마지막 작업으로 미룸** (`roadmap.md` §3)
 - [x] `blind_eval.py`, `retrieve_style.py`, `generate_draft.py --history` 연동 실제 실행 검증 —
   검색기의 recency 가중치가 키워드 겹침을 압도하는 버그 발견·수정함 (`poc/tone-corpus/README.md`
   "말투 검색기" 참고)
