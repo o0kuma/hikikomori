@@ -639,6 +639,155 @@ func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
 	}
 }
 
+func TestWhitelistRuleCRUD(t *testing.T) {
+	server, _ := setupTestServer(t)
+	userID := mustSignup(t, server.URL, "화이트")
+	base := server.URL + "/users/" + strconv.FormatUint(uint64(userID), 10) + "/whitelist-rules"
+
+	createResp := postJSON(t, base, createWhitelistRuleRequest{TopicKeyword: "저녁"})
+	if createResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 creating rule, got %d", createResp.StatusCode)
+	}
+	var created map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&created)
+	if created["topic_keyword"] != "저녁" || created["contact_id"] != nil {
+		t.Fatalf("unexpected created rule: %v", created)
+	}
+	ruleID := uint(created["id"].(float64))
+
+	listResp, err := http.Get(base)
+	if err != nil {
+		t.Fatalf("list rules: %v", err)
+	}
+	var list map[string]interface{}
+	json.NewDecoder(listResp.Body).Decode(&list)
+	rules := list["whitelist_rules"].([]interface{})
+	if len(rules) != 1 {
+		t.Fatalf("expected 1 rule listed, got %d", len(rules))
+	}
+
+	delReq, _ := http.NewRequest(http.MethodDelete, base+"/"+strconv.FormatUint(uint64(ruleID), 10), nil)
+	delResp, err := http.DefaultClient.Do(delReq)
+	if err != nil {
+		t.Fatalf("delete rule: %v", err)
+	}
+	if delResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 deleting rule, got %d", delResp.StatusCode)
+	}
+
+	listResp2, _ := http.Get(base)
+	var list2 map[string]interface{}
+	json.NewDecoder(listResp2.Body).Decode(&list2)
+	if len(list2["whitelist_rules"].([]interface{})) != 0 {
+		t.Fatalf("expected 0 rules after delete, got %v", list2)
+	}
+
+	delAgain, _ := http.NewRequest(http.MethodDelete, base+"/"+strconv.FormatUint(uint64(ruleID), 10), nil)
+	delAgainResp, _ := http.DefaultClient.Do(delAgain)
+	if delAgainResp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 deleting an already-deleted rule, got %d", delAgainResp.StatusCode)
+	}
+}
+
+func TestWhitelistRuleCRUDMissingUser(t *testing.T) {
+	server, _ := setupTestServer(t)
+	resp := postJSON(t, server.URL+"/users/9999/whitelist-rules", createWhitelistRuleRequest{TopicKeyword: "저녁"})
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+func TestRetractTwinMessage(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID := mustSignup(t, server.URL, "되돌리기")
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/conversations/" +
+		strconv.FormatUint(uint64(conv.ID), 10)
+	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatalf("dial ws: %v", err)
+	}
+	defer ws.Close()
+
+	sendResp := postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "저녁 뭐 먹었어?", SenderMode: SenderTwin})
+	if sendResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 auto-sending, got %d", sendResp.StatusCode)
+	}
+	var sent map[string]interface{}
+	json.NewDecoder(sendResp.Body).Decode(&sent)
+	msgID := uint(sent["id"].(float64))
+
+	var sendBroadcast map[string]interface{}
+	if err := ws.ReadJSON(&sendBroadcast); err != nil {
+		t.Fatalf("read send broadcast: %v", err)
+	}
+	if sendBroadcast["type"] != "message" {
+		t.Fatalf("expected type:message on send broadcast, got %v", sendBroadcast)
+	}
+
+	retractResp := postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(msgID), 10)+"/retract", nil)
+	if retractResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 retracting, got %d", retractResp.StatusCode)
+	}
+
+	var retractBroadcast map[string]interface{}
+	if err := ws.ReadJSON(&retractBroadcast); err != nil {
+		t.Fatalf("read retract broadcast: %v", err)
+	}
+	if retractBroadcast["type"] != "retraction" || uint(retractBroadcast["id"].(float64)) != msgID {
+		t.Fatalf("unexpected retraction broadcast: %v", retractBroadcast)
+	}
+
+	var message Message
+	db.First(&message, msgID)
+	if !message.Retracted {
+		t.Fatalf("expected message.Retracted true after retract")
+	}
+
+	// Already retracted -- must not succeed again.
+	again := postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(msgID), 10)+"/retract", nil)
+	if again.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409 retracting an already-retracted message, got %d", again.StatusCode)
+	}
+}
+
+func TestRetractRejectsHumanMessage(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID := mustSignup(t, server.URL, "사람")
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	sendResp := postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv.ID), 10)+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "안녕", SenderMode: SenderHuman,
+	})
+	var sent map[string]interface{}
+	json.NewDecoder(sendResp.Body).Decode(&sent)
+	msgID := uint(sent["id"].(float64))
+
+	resp := postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(msgID), 10)+"/retract", nil)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 retracting a human message, got %d", resp.StatusCode)
+	}
+}
+
+func TestRetractMissingMessage(t *testing.T) {
+	server, _ := setupTestServer(t)
+	resp := postJSON(t, server.URL+"/messages/9999/retract", nil)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
 func TestDraftMissingConversation(t *testing.T) {
 	server, _ := setupTestServer(t)
 	resp := postJSON(t, server.URL+"/conversations/9999/draft", draftMessageRequest{

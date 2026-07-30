@@ -36,6 +36,11 @@ type updateTwinSettingsRequest struct {
 	AutonomyLevel AutonomyLevel `json:"autonomy_level" binding:"required"`
 }
 
+type createWhitelistRuleRequest struct {
+	ContactID    *uint  `json:"contact_id"`
+	TopicKeyword string `json:"topic_keyword" binding:"required"`
+}
+
 type draftMessageRequest struct {
 	ContextLines  []string `json:"context_lines" binding:"required"`
 	StyleExamples []string `json:"style_examples"`
@@ -242,6 +247,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		}
 
 		relay.broadcast(convID, gin.H{
+			"type":        "message",
 			"id":          message.ID,
 			"sender_id":   message.SenderID,
 			"sender_mode": message.SenderMode,
@@ -249,6 +255,44 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		})
 
 		c.JSON(http.StatusOK, gin.H{"id": message.ID})
+	})
+
+	r.POST("/messages/:id/retract", func(c *gin.Context) {
+		msgID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var message Message
+		if err := db.First(&message, msgID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "message not found"})
+			return
+		}
+		// One-tap undo (PRD.md §3.1, AGENTS.md "every automatic action needs
+		// post-hoc notification + one-tap undo") applies to unattended
+		// twin auto-sends -- a human retracting their own words is a
+		// different, unrelated feature this endpoint doesn't cover.
+		if message.SenderMode != SenderTwin {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "only twin-authored (auto-sent) messages can be retracted"})
+			return
+		}
+		if message.Retracted {
+			c.JSON(http.StatusConflict, gin.H{"detail": "message already retracted"})
+			return
+		}
+
+		message.Retracted = true
+		if err := db.Save(&message).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		relay.broadcast(message.ConversationID, gin.H{
+			"type": "retraction",
+			"id":   message.ID,
+		})
+
+		c.JSON(http.StatusOK, gin.H{"id": message.ID, "retracted": true})
 	})
 
 	r.POST("/conversations/:id/draft", func(c *gin.Context) {
@@ -344,6 +388,84 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		}
 
 		c.JSON(http.StatusOK, gin.H{"user_id": userID, "autonomy_level": settings.AutonomyLevel})
+	})
+
+	r.POST("/users/:id/whitelist-rules", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var user User
+		if err := db.First(&user, userID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "user not found"})
+			return
+		}
+
+		var req createWhitelistRuleRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+			return
+		}
+
+		rule := WhitelistRule{UserID: userID, ContactID: req.ContactID, TopicKeyword: req.TopicKeyword}
+		if err := db.Create(&rule).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"id":            rule.ID,
+			"user_id":       rule.UserID,
+			"contact_id":    rule.ContactID,
+			"topic_keyword": rule.TopicKeyword,
+		})
+	})
+
+	r.GET("/users/:id/whitelist-rules", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var user User
+		if err := db.First(&user, userID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "user not found"})
+			return
+		}
+
+		var rules []WhitelistRule
+		db.Where("user_id = ?", userID).Order("id").Find(&rules)
+
+		out := make([]gin.H, 0, len(rules))
+		for _, rule := range rules {
+			out = append(out, gin.H{
+				"id":            rule.ID,
+				"contact_id":    rule.ContactID,
+				"topic_keyword": rule.TopicKeyword,
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{"whitelist_rules": out})
+	})
+
+	r.DELETE("/users/:id/whitelist-rules/:ruleId", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+		ruleID, ok := parseUintParam(c, "ruleId")
+		if !ok {
+			return
+		}
+
+		var rule WhitelistRule
+		if err := db.Where("id = ? AND user_id = ?", ruleID, userID).First(&rule).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "whitelist rule not found"})
+			return
+		}
+		db.Delete(&rule)
+
+		c.JSON(http.StatusOK, gin.H{"deleted": true})
 	})
 
 	r.DELETE("/users/:id", func(c *gin.Context) {

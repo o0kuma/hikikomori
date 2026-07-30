@@ -69,7 +69,12 @@ type Message struct {
 	SenderID       uint       `gorm:"not null"`
 	SenderMode     SenderMode `gorm:"not null;default:human"`
 	Text           string     `gorm:"not null"`
-	CreatedAt      time.Time
+	// Retracted is the one-tap undo for an L2 auto-send (PRD.md §3.1,
+	// AGENTS.md "every automatic action needs post-hoc notification +
+	// one-tap undo") -- set via POST /messages/:id/retract, twin-authored
+	// messages only.
+	Retracted bool `gorm:"not null;default:false"`
+	CreatedAt time.Time
 }
 
 type TwinSettings struct {
