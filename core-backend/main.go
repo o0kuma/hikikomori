@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +56,12 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	registerA1A2Routes(r, db)
+
 	r.POST("/invites", func(c *gin.Context) {
+		if !requireAdmin(c) {
+			return
+		}
 		code, err := generateInviteCode()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
@@ -70,6 +76,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	})
 
 	r.GET("/admin/metrics", func(c *gin.Context) {
+		if !requireAdmin(c) {
+			return
+		}
 		// v1-minimal (roadmap.md §2.6): only counts honestly derivable from
 		// the current schema. Draft-generation latency and AI-service error
 		// rate need a request-timing/logging layer that doesn't exist yet --
@@ -151,7 +160,18 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		invite.UsedByUserID = &user.ID
 		db.Save(&invite)
 
-		c.JSON(http.StatusOK, gin.H{"id": user.ID, "display_name": user.DisplayName})
+		session, err := createSession(db, user.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"id":           user.ID,
+			"display_name": user.DisplayName,
+			"token":        session.Token,
+			"expires_at":   session.ExpiresAt,
+		})
 	})
 
 	r.POST("/conversations/:id/messages", func(c *gin.Context) {
@@ -225,7 +245,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 					return
 				}
 			case AutonomyL2:
-				if !req.Approved && !whitelistMatches(db, req.SenderID, req.Text) {
+				if !req.Approved && !whitelistMatches(db, req.SenderID, convID, req.Text) {
 					c.JSON(http.StatusForbidden, gin.H{"detail": "화이트리스트에 없는 주제는 L1과 동일하게 사용자 승인이 필요합니다"})
 					return
 				}
@@ -365,6 +385,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		if !ok {
 			return
 		}
+		if !requireSelf(c, db, userID) {
+			return
+		}
 
 		var req updateTwinSettingsRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -393,6 +416,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	r.POST("/users/:id/whitelist-rules", func(c *gin.Context) {
 		userID, ok := parseUintParam(c, "id")
 		if !ok {
+			return
+		}
+		if !requireSelf(c, db, userID) {
 			return
 		}
 
@@ -427,6 +453,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		if !ok {
 			return
 		}
+		if !requireSelf(c, db, userID) {
+			return
+		}
 
 		var user User
 		if err := db.First(&user, userID).Error; err != nil {
@@ -453,6 +482,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		if !ok {
 			return
 		}
+		if !requireSelf(c, db, userID) {
+			return
+		}
 		ruleID, ok := parseUintParam(c, "ruleId")
 		if !ok {
 			return
@@ -473,6 +505,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		if !ok {
 			return
 		}
+		if !requireSelf(c, db, userID) {
+			return
+		}
 
 		var user User
 		if err := db.First(&user, userID).Error; err != nil {
@@ -487,6 +522,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		var messagesDeleted, escalationLogsDeleted int64
 		err := db.Transaction(func(tx *gorm.DB) error {
 			if res := tx.Model(&InviteCode{}).Where("used_by_user_id = ?", userID).Update("used_by_user_id", nil); res.Error != nil {
+				return res.Error
+			}
+			if res := tx.Where("user_id = ?", userID).Delete(&Session{}); res.Error != nil {
 				return res.Error
 			}
 			if res := tx.Where("user_id = ?", userID).Delete(&TwinSettings{}); res.Error != nil {
@@ -550,17 +588,22 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	return r
 }
 
-// whitelistMatches is a v1-minimal check: any of the user's WhitelistRule
-// keywords appearing as a substring of the message text counts as a match.
-// It intentionally ignores WhitelistRule.ContactID (per-counterpart
-// whitelisting) because conversations aren't yet linked to a Contact row --
-// that link needs its own design pass once the client's contact model
-// exists, so this only supports the "any counterpart" case for now.
-func whitelistMatches(db *gorm.DB, userID uint, text string) bool {
+// whitelistMatches: keyword substring match, scoped by ContactID when set.
+// Rules with ContactID == nil apply to any counterpart. Rules with a
+// ContactID apply only when that contact is the peer in this conversation
+// (resolved via Contact.ContactUserID ↔ other participant).
+func whitelistMatches(db *gorm.DB, userID, conversationID uint, text string) bool {
 	var rules []WhitelistRule
 	db.Where("user_id = ?", userID).Find(&rules)
+	peerContactID := resolvePeerContactID(db, userID, conversationID)
 	for _, rule := range rules {
-		if strings.Contains(text, rule.TopicKeyword) {
+		if !strings.Contains(text, rule.TopicKeyword) {
+			continue
+		}
+		if rule.ContactID == nil {
+			return true
+		}
+		if peerContactID != nil && *rule.ContactID == *peerContactID {
 			return true
 		}
 	}
@@ -585,6 +628,10 @@ func parseUintParam(c *gin.Context, name string) (uint, bool) {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		_ = openDB()
+		return
+	}
 	db := openDB()
 	relay := newConnectionManager()
 	ai := newAIServiceClient()

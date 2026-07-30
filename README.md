@@ -39,7 +39,12 @@ export GEMINI_API_KEY=...   # or repo-root .env
 uvicorn app.main:app --port 8001
 
 # 터미널 2 — 코어 백엔드
-cd core-backend && go run .
+cd core-backend
+export ADMIN_API_TOKEN=dev-admin-token
+go run . migrate && go run .
+
+# 초대 코드 발급 예:
+# curl -X POST http://localhost:8080/invites -H "Authorization: Bearer $ADMIN_API_TOKEN"
 
 # 터미널 3 — Flutter (Android)
 cd mobile && flutter run --dart-define=CORE_API_BASE=http://10.0.2.2:8080

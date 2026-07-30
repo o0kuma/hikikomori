@@ -24,6 +24,16 @@ type User struct {
 	CreatedAt   time.Time
 }
 
+// Session is a bearer token issued at signup/login (roadmap A2).
+// v1 beta: opaque random token, no refresh rotation yet.
+type Session struct {
+	ID        uint   `gorm:"primaryKey"`
+	Token     string `gorm:"uniqueIndex;not null"`
+	UserID    uint   `gorm:"not null;index"`
+	CreatedAt time.Time
+	ExpiresAt time.Time `gorm:"not null;index"`
+}
+
 // InviteCode is a pre-minted, single-use code (roadmap.md Phase 1 §2.6
 // "초대 기반 베타 가입 플로우") -- signup validates against this table instead
 // of just deduping User.InviteCode, so joining actually requires a code
@@ -111,6 +121,7 @@ type EscalationLog struct {
 
 var allModels = []interface{}{
 	&User{},
+	&Session{},
 	&InviteCode{},
 	&Contact{},
 	&Conversation{},

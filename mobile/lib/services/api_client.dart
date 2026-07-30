@@ -22,8 +22,14 @@ class ApiClient {
 
   final http.Client _http;
   final String _base;
+  String? authToken;
 
   Uri _u(String path) => Uri.parse('$_base$path');
+
+  Map<String, String> _headers() => {
+        'Content-Type': 'application/json',
+        if (authToken != null && authToken!.isNotEmpty) 'Authorization': 'Bearer $authToken',
+      };
 
   Future<Map<String, dynamic>> _json(
     String method,
@@ -31,7 +37,7 @@ class ApiClient {
     Map<String, dynamic>? body,
   }) async {
     final req = http.Request(method, _u(path));
-    req.headers['Content-Type'] = 'application/json';
+    req.headers.addAll(_headers());
     if (body != null) req.body = jsonEncode(body);
     final streamed = await _http.send(req);
     final res = await http.Response.fromStream(streamed);
@@ -42,24 +48,31 @@ class ApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<List<dynamic>> _jsonList(String path) async {
-    final res = await _http.get(_u(path));
+  Future<Map<String, dynamic>> _getObject(String path) async {
+    final res = await _http.get(_u(path), headers: _headers());
     if (res.statusCode >= 400) {
       throw ApiException(res.statusCode, res.body);
     }
-    return jsonDecode(res.body) as List<dynamic>;
+    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<User> signup({required String inviteCode, required String displayName}) async {
+  Future<({User user, String token})> signup({
+    required String inviteCode,
+    required String displayName,
+  }) async {
     final json = await _json('POST', '/auth/signup', body: {
       'invite_code': inviteCode,
       'display_name': displayName,
     });
-    // core-backend returns {id, display_name} only — keep the invite we sent.
-    return User(
-      id: json['id'] as int,
-      displayName: json['display_name'] as String? ?? displayName,
-      inviteCode: inviteCode,
+    final token = json['token'] as String? ?? '';
+    authToken = token;
+    return (
+      user: User(
+        id: json['id'] as int,
+        displayName: json['display_name'] as String? ?? displayName,
+        inviteCode: inviteCode,
+      ),
+      token: token,
     );
   }
 
@@ -108,8 +121,27 @@ class ApiClient {
   }
 
   Future<List<WhitelistRule>> listWhitelist(int userId) async {
-    final list = await _jsonList('/users/$userId/whitelist-rules');
+    final obj = await _getObject('/users/$userId/whitelist-rules');
+    final list = (obj['whitelist_rules'] as List<dynamic>? ?? const []);
     return list.map((e) => WhitelistRule.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> listConversations() async {
+    final obj = await _getObject('/conversations');
+    final list = (obj['conversations'] as List<dynamic>? ?? const []);
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createConversation({
+    required List<int> userIds,
+    int? contactId,
+    bool isGroup = false,
+  }) async {
+    return _json('POST', '/conversations', body: {
+      'user_ids': userIds,
+      'is_group': isGroup,
+      if (contactId != null) 'contact_id': contactId,
+    });
   }
 
   Future<WhitelistRule> addWhitelist(int userId, String topicKeyword) async {
