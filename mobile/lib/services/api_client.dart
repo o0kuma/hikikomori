@@ -214,4 +214,8 @@ class ApiClient {
       'platform': platform,
     });
   }
+
+  Future<void> revokeSession(int userId, int sessionId) async {
+    await _json('DELETE', '/users/$userId/sessions/$sessionId');
+  }
 }

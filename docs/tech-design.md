@@ -130,7 +130,7 @@ Python으로 남긴다.
 | 서비스 간 통신 | Go 코어 → Python AI 서비스, 내부망 HTTP(REST) | 처음부터 gRPC 등으로 과설계하지 않음 — 필요해지면 그때 전환 |
 | 메시지 릴레이 | Go 코어 서비스 내 WebSocket | 자체 서버로 충분한 규모. Kafka·관리형 pub-sub은 지금 시점에 과한 인프라 |
 | 데이터베이스 | PostgreSQL | users/contacts/conversations/messages/escalation_logs/whitelist_rules 관계형 스키마에 적합. Go 쪽 접근은 `pgx`나 GORM |
-| 온디바이스 저장소 | Flutter `drift`(SQLite) + `sqlcipher_flutter_libs` 암호화 | 말투 이력·설정을 기기 내 암호화 저장한다는 §2/§5 원칙을 그대로 구현 |
+| 온디바이스 저장소 | Flutter `drift` + `sqlcipher_flutter_libs` (`PRAGMA key`, 패스프레이즈는 `flutter_secure_storage`) | 말투 이력·설정을 기기 내 암호화 저장한다는 §2/§5 원칙. 구현: `mobile/lib/db/` |
 | Gemini API 키 관리 | Python AI 서비스에서만 보관 (Go 코어는 키를 안 가짐) | `poc/tone-corpus/.env`는 PoC 전용 — 프로덕션 키·쿼터는 AI 서비스 환경에서만 분리 관리 |
 
 이 표 밖의 결정(자율성 기본값, 화이트리스트 기본 주제, 신뢰 UX 문구)은 `roadmap.md` Phase 1 §3에

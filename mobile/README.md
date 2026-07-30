@@ -52,8 +52,20 @@ HTTP로 검증한다.
 6. 분신 메시지 되돌리기 · 거부권
 7. 자율성 L0~L2 + 화이트리스트 추가/삭제
 
-## 아직 없는 것 (B 이후)
+## 로컬 DB (drift + SQLCipher)
 
-- FCM 푸시 · drift + SQLCipher · 멀티 디바이스
+말투 샘플·온보딩 플래그는 `lib/db/` 암호화 SQLite에 저장한다. 패스프레이즈는
+`flutter_secure_storage`. Linux 개발 호스트에 `libsqlcipher.so`가 없으면 메모리 폴백으로
+기동한다(Android 릴리즈 경로에서는 SQLCipher 사용).
+
+```bash
+# Linux에서 drift 테스트/암호화 DB를 쓰려면
+sudo apt-get install -y libsqlite3-dev libsqlcipher1
+```
+
+## 아직 없는 것
+
+- Firebase 프로젝트의 실제 FCM registration token 연동 (`google-services.json`)
+- 오프라인 메시지 큐 / 멀티디바이스 실시간 설정 동기화 고도화
 - 온보딩 말투 UX 디테일 (PoC #1 결과는 맨 마지막에 반영)
 - iOS 빌드 (v1 범위 밖)

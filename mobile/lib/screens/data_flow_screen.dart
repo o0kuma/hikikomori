@@ -29,7 +29,13 @@ class DataFlowScreen extends StatelessWidget {
           Card(
             child: ListTile(
               title: Text('말투 샘플 ${samples.length}개'),
-              subtitle: Text(samples.isEmpty ? '(아직 없음 — 말투 샘플 화면에서 추가)' : samples.take(3).join(' · ')),
+              subtitle: Text(
+                [
+                  samples.isEmpty ? '(아직 없음 — 말투 샘플 화면에서 추가)' : samples.take(3).join(' · '),
+                  session.localDbEncrypted ? '저장: drift + SQLCipher(암호화)' : '저장: 메모리 폴백(이 환경에 SQLCipher 없음)',
+                ].join('\n'),
+              ),
+              isThreeLine: true,
             ),
           ),
           const SizedBox(height: 24),
