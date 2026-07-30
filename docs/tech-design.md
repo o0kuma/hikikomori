@@ -111,11 +111,11 @@ v1에서는 커스텀 모델을 새로 학습하지 않는다. 대신 **검색 �
 
 | 항목 | 결정 | 근거 |
 |---|---|---|
-| 클라이언트 | Android 네이티브 (Kotlin, Jetpack Compose) | Q7이 이미 안드로이드 우선을 확정함. 크로스플랫폼은 v2 OS 레이어(알림 접근 권한 API)에서 결국 네이티브가 필요해지므로, 처음부터 네이티브로 시작하면 나중에 다시 만들 일이 없음 |
+| 클라이언트 | Flutter (Dart) | Q7이 안드로이드 우선을 확정했지만 네이티브를 강제하진 않음. 채팅 UI(이미 클릭 프로토타입으로 검증된 디자인)를 핫리로드로 빠르게 만들 수 있어 v1 개발 속도에 유리. v2 OS 레이어의 알림 접근 권한(NotificationListenerService)은 platform channel로 네이티브 Android 모듈을 붙여 해결 — 클라이언트 전체를 네이티브로 갈 필요는 없음 |
 | 백엔드 | Python (FastAPI) | `poc/tone-corpus/`의 AI 파이프라인(generate_draft·escalation_filter·retrieve_style)이 이미 Python — 언어를 바꾸면 그대로 재사용 못 하고 다시 짜야 함. 클로즈드 베타 규모에서 성능은 병목이 아님 |
 | 메시지 릴레이 | FastAPI WebSocket | 자체 서버로 충분한 규모(소규모 지인 네트워크 베타). Kafka·관리형 pub-sub 같은 건 지금 시점에 과한 인프라 |
 | 데이터베이스 | PostgreSQL | users/contacts/conversations/messages/escalation_logs/whitelist_rules 관계형 스키마에 적합, 운영 경험 풍부 |
-| 온디바이스 저장소 | Android Room (SQLite) + SQLCipher 암호화 | 말투 이력·설정을 기기 내 암호화 저장한다는 §2/§5 원칙을 그대로 구현 |
+| 온디바이스 저장소 | Flutter `drift`(SQLite) + `sqlcipher_flutter_libs` 암호화 | 말투 이력·설정을 기기 내 암호화 저장한다는 §2/§5 원칙을 그대로 구현 |
 | Gemini API 키 관리 | 프로덕션 키는 서버 환경변수/시크릿 매니저로, PoC 키와 분리 | `poc/tone-corpus/.env`는 PoC 전용 — 프로덕션 트래픽과 쿼터를 섞지 않음 |
 
 이 표 밖의 결정(자율성 기본값, 화이트리스트 기본 주제, 신뢰 UX 문구)은 `roadmap.md` Phase 1 §3에

@@ -27,8 +27,8 @@
 
 #### 1. 착수 전 확정 필요 (기술 스택)
 
-- [x] 기술 스택 결정 — `tech-design.md` §8 (Android 네이티브/Kotlin, 백엔드 Python/FastAPI,
-  PostgreSQL, WebSocket 릴레이, Room+SQLCipher, Gemini 키 분리)
+- [x] 기술 스택 결정 — `tech-design.md` §8 (Flutter/Dart, 백엔드 Python/FastAPI,
+  PostgreSQL, WebSocket 릴레이, drift+SQLCipher, Gemini 키 분리)
 
 #### 2. 워크스트림별 작업
 
@@ -47,7 +47,7 @@
 - [ ] 온디바이스 말투 이력 저장 + 서버 최소 전송 원칙 구현
 - [ ] 사후 알림 + 되돌리기 로그 스키마/API
 
-**2.3 안드로이드 클라이언트**
+**2.3 클라이언트 (Flutter, 안드로이드 우선 빌드)**
 - [ ] 기본 채팅 UI (대화 목록, 대화방) — 무관, 착수 가능
 - [ ] 온보딩 플로우(5분 온보딩) 뼈대 — 무관, 착수 가능. 말투 학습 UX 디테일만 PoC#1 결과로 조정
 - [ ] 분신 뱃지·실시간 본인확인·거부권 UX — 클릭 프로토타입 디자인 그대로 구현 가능
