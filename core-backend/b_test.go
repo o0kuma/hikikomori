@@ -72,6 +72,49 @@ func TestDeviceTokenAndSessions(t *testing.T) {
 	}
 }
 
+func TestRevokeSessionAndPushTestWithoutFCM(t *testing.T) {
+	server, _ := setupTestServer(t)
+	userID, token := mustSignup(t, server.URL, "revoke")
+
+	// Second login via invite re-use is blocked; mint another session by signup of peer then
+	// just revoke the only session after listing.
+	req, _ := http.NewRequest(http.MethodGet, server.URL+"/users/"+strconv.FormatUint(uint64(userID), 10)+"/sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sout map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&sout)
+	resp.Body.Close()
+	sessions := sout["sessions"].([]interface{})
+	sid := uint(sessions[0].(map[string]interface{})["id"].(float64))
+
+	del := deleteJSONAuth(t, server.URL+"/users/"+strconv.FormatUint(uint64(userID), 10)+"/sessions/"+strconv.FormatUint(uint64(sid), 10), token)
+	if del.StatusCode != http.StatusOK {
+		t.Fatalf("revoke: %d", del.StatusCode)
+	}
+
+	// Push test without FCM_SERVER_KEY should soft-skip.
+	push := postJSONAuth(t, server.URL+"/admin/push-test", "test-admin-token", map[string]interface{}{
+		"user_id": userID,
+		"title":   "t",
+		"body":    "b",
+	})
+	if push.StatusCode != http.StatusOK {
+		t.Fatalf("push-test: %d", push.StatusCode)
+	}
+	var pout map[string]interface{}
+	json.NewDecoder(push.Body).Decode(&pout)
+	// Without device tokens / FCM key: sent==0 and a skipped_reason is expected.
+	if pout["sent"].(float64) != 0 {
+		t.Fatalf("expected zero sent without FCM tokens, got %v", pout)
+	}
+	if pout["skipped_reason"] == nil || pout["skipped_reason"] == "" {
+		t.Fatalf("expected skipped_reason, got %v", pout)
+	}
+}
+
 func TestAdminMetricsIncludesDraftLatencyFields(t *testing.T) {
 	server, _ := setupTestServer(t)
 	req, _ := http.NewRequest(http.MethodGet, server.URL+"/admin/metrics", nil)

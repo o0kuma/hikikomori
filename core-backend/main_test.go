@@ -105,6 +105,19 @@ func postJSONAuth(t *testing.T, url, token string, body interface{}) *http.Respo
 	return resp
 }
 
+func deleteJSONAuth(t *testing.T, url, token string) *http.Response {
+	t.Helper()
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("delete %s: %v", url, err)
+	}
+	return resp
+}
+
 func mintInvite(t *testing.T, serverURL string) string {
 	t.Helper()
 	resp := postJSONAuth(t, serverURL+"/invites", "test-admin-token", nil)

@@ -136,6 +136,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			"escalate_errors":        rt.EscalateErrors,
 			"escalate_error_rate":    rt.EscalateErrorRate,
 			"twin_sends_blocked":     rt.TwinSendsBlocked,
+			"push_attempts":          rt.PushAttempts,
+			"push_skipped":           rt.PushSkipped,
+			"push_delivered":         rt.PushDelivered,
 			"invites_minted":         invitesMinted,
 			"invites_used":   invitesUsed,
 		})
@@ -239,6 +242,12 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 					ConversationID: convID,
 					Reason:         result.Reason,
 					MessageSnippet: req.Text,
+				})
+				// Best-effort push (no-op without FCM_SERVER_KEY / real tokens).
+				_, _, _ = notifyUser(db, req.SenderID, "분신 확인 필요", result.Reason, map[string]string{
+					"type":            "escalation",
+					"conversation_id": strconv.FormatUint(uint64(convID), 10),
+					"reason":          result.Reason,
 				})
 				c.JSON(http.StatusForbidden, gin.H{"detail": "escalated", "reason": result.Reason})
 				return

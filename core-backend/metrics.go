@@ -11,12 +11,15 @@ import (
 type RuntimeMetrics struct {
 	mu sync.Mutex
 
-	DraftRequests   int64
-	DraftErrors     int64
-	DraftLatencies  []time.Duration // capped ring of recent samples
-	EscalateChecks  int64
-	EscalateErrors  int64
+	DraftRequests    int64
+	DraftErrors      int64
+	DraftLatencies   []time.Duration // capped ring of recent samples
+	EscalateChecks   int64
+	EscalateErrors   int64
 	TwinSendsBlocked int64
+	PushAttempts     int64
+	PushSkipped      int64
+	PushDelivered    int64
 }
 
 const maxLatencySamples = 200
@@ -51,6 +54,16 @@ func (m *RuntimeMetrics) recordTwinBlocked() {
 	m.TwinSendsBlocked++
 }
 
+func (m *RuntimeMetrics) recordPush(delivered int, skipped bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.PushAttempts++
+	if skipped {
+		m.PushSkipped++
+	}
+	m.PushDelivered += int64(delivered)
+}
+
 func (m *RuntimeMetrics) snapshot() ginHMetrics {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -76,16 +89,19 @@ func (m *RuntimeMetrics) snapshot() ginHMetrics {
 		escErrRate = float64(m.EscalateErrors) / float64(m.EscalateChecks)
 	}
 	return ginHMetrics{
-		DraftRequests:        m.DraftRequests,
-		DraftErrors:          m.DraftErrors,
-		DraftErrorRate:       errRate,
-		DraftLatencyAvgMs:    avgMs,
-		DraftLatencyMaxMs:    float64(max.Milliseconds()),
-		DraftLatencySamples:  len(m.DraftLatencies),
-		EscalateChecks:       m.EscalateChecks,
-		EscalateErrors:       m.EscalateErrors,
-		EscalateErrorRate:    escErrRate,
-		TwinSendsBlocked:     m.TwinSendsBlocked,
+		DraftRequests:       m.DraftRequests,
+		DraftErrors:         m.DraftErrors,
+		DraftErrorRate:      errRate,
+		DraftLatencyAvgMs:   avgMs,
+		DraftLatencyMaxMs:   float64(max.Milliseconds()),
+		DraftLatencySamples: len(m.DraftLatencies),
+		EscalateChecks:      m.EscalateChecks,
+		EscalateErrors:      m.EscalateErrors,
+		EscalateErrorRate:   escErrRate,
+		TwinSendsBlocked:    m.TwinSendsBlocked,
+		PushAttempts:        m.PushAttempts,
+		PushSkipped:         m.PushSkipped,
+		PushDelivered:       m.PushDelivered,
 	}
 }
 
@@ -100,4 +116,7 @@ type ginHMetrics struct {
 	EscalateErrors      int64
 	EscalateErrorRate   float64
 	TwinSendsBlocked    int64
+	PushAttempts        int64
+	PushSkipped         int64
+	PushDelivered       int64
 }

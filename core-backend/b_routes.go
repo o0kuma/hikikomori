@@ -120,6 +120,61 @@ func registerBRoutes(r *gin.Engine, db *gorm.DB) {
 		}
 		c.JSON(http.StatusOK, gin.H{"sessions": out})
 	})
+
+	// Revoke another (or current) session — multi-device control.
+	r.DELETE("/users/:id/sessions/:sessionId", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+		sessionID, ok := parseUintParam(c, "sessionId")
+		if !ok {
+			return
+		}
+		actor, ok := currentUser(c, db, true)
+		if !ok {
+			return
+		}
+		if actor.ID != userID {
+			c.JSON(http.StatusForbidden, gin.H{"detail": "can only revoke your own sessions"})
+			return
+		}
+		var session Session
+		if err := db.Where("id = ? AND user_id = ?", sessionID, userID).First(&session).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "session not found"})
+			return
+		}
+		db.Delete(&session)
+		c.JSON(http.StatusOK, gin.H{"deleted": true, "id": sessionID})
+	})
+
+	// Admin smoke-test push to a user (requires FCM_SERVER_KEY for real delivery).
+	r.POST("/admin/push-test", func(c *gin.Context) {
+		if !requireAdmin(c) {
+			return
+		}
+		var req struct {
+			UserID uint   `json:"user_id" binding:"required"`
+			Title  string `json:"title"`
+			Body   string `json:"body"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+			return
+		}
+		if req.Title == "" {
+			req.Title = "분신 테스트"
+		}
+		if req.Body == "" {
+			req.Body = "push test"
+		}
+		sent, reason, err := notifyUser(db, req.UserID, req.Title, req.Body, map[string]string{"type": "test"})
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"detail": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"sent": sent, "skipped_reason": reason})
+	})
 }
 
 func trimToken(token string) string {

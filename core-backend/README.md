@@ -40,6 +40,9 @@ Phase 1 B (베타 품질) 추가분:
 - `GET /admin/dashboard` — 최소 HTML 대시보드
 - `POST|GET /users/:id/device-tokens` — FCM 토큰 등록(전송은 후속)
 - `GET /users/:id/sessions` — 활성 세션 목록(멀티 디바이스 1차)
+- `DELETE /users/:id/sessions/:sessionId` — 세션 종료
+- `POST /admin/push-test` — FCM 스모크 테스트 (`FCM_SERVER_KEY` 필요, 없으면 skipped)
+- 에스컬레이션 시 사용자 디바이스로 푸시 시도 (`notifyUser`)
 
 ## 테스트
 

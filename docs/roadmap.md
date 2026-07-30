@@ -185,13 +185,14 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
   동시 통과. Android 에뮬레이터 UI 탭은 이 환경에 SDK가 없어 체크리스트는 `mobile/README.md`에 유지
 
 ##### B. 그다음 — 베타 품질
-- [~] FCM 푸시 연동 — 디바이스 토큰 등록 API(`POST /users/:id/device-tokens`)까지.
-  실제 FCM 전송은 Firebase 프로젝트 키 연동 후
-- [~] 멀티 디바이스 동기화 — 활성 세션 목록(`GET /users/:id/sessions`) + Flutter 화면.
-  강제 로그아웃·메시지 동기화 고도화는 후속
-- [ ] drift + SQLCipher 로컬 저장 — 다음 슬라이스(코드젠). 현재 말투는 SharedPreferences
-- [x] 말투 이력 기기 내 저장 + 서버 최소 전송 — 온보딩 샘플 로컬 저장, draft에 샘플만 전달,
-  데이터 흐름 UI로 원칙 노출
+- [~] FCM 푸시 연동 — 토큰 등록 + 에스컬레이션 시 `notifyUser` + `POST /admin/push-test`.
+  `FCM_SERVER_KEY`와 실제 FCM registration token이 있으면 전송, 없으면 soft-skip.
+  Flutter는 install-id 플레이스홀더 등록(Firebase Messaging 앱 키는 배포 환경에서 교체)
+- [~] 멀티 디바이스 동기화 — 세션 목록 + 세션 종료(`DELETE /users/:id/sessions/:id`).
+  메시지 히스토리 서버 동기화는 이미 REST/WS; 오프라인 큐는 후속
+- [x] drift + SQLCipher 로컬 저장 — `mobile/lib/db/` (말투 샘플·KV). 키는
+  `flutter_secure_storage`. Linux CI는 SQLCipher SO 없으면 메모리 폴백
+- [x] 말투 이력 기기 내 저장 + 서버 최소 전송 — drift 암호화 저장, draft에 샘플만 전달
 - [x] 데이터 흐름 표시 UI — `DataFlowScreen`
 - [x] 생성 지연시간·오류율 계측 — process-local `RuntimeMetrics` → `/admin/metrics`
 - [x] 모니터링 대시보드(최소) — `GET /admin/dashboard`
