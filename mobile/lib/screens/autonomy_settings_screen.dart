@@ -49,36 +49,50 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
     super.dispose();
   }
 
+  static const _levelDescriptions = {
+    AutonomyLevel.L0: '분신이 초안만 만들고, 발송은 항상 직접 합니다.',
+    AutonomyLevel.L1: '분신이 초안을 만들면 검토·수정 후 승인해야 보내집니다.',
+    AutonomyLevel.L2: '아래 화이트리스트 주제는 승인 없이 자동으로 보내집니다.',
+  };
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionState>();
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('자율성 설정')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('데이터 흐름'),
-            subtitle: const Text('무엇이 기기에 남고 서버로 가는지'),
-            onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DataFlowScreen()));
-            },
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('데이터 흐름'),
+                  subtitle: const Text('무엇이 기기에 남고 서버로 가는지'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DataFlowScreen()));
+                  },
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.devices),
+                  title: const Text('로그인 세션'),
+                  subtitle: const Text('멀티 디바이스 세션 목록'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SessionsScreen()));
+                  },
+                ),
+              ],
+            ),
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.devices),
-            title: const Text('로그인 세션'),
-            subtitle: const Text('멀티 디바이스 세션 목록'),
-            onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SessionsScreen()));
-            },
-          ),
-          const Divider(height: 32),
-          Text('전역 레벨', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          Text('전역 자율성 레벨', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
           SegmentedButton<AutonomyLevel>(
             segments: const [
               ButtonSegment(value: AutonomyLevel.L0, label: Text('L0'), tooltip: '초안만'),
@@ -88,23 +102,37 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
             selected: {session.autonomyLevel},
             onSelectionChanged: (s) => session.setAutonomy(s.first),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '기본값은 L0입니다. L2는 아래 화이트리스트 주제에만 자동 발송됩니다.',
-            style: Theme.of(context).textTheme.bodySmall,
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _levelDescriptions[session.autonomyLevel] ?? '',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 32),
-          Text('L2 화이트리스트 주제', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: 28),
+          Text('L2 화이트리스트 주제', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: TextField(
                   controller: _keyword,
-                  decoration: const InputDecoration(
-                    labelText: '주제 키워드',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: '주제 키워드'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -128,24 +156,37 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
           ],
           const SizedBox(height: 12),
           if (_loading)
-            const Center(child: CircularProgressIndicator())
-          else
-            ..._rules.map(
-              (r) => ListTile(
-                title: Text(r.topicKeyword),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    if (session.user == null) return;
-                    await session.api.deleteWhitelist(session.user!.id, r.id);
-                    setState(() => _rules = _rules.where((x) => x.id != r.id).toList());
-                  },
-                ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_rules.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                '아직 화이트리스트 주제가 없습니다.',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final r in _rules)
+                  InputChip(
+                    label: Text(r.topicKeyword),
+                    onDeleted: () async {
+                      if (session.user == null) return;
+                      await session.api.deleteWhitelist(session.user!.id, r.id);
+                      setState(() => _rules = _rules.where((x) => x.id != r.id).toList());
+                    },
+                  ),
+              ],
             ),
         ],
       ),

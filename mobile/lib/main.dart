@@ -5,6 +5,7 @@ import 'screens/conversation_list_screen.dart';
 import 'screens/onboarding_tone_screen.dart';
 import 'screens/signup_screen.dart';
 import 'state/session_state.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,13 +25,10 @@ class BunsinApp extends StatelessWidget {
       value: session,
       child: MaterialApp(
         title: '분신',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF1F6F5B),
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-        ),
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
         home: Consumer<SessionState>(
           builder: (context, s, _) {
             if (s.user == null) return const SignupScreen();

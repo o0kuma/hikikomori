@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
+import '../theme/app_theme.dart';
 
-/// Twin messages use a dashed border + badge (PRD §3.1 분신 뱃지).
+/// Twin messages get a dashed border + badge (PRD §3.1 분신 뱃지) so an
+/// auto-sent bubble never reads as something the human actually typed.
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -15,90 +17,146 @@ class MessageBubble extends StatelessWidget {
   final bool isMine;
   final VoidCallback? onRetract;
 
+  static String _time(DateTime dt) {
+    final local = dt.toLocal();
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final twin = message.isTwin;
-    final bg = isMine
-        ? theme.colorScheme.primaryContainer
-        : theme.colorScheme.surfaceContainerHighest;
+    final retracted = message.retracted;
+    final accent = AppTheme.twinAccent(theme.brightness);
+
+    final Color bg;
+    final Color fg;
+    if (retracted) {
+      bg = scheme.surfaceContainerHigh;
+      fg = scheme.onSurfaceVariant;
+    } else if (isMine) {
+      bg = scheme.primaryContainer;
+      fg = scheme.onPrimaryContainer;
+    } else {
+      bg = scheme.surfaceContainerHighest;
+      fg = scheme.onSurface;
+    }
+
+    final radius = BorderRadius.only(
+      topLeft: const Radius.circular(18),
+      topRight: const Radius.circular(18),
+      bottomLeft: Radius.circular(isMine ? 18 : 4),
+      bottomRight: Radius.circular(isMine ? 4 : 18),
+    );
 
     final bubble = Container(
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(14),
-        border: twin
-            ? Border.all(color: theme.colorScheme.tertiary, width: 1.5, strokeAlign: BorderSide.strokeAlignOutside)
-            : null,
-      ),
+      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.76),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      decoration: BoxDecoration(color: bg, borderRadius: radius),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (twin)
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '분신',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.tertiary,
-                  fontWeight: FontWeight.w700,
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, size: 13, color: accent),
+                  const SizedBox(width: 4),
+                  Text(
+                    '분신',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (retracted)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.replay, size: 14, color: fg),
+                const SizedBox(width: 4),
+                Text(
+                  '되돌린 메시지',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: fg, fontStyle: FontStyle.italic),
                 ),
-              ),
+              ],
+            )
+          else
+            Text(
+              message.text,
+              style: theme.textTheme.bodyMedium?.copyWith(color: fg, height: 1.35),
             ),
+          const SizedBox(height: 4),
           Text(
-            message.retracted ? '(되돌린 메시지)' : message.text,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontStyle: message.retracted ? FontStyle.italic : FontStyle.normal,
-              color: message.retracted ? theme.disabledColor : null,
-            ),
+            _time(message.createdAt),
+            style: theme.textTheme.labelSmall?.copyWith(color: fg.withOpacity(0.55), fontSize: 10),
           ),
-          if (twin && isMine && !message.retracted && onRetract != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: onRetract,
-                child: const Text('되돌리기'),
-              ),
-            ),
         ],
       ),
     );
 
-    // Dashed look for twin: overlay a custom painter border when twin.
-    if (!twin) {
-      return Align(
-        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-        child: bubble,
-      );
-    }
+    final content = Column(
+      crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        twin
+            ? CustomPaint(
+                painter: _DashedRRectPainter(color: accent, radius: radius),
+                child: bubble,
+              )
+            : bubble,
+        if (twin && isMine && !retracted && onRetract != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2, right: 4, left: 4),
+            child: TextButton.icon(
+              onPressed: onRetract,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: scheme.onSurfaceVariant,
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+              icon: const Icon(Icons.undo, size: 14),
+              label: const Text('되돌리기'),
+            ),
+          ),
+      ],
+    );
 
-    return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: CustomPaint(
-        painter: _DashedRRectPainter(color: theme.colorScheme.tertiary),
-        child: bubble,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      child: Align(
+        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+        child: content,
       ),
     );
   }
 }
 
 class _DashedRRectPainter extends CustomPainter {
-  _DashedRRectPainter({required this.color});
+  _DashedRRectPainter({required this.color, required this.radius});
+
   final Color color;
+  final BorderRadius radius;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(1, 1, size.width - 2, size.height - 2),
-      const Radius.circular(14),
-    );
+      ..strokeWidth = 1.4;
+    final rrect = radius.toRRect(Rect.fromLTWH(0.7, 0.7, size.width - 1.4, size.height - 1.4));
     final path = Path()..addRRect(rrect);
     final dashed = _dashPath(path, dashLength: 5, gapLength: 4);
     canvas.drawPath(dashed, paint);
@@ -119,5 +177,6 @@ class _DashedRRectPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }

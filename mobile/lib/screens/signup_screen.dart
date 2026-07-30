@@ -24,28 +24,47 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionState>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 48),
-              Text('분신', style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+              const Spacer(flex: 3),
+              Center(
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Icon(Icons.auto_awesome, size: 34, color: scheme.onPrimaryContainer),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '분신',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 8),
               Text(
-                '초대 코드로 클로즈드 베타에 참여합니다.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                '나를 대신해 답하는, 나만의 분신',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 32),
+              const Spacer(flex: 3),
+              Text('초대 코드로 클로즈드 베타에 참여합니다', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 12),
               TextField(
                 controller: _invite,
                 decoration: const InputDecoration(
                   labelText: '초대 코드',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.vpn_key),
                 ),
                 textInputAction: TextInputAction.next,
               ),
@@ -54,15 +73,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 controller: _name,
                 decoration: const InputDecoration(
                   labelText: '표시 이름',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
                 textInputAction: TextInputAction.done,
               ),
               if (session.error != null) ...[
                 const SizedBox(height: 12),
-                Text(session.error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(session.error!, style: TextStyle(color: scheme.error)),
               ],
-              const Spacer(),
+              const SizedBox(height: 20),
               FilledButton(
                 onPressed: session.loading
                     ? null
@@ -71,6 +90,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('시작하기'),
               ),
+              const SizedBox(height: 32),
             ],
           ),
         ),

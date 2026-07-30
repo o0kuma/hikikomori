@@ -72,32 +72,53 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('로그인 세션')),
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? ListView(children: const [SizedBox(height: 120), Center(child: CircularProgressIndicator())])
+            ? ListView(children: const [SizedBox(height: 160), Center(child: CircularProgressIndicator())])
             : ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('이 계정에 연결된 활성 세션입니다. 다른 기기를 종료하면 해당 토큰이 즉시 무효화됩니다.'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Text(
+                      '이 계정에 연결된 활성 세션입니다. 다른 기기를 종료하면 해당 토큰이 즉시 무효화됩니다.',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
                   ),
                   if (_error != null)
                     Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
                     ),
                   for (final s in _sessions)
-                    ListTile(
-                      leading: Icon(s['is_current'] == true ? Icons.smartphone : Icons.devices_other),
-                      title: Text(s['is_current'] == true ? '이 기기 (현재)' : '세션 #${s['id']}'),
-                      subtitle: Text('만료: ${s['expires_at'] ?? ''}'),
-                      trailing: IconButton(
-                        tooltip: '세션 종료',
-                        icon: const Icon(Icons.logout),
-                        onPressed: () => _revoke(s),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: s['is_current'] == true
+                              ? theme.colorScheme.primaryContainer
+                              : theme.colorScheme.surfaceContainerHighest,
+                          child: Icon(
+                            s['is_current'] == true ? Icons.smartphone : Icons.devices_other,
+                            color: s['is_current'] == true
+                                ? theme.colorScheme.onPrimaryContainer
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        title: Text(
+                          s['is_current'] == true ? '이 기기 (현재)' : '세션 #${s['id']}',
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        subtitle: Text('만료: ${s['expires_at'] ?? ''}', style: theme.textTheme.bodySmall),
+                        trailing: IconButton(
+                          tooltip: '세션 종료',
+                          icon: const Icon(Icons.logout),
+                          onPressed: () => _revoke(s),
+                        ),
                       ),
                     ),
                 ],
