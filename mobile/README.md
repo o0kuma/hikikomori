@@ -29,7 +29,20 @@ flutter run --dart-define=CORE_API_BASE=http://10.0.2.2:8080
 flutter run --dart-define=CORE_API_BASE=http://<your-lan-ip>:8080
 ```
 
-## E2E 수동 QA 체크 (에뮬레이터/실기기)
+## E2E
+
+**API 레벨 (클라우드/CI에서 실행 가능)**
+
+```bash
+# core-backend :8080 + ai-service :8001 기동 후
+export ADMIN_API_TOKEN=dev-admin-token
+python3 scripts/e2e_a3.py
+```
+
+A3 체크리스트(가입·연락처·대화·히스토리·draft/L1·에스컬레이션·되돌리기·거부권·화이트리스트)를
+HTTP로 검증한다.
+
+**에뮬레이터/실기기 UI 탭 (Android SDK 필요)**
 
 1. 초대 코드로 가입 → 말투 샘플 저장(또는 나중에)
 2. 연락처에 상대 사용자 ID 등록 → 대화 시작

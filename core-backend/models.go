@@ -119,6 +119,17 @@ type EscalationLog struct {
 	CreatedAt      time.Time
 }
 
+// DeviceToken stores an FCM registration token for push (roadmap B).
+// Sending pushes is wired later; v1 persists tokens per user/device.
+type DeviceToken struct {
+	ID        uint   `gorm:"primaryKey"`
+	UserID    uint   `gorm:"not null;index"`
+	Token     string `gorm:"uniqueIndex;not null"`
+	Platform  string `gorm:"not null;default:android"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 var allModels = []interface{}{
 	&User{},
 	&Session{},
@@ -130,4 +141,5 @@ var allModels = []interface{}{
 	&TwinSettings{},
 	&WhitelistRule{},
 	&EscalationLog{},
+	&DeviceToken{},
 }

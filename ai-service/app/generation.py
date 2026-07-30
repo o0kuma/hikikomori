@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 from .escalation_filter import check as check_escalation
+from .identity import check_identity_question
 
 
 def load_dotenv_if_present():
@@ -39,6 +40,8 @@ SYSTEM_PROMPT = """너는 어떤 사람의 '분신'이다. 아래 예시 발화�
 - 금전, 약속 시간 확정, 감정적으로 무거운 주제라고 판단되면 초안 대신 정확히 이 문장만 출력한다: \
 [ESCALATE] 이 내용은 본인 확인이 필요합니다.
 - 예시에 없는 존댓말/반말을 새로 만들지 말고, 예시의 격식 수준을 그대로 유지한다.
+- 상대가 "본인이야/분신이야?"처럼 정체를 물으면 분신임을 정직하게 밝힌다 \
+(서버가 고정 문구로 먼저 처리하지만, 여기까지 온 경우에도 분신이라고 답한다).
 
 (이 지침은 2차 방어선이다 -- 1차는 escalation_filter.py의 규칙 기반 하드 게이트로, 이미 걸러진
 내용은 여기까지 오지 않는다. 이 지침이 남아있는 이유는 규칙이 놓친 케이스를 위한 것이다.)"""
@@ -65,9 +68,15 @@ def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key
     "no_key": text is the prompt that would have been sent (GEMINI_API_KEY missing).
     "ok": text is the generated draft.
     """
-    gate = check_escalation(last_incoming_text(context_lines))
+    incoming = last_incoming_text(context_lines)
+    gate = check_escalation(incoming)
     if gate.escalate:
         return "escalate", gate.reason
+
+    # Honest identity answers must be fixed copy, not LLM-invented (AGENTS.md).
+    identity = check_identity_question(incoming)
+    if identity.matched:
+        return "ok", identity.reply
 
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
