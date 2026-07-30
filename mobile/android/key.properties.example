@@ -1,0 +1,4 @@
+storePassword=replace-me
+keyPassword=replace-me
+keyAlias=bunsin
+storeFile=/absolute/path/to/bunsin-release.jks

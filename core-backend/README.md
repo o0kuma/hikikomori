@@ -29,8 +29,10 @@ export AI_SERVICE_URL="http://localhost:8001"   # 기본값도 이 주소
 
 - 가입 `POST /auth/signup` / 로그인 `POST /auth/login` → `{token}` (Bearer)
 - 사용자 스코프 API(`PATCH /users/:id/...`, contacts, conversations 목록 등)는 Bearer 필요
-- `/invites`, `/admin/metrics`, `/admin/dashboard`는 `Authorization: Bearer $ADMIN_API_TOKEN`
-  (`/admin/dashboard`는 `?token=` 쿼리로도 토큰을 넘길 수 있음)
+- `/invites`, `/admin/metrics`, `/admin/dashboard`, `/admin/push-test`는
+  `Authorization: Bearer $ADMIN_API_TOKEN` (`/admin/dashboard`는 `?token=` 쿼리 가능)
+- 초대 운영: `POST /invites`(`note`, `expires_in_days`, `count`), `GET /invites`,
+  `POST /invites/:code/revoke` — 절차는 `docs/invite-ops.md`
 
 메시지 생성(`POST /conversations/:id/messages`)은 전체 메시지 JSON을 반환한다
 (`id`, `conversation_id`, `sender_id`, `sender_mode`, `text`, `retracted`, `created_at`).

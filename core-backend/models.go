@@ -41,7 +41,10 @@ type Session struct {
 type InviteCode struct {
 	ID           uint   `gorm:"primaryKey"`
 	Code         string `gorm:"uniqueIndex;not null"`
+	Note         string // operator memo (recipient/channel) — roadmap C invite ops
 	CreatedAt    time.Time
+	ExpiresAt    *time.Time
+	RevokedAt    *time.Time
 	UsedAt       *time.Time
 	UsedByUserID *uint
 }

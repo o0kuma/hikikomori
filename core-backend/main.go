@@ -58,23 +58,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 
 	registerA1A2Routes(r, db)
 	registerBRoutes(r, db)
-
-	r.POST("/invites", func(c *gin.Context) {
-		if !requireAdmin(c) {
-			return
-		}
-		code, err := generateInviteCode()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
-			return
-		}
-		invite := InviteCode{Code: code}
-		if err := db.Create(&invite).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"code": invite.Code})
-	})
+	registerInviteOpsRoutes(r, db)
 
 	r.GET("/admin/metrics", func(c *gin.Context) {
 		if !requireAdmin(c) {
@@ -159,8 +143,12 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			c.JSON(http.StatusBadRequest, gin.H{"detail": "invalid invite code"})
 			return
 		}
-		if invite.UsedAt != nil {
-			c.JSON(http.StatusConflict, gin.H{"detail": "invite code already used"})
+		if ok, detail := inviteUsable(invite, time.Now()); !ok {
+			status := http.StatusBadRequest
+			if detail == "invite code already used" {
+				status = http.StatusConflict
+			}
+			c.JSON(status, gin.H{"detail": detail})
 			return
 		}
 

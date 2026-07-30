@@ -15,9 +15,10 @@
 
 ## 문서
 
-- 기획: [`docs/PLANNING.md`](./docs/PLANNING.md) · 결정: [`docs/decision-log.md`](./docs/decision-log.md)
+- 기획: [`docs/PLANNING.md`](./docs/PLANNING.md) · 결정: [`docs/decision-log.md`](./docs/decision-log.md) (Q1~Q7 **확정**)
 - Vision / PRD / 기술설계: [`docs/vision.md`](./docs/vision.md) · [`docs/PRD.md`](./docs/PRD.md) · [`docs/tech-design.md`](./docs/tech-design.md)
 - 로드맵 (작업 체크리스트): [`docs/roadmap.md`](./docs/roadmap.md)
+- 베타 직전(C): [`docs/invite-ops.md`](./docs/invite-ops.md) · [`docs/android-release.md`](./docs/android-release.md) · [`docs/prototype.md`](./docs/prototype.md)
 - PoC 계획/준비물: [`docs/poc-plan.md`](./docs/poc-plan.md) · [`docs/poc-materials.md`](./docs/poc-materials.md)
 
 ## AI 에이전트 규칙
@@ -26,9 +27,9 @@
 
 ## 현재 단계
 
-- 기획 문서 + Phase 1 **서버(Go/Python)** + Flutter **클라이언트 골격**까지 진행됨
-- Q1~Q7은 아직 **잠정(제안)** — 회의 확정 전
-- **사람 대상 PoC #1/#3·Q3 인터뷰는 맨 마지막 작업**으로 미룸 (`docs/roadmap.md` §3)
+- Phase 1 **A~C**까지 반영됨 (서버·Flutter·베타 직전 문서/배포 경로)
+- 다음: **D — 사람 PoC #1/#3·Q3 인터뷰** (`docs/roadmap.md` §3, 맨 마지막)
+- 프로토타입 공유 URL은 [`docs/prototype.md`](./docs/prototype.md)의 `SHARE_URL`에 Master가 기입
 
 ## 로컬 실행 (요약)
 
