@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
+import 'data_flow_screen.dart';
+import 'sessions_screen.dart';
 
 class AutonomySettingsScreen extends StatefulWidget {
   const AutonomySettingsScreen({super.key});
@@ -56,6 +58,25 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('데이터 흐름'),
+            subtitle: const Text('무엇이 기기에 남고 서버로 가는지'),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DataFlowScreen()));
+            },
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.devices),
+            title: const Text('로그인 세션'),
+            subtitle: const Text('멀티 디바이스 세션 목록'),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SessionsScreen()));
+            },
+          ),
+          const Divider(height: 32),
           Text('전역 레벨', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           SegmentedButton<AutonomyLevel>(

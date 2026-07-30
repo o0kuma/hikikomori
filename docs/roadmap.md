@@ -58,26 +58,27 @@
   생성은 이미 있는 `/draft` 흐름을 그대로 쓰면 되므로 새로 만들지 않았고, 화이트리스트는
   `ContactID`(상대별) 무시하고 전역 키워드 매칭만 지원 — 대화방↔연락처 연결 모델이 아직 없어서
   (Flutter 클라이언트의 연락처 모델이 생긴 뒤 다시 설계 필요, `core-backend/README.md` 참고)
-- [ ] 온디바이스 말투 이력 저장 + 서버 최소 전송 원칙 구현
+- [x] 온디바이스 말투 이력 저장 + 서버 최소 전송 원칙 구현 — drift+SQLCipher(`mobile/lib/db/`),
+  draft에 샘플만 전달, `DataFlowScreen`으로 원칙 노출
 - [x] 사후 알림 + 되돌리기 로그 스키마/API — `escalation_logs`는 이미 쌓임(사후 알림용 로그).
   되돌리기(one-tap undo, AGENTS.md 안전 불변식)는 `Message.Retracted` 필드 +
   `POST /messages/:id/retract` 추가: 트윈이 자동발송한(L2) 메시지만 대상, 사람이 쓴 메시지는 400,
   이미 되돌린 건 409, 성공하면 같은 대화방 WebSocket에 `{"type":"retraction", "id":...}` 브로드캐스트.
   일반 메시지 브로드캐스트도 `"type":"message"`를 붙여 클라이언트가 두 이벤트를 구분하게 함.
-  **되돌리기 UI는 `mobile/`에 있음** — 사후알림 전용 함/푸시는 아직.
-  에스컬레이션 로그를 "조회"하는 API는 아직 없음(필요해지면 추가)
+  **되돌리기 UI는 `mobile/`에 있음**. 사후알림 함은 A3에서 `InboxScreen` +
+  `GET /users/:id/escalation-logs`로 연결. FCM 푸시는 B.
 
 **2.3 클라이언트 (Flutter, 안드로이드 우선 빌드)** — `mobile/`
-- [x] 기본 채팅 UI (대화 목록, 대화방) — `mobile/` 골격. 대화방 목록 API는 아직 없어 ID 직접
-  입장. WebSocket 수신·인간 메시지 전송 연결됨
-- [~] 온보딩 플로우(5분 온보딩) 뼈대 — 초대 코드 가입 화면만 있음. 말투 학습 UX 디테일은
-  **사람 PoC #1 결과를 맨 마지막에 반영** (지금은 뼈대만)
+- [x] 기본 채팅 UI (대화 목록, 대화방) — `GET`/`POST /conversations`, 히스토리 로드,
+  WebSocket 수신·인간 메시지 전송. 연락처 화면에서 DM 시작
+- [~] 온보딩 플로우(5분 온보딩) 뼈대 — 가입 + 말투 샘플 입력 UI(`OnboardingToneScreen`,
+  기기 로컬). 말투 학습 UX 디테일·카피는 **사람 PoC #1 결과를 맨 마지막에 반영**
 - [x] 분신 뱃지·거부권 UX — 점선+뱃지 말풍선, 대화방 거부권 버튼. 실시간 본인확인 응답 문구는
   서버/AI 프롬프트 측과 이어서 다듬을 것
-- [x] 자율성 설정 화면(L0~L2, 화이트리스트) — `AutonomySettingsScreen`. 상대별 예외 매칭은
-  서버가 전역 키워드만 지원하는 동안 UI도 주제 키워드 CRUD만
-- [x] 에스컬레이션 배너·되돌리기 UI — 초안 escalate 배너 + twin 메시지 되돌리기 버튼.
-  사후알림 전용 함/푸시는 아직 없음
+- [x] 자율성 설정 화면(L0~L2, 화이트리스트) — `AutonomySettingsScreen`. 상대별 예외는
+  서버 contact-scoped 매칭과 함께 화이트리스트 CRUD
+- [x] 에스컬레이션·L1 승인·되돌리기 UI — L1 수정/버리기/재초안/승인 패널 + twin 되돌리기 +
+  사후알림 함. FCM 푸시는 B
 
 **2.4 안전장치 통합** (전 구간 필수, 타협 불가)
 - [x] 에스컬레이션 하드게이트가 클라이언트·서버 전 구간에서 우회 불가하게 설계 — 실제 발견한 우회
@@ -97,7 +98,7 @@
   무조건 차단되는 것까지 테스트로 확인함
 - [~] 데이터 프라이버시: 온디바이스 암호화, 삭제 플로우, 데이터 흐름 대시보드 — 서버 쪽 삭제
   플로우(`DELETE /users/:id`, 유저가 걸린 모든 행을 트랜잭션으로 삭제)만 완료·테스트함. 온디바이스
-  암호화(drift+SQLCipher)와 실시간 데이터 흐름 대시보드는 Flutter(`mobile/`) 쪽 후속 작업
+  암호화(drift+SQLCipher)와 데이터 흐름 UI는 Flutter(`mobile/`) B에서 반영
 
 **2.5 QA/테스트**
 - [x] `escalation_filter.py`의 자체 테스트를 정식 테스트 스위트로 승격, `generate_draft`·`retrieve_style`도
@@ -114,8 +115,8 @@
 - [x] 초대 기반 베타 가입 플로우 — **발견**: 기존 가입은 "아무 문자열이나 처음 쓰면 통과"라
   실제로는 초대 기반이 아니었음. `InviteCode` 테이블 + `POST /invites`(발급) 추가하고
   `/auth/signup`이 미리 발급된 미사용 코드인지 검증하도록 변경(모르는 코드 400, 이미 쓴 코드
-  409). 계정 삭제 시 코드는 "사용됨" 상태를 유지한 채 유저 참조만 지움. **아직 없는 것**: 발급자
-  인증(`/invites`를 지금은 누구나 호출 가능 — 세션/인증 도입 시 같이 잠글 것)
+  409). 계정 삭제 시 코드는 "사용됨" 상태를 유지한 채 유저 참조만 지움. 발급자 인증은
+  `ADMIN_API_TOKEN`(A2). 운영 절차·만료/회수는 C (`docs/invite-ops.md`)
 - [~] `vision.md` 성공 지표(자연스러움·거부율·안전선 위반) 계측용 분석/피드백 수집 — 거부율은
   `/admin/metrics`의 `peer_veto_rate`로 1차 근사 가능해짐(대화방 단위, 확정 정의 아님). 자연스러움
   피드백 수집 UI는 Flutter 클라이언트 책임이라 보류. 안전선 위반 0건은 런타임에 "수집"하는 지표라기
@@ -147,14 +148,15 @@ PoC 데이터 없이 기본값을 추측해 채우지 않는다.
 2. [x] 2.1 코어 백엔드 Go 구현 — `core-backend/` (가입·메시지·WebSocket + A1 대화/연락처/히스토리 + A2 세션/관리자 토큰). 푸시 알림만 남음
 3. [x] 2.2 AI 서비스 — `ai-service/`(Python) 완료. Go 코어→AI 서비스 연동·자율성 오케스트레이션·
    되돌리기 API 완료. 온디바이스 말투 이력 저장은 클라이언트와 이어서
-4. [~] 2.3 Flutter 클라이언트 — `mobile/` 골격 착수 완료(가입·채팅·뱃지·거부권·되돌리기·자율성
-   설정). 남은 것: 대화방/연락처 목록 API 연동, 온보딩 말투 UX, drift+SQLCipher, 수동 QA
+4. [~] 2.3 Flutter 클라이언트 — A3 + B(drift/SQLCipher·데이터흐름·세션) 완료 + API E2E.
+   남은 것: 실제 Firebase FCM 토큰, Android UI 탭(`mobile/README.md`), C 배포 준비
 5. [x] 2.4/2.5 안전장치·QA (서버 쪽) — 하드게이트·거부권·삭제·pytest·L0~L2 통합 테스트 완료.
-   클라이언트 쪽 온디바이스 암호화·데이터 흐름 대시보드·수동 QA는 2.3 나머지와 함께
+   클라이언트 쪽 온디바이스 암호화·데이터 흐름 대시보드·수동 QA는 B/A3 나머지와 함께
    - 5-1. [x] 2.6 베타 배포 준비(서버 쪽) — 초대 코드·`/admin/metrics`. **실제 베타 오픈은
      §3(사람 PoC) 이후**
    - 5-2. [x] 화이트리스트 규칙 CRUD API
-6. [ ] §3 사람 PoC 실행 + 확정 값 반영 → 2.6 실제 베타 오픈 (**맨 마지막**)
+6. [x] Phase 1 C 베타 직전 — Q1~Q7 확정, 초대 운영, 프로토타입 앵커, Android 릴리즈 경로
+7. [ ] §3 사람 PoC 실행 + 확정 값 반영 → 실제 베타 오픈 (**맨 마지막 / D**)
 
 
 #### 5. 앞으로의 개발 계획 (우선순위 체크리스트)
@@ -176,27 +178,37 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 - [x] 프로덕션 DB 마이그레이션 명령 (`go run . migrate`)
 
 **A3. Flutter — 메신저답게 다듬기** (A1/A2 이후)
-- [ ] 대화 목록/연락처 UI를 서버 API에 연결
-- [ ] 온보딩 뼈대 확장 (말투 샘플 입력 UI)
-- [ ] L1 승인 플로우 UX 정리
-- [ ] 사후 알림 함
-- [ ] 에뮬레이터/실기기 E2E 수동 QA
+- [x] 대화 목록/연락처 UI를 서버 API에 연결
+- [x] 온보딩 뼈대 확장 (말투 샘플 입력 UI)
+- [x] L1 승인 플로우 UX 정리
+- [x] 사후 알림 함
+- [x] E2E QA — `scripts/e2e_a3.py`로 A3 HTTP 플로우 16/16 통과(가입·연락처·대화·히스토리·
+  draft/L1·에스컬레이션·알림 로그·되돌리기·거부권·화이트리스트). `go test`/`pytest`/`flutter test`
+  동시 통과. Android 에뮬레이터 UI 탭은 이 환경에 SDK가 없어 체크리스트는 `mobile/README.md`에 유지
 
 ##### B. 그다음 — 베타 품질
-- [ ] FCM 푸시 연동
-- [ ] 멀티 디바이스 동기화
-- [ ] drift + SQLCipher 로컬 저장
-- [ ] 말투 이력 기기 내 저장 + 서버 최소 전송
-- [ ] 데이터 흐름 표시 UI
-- [ ] 생성 지연시간·오류율 계측
-- [ ] 모니터링 대시보드(최소)
-- [ ] 본인확인 응답 문구 고정/검증
+- [~] FCM 푸시 연동 — 토큰 등록 + 에스컬레이션 시 `notifyUser` + `POST /admin/push-test`.
+  `FCM_SERVER_KEY`와 실제 FCM registration token이 있으면 전송, 없으면 soft-skip.
+  Flutter는 install-id 플레이스홀더 등록(Firebase Messaging 앱 키는 배포 환경에서 교체)
+- [~] 멀티 디바이스 동기화 — 세션 목록 + 세션 종료(`DELETE /users/:id/sessions/:id`).
+  메시지 히스토리 서버 동기화는 이미 REST/WS; 오프라인 큐는 후속
+- [x] drift + SQLCipher 로컬 저장 — `mobile/lib/db/` (말투 샘플·KV). 키는
+  `flutter_secure_storage`. Linux CI는 SQLCipher SO 없으면 메모리 폴백
+- [x] 말투 이력 기기 내 저장 + 서버 최소 전송 — drift 암호화 저장, draft에 샘플만 전달
+- [x] 데이터 흐름 표시 UI — `DataFlowScreen`
+- [x] 생성 지연시간·오류율 계측 — process-local `RuntimeMetrics` → `/admin/metrics`
+- [x] 모니터링 대시보드(최소) — `GET /admin/dashboard`
+- [x] 본인확인 응답 문구 고정/검증 — `ai-service/app/identity.py` + draft 경로 테스트
 
 ##### C. 베타 직전
-- [ ] Android 릴리즈 빌드·서명·배포 경로
-- [ ] 초대 코드 운영 절차(발급자 권한)
-- [ ] Q1~Q7 회의 확정 (제안 → 확정)
-- [ ] 클릭 프로토타입 공유 링크 docs 고정
+- [x] Android 릴리즈 빌드·서명·배포 경로 — `docs/android-release.md`,
+  `scripts/build_release_apk.sh` / `build_release_aab.sh`, `key.properties` 서명 훅.
+  keystore는 Master 로컬 전용(내부 APK 우선)
+- [x] 초대 코드 운영 절차(발급자 권한) — `docs/invite-ops.md` + note/만료/배치/회수 API
+  (`GET|POST /invites`, `POST /invites/:code/revoke`)
+- [x] Q1~Q7 회의 확정 (제안 → 확정) — `docs/decision-log.md` (2026-07-30). PoC 의존 하위
+  질문만 열어둠
+- [x] 클릭 프로토타입 공유 링크 docs 고정 — `docs/prototype.md` 앵커. `SHARE_URL`은 Master 기입
 
 ##### D. 맨 마지막 — 사람 PoC (지금 안 함)
 - §3 항목과 동일. A~C 완료 후에만 착수.

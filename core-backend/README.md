@@ -29,7 +29,22 @@ export AI_SERVICE_URL="http://localhost:8001"   # 기본값도 이 주소
 
 - 가입 `POST /auth/signup` / 로그인 `POST /auth/login` → `{token}` (Bearer)
 - 사용자 스코프 API(`PATCH /users/:id/...`, contacts, conversations 목록 등)는 Bearer 필요
-- `/invites`, `/admin/metrics`는 `Authorization: Bearer $ADMIN_API_TOKEN`
+- `/invites`, `/admin/metrics`, `/admin/dashboard`, `/admin/push-test`는
+  `Authorization: Bearer $ADMIN_API_TOKEN` (`/admin/dashboard`는 `?token=` 쿼리 가능)
+- 초대 운영: `POST /invites`(`note`, `expires_in_days`, `count`), `GET /invites`,
+  `POST /invites/:code/revoke` — 절차는 `docs/invite-ops.md`
+
+메시지 생성(`POST /conversations/:id/messages`)은 전체 메시지 JSON을 반환한다
+(`id`, `conversation_id`, `sender_id`, `sender_mode`, `text`, `retracted`, `created_at`).
+
+Phase 1 B (베타 품질) 추가분:
+- draft/escalate 지연·오류율 → `/admin/metrics`의 `draft_*` / `escalate_*` 필드 (프로세스 메모리)
+- `GET /admin/dashboard` — 최소 HTML 대시보드
+- `POST|GET /users/:id/device-tokens` — FCM 토큰 등록(전송은 후속)
+- `GET /users/:id/sessions` — 활성 세션 목록(멀티 디바이스 1차)
+- `DELETE /users/:id/sessions/:sessionId` — 세션 종료
+- `POST /admin/push-test` — FCM 스모크 테스트 (`FCM_SERVER_KEY` 필요, 없으면 skipped)
+- 에스컬레이션 시 사용자 디바이스로 푸시 시도 (`notifyUser`)
 
 ## 테스트
 

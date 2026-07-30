@@ -1,10 +1,10 @@
 # Project Instructions — hikikomori / 분신 (가칭)
 
-This repository is currently a **planning-docs repo** for an AI-twin messenger
-("나를 대신해 남과 대화하는 AI 분신"). There is no application code yet.
+This repository is an AI-twin messenger ("나를 대신해 남과 대화하는 AI 분신") with
+Phase 1 app code (`core-backend/`, `ai-service/`, `mobile/`) plus planning docs.
 
-Canonical docs live under `docs/`. Prefer linking to them over copying content
-into prompts or new files.
+Canonical product decisions live under `docs/`. Prefer linking to them over
+copying content into prompts or new files.
 
 ## Document authority
 
@@ -18,9 +18,10 @@ When documents disagree, follow this order:
 
 Notes:
 
-- Q1~Q7 in `decision-log.md` are **제안 (tentative)**, not final meeting
-  decisions. Do not silently reverse them. If a change is required, update
-  `decision-log.md` and all derived docs in the same change.
+- Q1~Q7 in `decision-log.md` are **확정** (Phase 1 C, 2026-07-30). PoC-dependent
+  sub-questions (default autonomy level, whitelist defaults, final branding)
+  stay open — do not invent those. To reverse a Q, update `decision-log.md` and
+  derived docs in the same change.
 - Prefer `decision-log.md` (and the synced summary in `PLANNING.md` §2) for
   current working answers.
 - Working delivery order is **자체 앱 클로즈드 베타 first → OS 레이어 later**

@@ -76,6 +76,67 @@ class ApiClient {
     );
   }
 
+  Future<List<ConversationSummary>> listConversations() async {
+    final obj = await _getObject('/conversations');
+    final list = (obj['conversations'] as List<dynamic>? ?? const []);
+    return list.map((e) => ConversationSummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<ConversationSummary> createConversation({
+    required List<int> userIds,
+    int? contactId,
+    bool isGroup = false,
+  }) async {
+    final json = await _json('POST', '/conversations', body: {
+      'user_ids': userIds,
+      'is_group': isGroup,
+      if (contactId != null) 'contact_id': contactId,
+    });
+    final rawIds = json['user_ids'] as List<dynamic>? ?? userIds;
+    return ConversationSummary(
+      id: json['id'] as int,
+      isGroup: json['is_group'] as bool? ?? isGroup,
+      userIds: rawIds.map((e) => e as int).toList(),
+      twinDisabledByPeer: false,
+    );
+  }
+
+  Future<List<ChatMessage>> listMessages(int conversationId) async {
+    final obj = await _getObject('/conversations/$conversationId/messages');
+    final list = (obj['messages'] as List<dynamic>? ?? const []);
+    return list.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<Contact>> listContacts(int userId) async {
+    final obj = await _getObject('/users/$userId/contacts');
+    final list = (obj['contacts'] as List<dynamic>? ?? const []);
+    return list.map((e) => Contact.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Contact> createContact({
+    required int userId,
+    required String displayName,
+    int? contactUserId,
+    String relationshipNote = '',
+  }) async {
+    final json = await _json('POST', '/users/$userId/contacts', body: {
+      'display_name': displayName,
+      if (contactUserId != null) 'contact_user_id': contactUserId,
+      'relationship_note': relationshipNote,
+    });
+    return Contact.fromJson(json);
+  }
+
+  Future<void> deleteContact(int userId, int contactId) async {
+    await _json('DELETE', '/users/$userId/contacts/$contactId');
+  }
+
+  Future<List<EscalationLogEntry>> listEscalationLogs(int userId) async {
+    final obj = await _getObject('/users/$userId/escalation-logs');
+    final list = (obj['escalation_logs'] as List<dynamic>? ?? const []);
+    return list.map((e) => EscalationLogEntry.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<ChatMessage> sendMessage({
     required int conversationId,
     required int senderId,
@@ -126,24 +187,6 @@ class ApiClient {
     return list.map((e) => WhitelistRule.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> listConversations() async {
-    final obj = await _getObject('/conversations');
-    final list = (obj['conversations'] as List<dynamic>? ?? const []);
-    return list.cast<Map<String, dynamic>>();
-  }
-
-  Future<Map<String, dynamic>> createConversation({
-    required List<int> userIds,
-    int? contactId,
-    bool isGroup = false,
-  }) async {
-    return _json('POST', '/conversations', body: {
-      'user_ids': userIds,
-      'is_group': isGroup,
-      if (contactId != null) 'contact_id': contactId,
-    });
-  }
-
   Future<WhitelistRule> addWhitelist(int userId, String topicKeyword) async {
     final json = await _json('POST', '/users/$userId/whitelist-rules', body: {
       'topic_keyword': topicKeyword,
@@ -153,5 +196,26 @@ class ApiClient {
 
   Future<void> deleteWhitelist(int userId, int ruleId) async {
     await _json('DELETE', '/users/$userId/whitelist-rules/$ruleId');
+  }
+
+  Future<List<Map<String, dynamic>>> listSessions(int userId) async {
+    final obj = await _getObject('/users/$userId/sessions');
+    final list = (obj['sessions'] as List<dynamic>? ?? const []);
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  Future<void> registerDeviceToken({
+    required int userId,
+    required String token,
+    String platform = 'android',
+  }) async {
+    await _json('POST', '/users/$userId/device-tokens', body: {
+      'token': token,
+      'platform': platform,
+    });
+  }
+
+  Future<void> revokeSession(int userId, int sessionId) async {
+    await _json('DELETE', '/users/$userId/sessions/$sessionId');
   }
 }
