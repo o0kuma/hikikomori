@@ -1,10 +1,10 @@
 # Project Instructions — hikikomori / 분신 (가칭)
 
-This repository is currently a **planning-docs repo** for an AI-twin messenger
-("나를 대신해 남과 대화하는 AI 분신"). There is no application code yet.
+This repository is an AI-twin messenger ("나를 대신해 남과 대화하는 AI 분신") with
+Phase 1 app code (`core-backend/`, `ai-service/`, `mobile/`) plus planning docs.
 
-Canonical docs live under `docs/`. Prefer linking to them over copying content
-into prompts or new files.
+Canonical product decisions live under `docs/`. Prefer linking to them over
+copying content into prompts or new files.
 
 ## Document authority
 
