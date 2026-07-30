@@ -34,6 +34,89 @@ class TwinSettings {
   }
 }
 
+class ConversationSummary {
+  ConversationSummary({
+    required this.id,
+    required this.isGroup,
+    required this.userIds,
+    required this.twinDisabledByPeer,
+    this.createdAt,
+  });
+
+  final int id;
+  final bool isGroup;
+  final List<int> userIds;
+  final bool twinDisabledByPeer;
+  final DateTime? createdAt;
+
+  factory ConversationSummary.fromJson(Map<String, dynamic> json) {
+    final rawIds = json['user_ids'] as List<dynamic>? ?? const [];
+    return ConversationSummary(
+      id: json['id'] as int,
+      isGroup: json['is_group'] as bool? ?? false,
+      userIds: rawIds.map((e) => e as int).toList(),
+      twinDisabledByPeer: json['twin_disabled_by_peer'] as bool? ?? false,
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
+    );
+  }
+
+  /// Title helper when peer display names are not yet loaded.
+  String titleFor(int myUserId) {
+    final peers = userIds.where((id) => id != myUserId).toList();
+    if (isGroup) return '그룹 #$id';
+    if (peers.isEmpty) return '나와의 대화 #$id';
+    return '대화 · 상대 #${peers.first}';
+  }
+}
+
+class Contact {
+  Contact({
+    required this.id,
+    required this.displayName,
+    this.contactUserId,
+    this.relationshipNote = '',
+  });
+
+  final int id;
+  final String displayName;
+  final int? contactUserId;
+  final String relationshipNote;
+
+  factory Contact.fromJson(Map<String, dynamic> json) => Contact(
+        id: json['id'] as int,
+        displayName: json['display_name'] as String? ?? '',
+        contactUserId: json['contact_user_id'] as int?,
+        relationshipNote: json['relationship_note'] as String? ?? '',
+      );
+}
+
+class EscalationLogEntry {
+  EscalationLogEntry({
+    required this.id,
+    required this.conversationId,
+    required this.reason,
+    required this.messageSnippet,
+    required this.resolved,
+    required this.createdAt,
+  });
+
+  final int id;
+  final int conversationId;
+  final String reason;
+  final String messageSnippet;
+  final bool resolved;
+  final DateTime createdAt;
+
+  factory EscalationLogEntry.fromJson(Map<String, dynamic> json) => EscalationLogEntry(
+        id: json['id'] as int,
+        conversationId: json['conversation_id'] as int? ?? 0,
+        reason: json['reason'] as String? ?? '',
+        messageSnippet: json['message_snippet'] as String? ?? '',
+        resolved: json['resolved'] as bool? ?? false,
+        createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      );
+}
+
 class ChatMessage {
   ChatMessage({
     required this.id,

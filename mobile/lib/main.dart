@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'screens/conversation_list_screen.dart';
+import 'screens/onboarding_tone_screen.dart';
 import 'screens/signup_screen.dart';
 import 'state/session_state.dart';
 
@@ -33,6 +34,7 @@ class BunsinApp extends StatelessWidget {
         home: Consumer<SessionState>(
           builder: (context, s, _) {
             if (s.user == null) return const SignupScreen();
+            if (!s.toneOnboardingDone) return const OnboardingToneScreen();
             return const ConversationListScreen();
           },
         ),
