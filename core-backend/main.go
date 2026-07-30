@@ -57,6 +57,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	})
 
 	registerA1A2Routes(r, db)
+	registerBRoutes(r, db)
 
 	r.POST("/invites", func(c *gin.Context) {
 		if !requireAdmin(c) {
@@ -110,6 +111,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			peerVetoRate = float64(conversationsVetoed) / float64(conversationsTotal)
 		}
 
+		rt := runtimeMetrics.snapshot()
 		c.JSON(http.StatusOK, gin.H{
 			"users_total":           usersTotal,
 			"messages_human_total":  humanMessages,
@@ -123,7 +125,18 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			// vision.md doesn't pin down the exact denominator, so treat
 			// this as a first approximation, not the final definition.
 			"peer_veto_rate": peerVetoRate,
-			"invites_minted": invitesMinted,
+			// Process-local draft/AI timings (roadmap B). Reset on restart.
+			"draft_requests":         rt.DraftRequests,
+			"draft_errors":           rt.DraftErrors,
+			"draft_error_rate":       rt.DraftErrorRate,
+			"draft_latency_avg_ms":   rt.DraftLatencyAvgMs,
+			"draft_latency_max_ms":   rt.DraftLatencyMaxMs,
+			"draft_latency_samples":  rt.DraftLatencySamples,
+			"escalate_checks":        rt.EscalateChecks,
+			"escalate_errors":        rt.EscalateErrors,
+			"escalate_error_rate":    rt.EscalateErrorRate,
+			"twin_sends_blocked":     rt.TwinSendsBlocked,
+			"invites_minted":         invitesMinted,
 			"invites_used":   invitesUsed,
 		})
 	})
@@ -207,16 +220,20 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// none of the later checks can override an earlier block.
 		if req.SenderMode == SenderTwin {
 			if conversation.TwinDisabledByPeer {
+				runtimeMetrics.recordTwinBlocked()
 				c.JSON(http.StatusForbidden, gin.H{"detail": "상대방이 분신을 거부해서 이 대화방에서는 자동 발송이 꺼져 있습니다"})
 				return
 			}
 
 			result, err := ai.checkEscalation(req.Text)
+			runtimeMetrics.recordEscalate(err)
 			if err != nil {
+				runtimeMetrics.recordTwinBlocked()
 				c.JSON(http.StatusBadGateway, gin.H{"detail": "escalation gate unavailable, twin send blocked: " + err.Error()})
 				return
 			}
 			if result.Escalate {
+				runtimeMetrics.recordTwinBlocked()
 				db.Create(&EscalationLog{
 					UserID:         req.SenderID,
 					ConversationID: convID,
@@ -237,19 +254,23 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 
 			switch level {
 			case AutonomyL0:
+				runtimeMetrics.recordTwinBlocked()
 				c.JSON(http.StatusForbidden, gin.H{"detail": "L0(비서 모드)에서는 분신 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
 				return
 			case AutonomyL1:
 				if !req.Approved {
+					runtimeMetrics.recordTwinBlocked()
 					c.JSON(http.StatusForbidden, gin.H{"detail": "L1은 발송 전 사용자 승인이 필요합니다"})
 					return
 				}
 			case AutonomyL2:
 				if !req.Approved && !whitelistMatches(db, req.SenderID, convID, req.Text) {
+					runtimeMetrics.recordTwinBlocked()
 					c.JSON(http.StatusForbidden, gin.H{"detail": "화이트리스트에 없는 주제는 L1과 동일하게 사용자 승인이 필요합니다"})
 					return
 				}
 			default:
+				runtimeMetrics.recordTwinBlocked()
 				c.JSON(http.StatusForbidden, gin.H{"detail": "알 수 없는 자율성 레벨이라 발송을 차단합니다"})
 				return
 			}
@@ -274,7 +295,8 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			"text":        message.Text,
 		})
 
-		c.JSON(http.StatusOK, gin.H{"id": message.ID})
+		// Return the full message so Flutter can render without waiting on WS.
+		c.JSON(http.StatusOK, messageJSON(message))
 	})
 
 	r.POST("/messages/:id/retract", func(c *gin.Context) {
@@ -337,16 +359,14 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			return
 		}
 
-		// EscalationLog persistence (sender's post-hoc notification + undo
-		// trail) is a separate checklist item -- roadmap.md Phase 1 §2.2
-		// "사후 알림 + 되돌리기 로그 스키마/API". This endpoint only proxies
-		// to the AI service for now.
+		started := time.Now()
 		result, err := ai.requestDraft(draftRequest{
 			ContextLines:  req.ContextLines,
 			StyleExamples: req.StyleExamples,
 			History:       req.History,
 			K:             req.K,
 		})
+		runtimeMetrics.recordDraft(time.Since(started), err)
 		if err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{"detail": err.Error()})
 			return

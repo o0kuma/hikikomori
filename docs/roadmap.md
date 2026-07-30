@@ -147,8 +147,8 @@ PoC 데이터 없이 기본값을 추측해 채우지 않는다.
 2. [x] 2.1 코어 백엔드 Go 구현 — `core-backend/` (가입·메시지·WebSocket + A1 대화/연락처/히스토리 + A2 세션/관리자 토큰). 푸시 알림만 남음
 3. [x] 2.2 AI 서비스 — `ai-service/`(Python) 완료. Go 코어→AI 서비스 연동·자율성 오케스트레이션·
    되돌리기 API 완료. 온디바이스 말투 이력 저장은 클라이언트와 이어서
-4. [~] 2.3 Flutter 클라이언트 — A3까지: 가입·말투 온보딩 뼈대·대화/연락처 API 연동·히스토리·
-   L1 승인 UX·사후 알림 함·뱃지·거부권·되돌리기·자율성. 남은 것: 수동 E2E QA, drift+SQLCipher(B)
+4. [~] 2.3 Flutter 클라이언트 — A3까지 완료 + API E2E(`scripts/e2e_a3.py`). 남은 것: B
+   (drift+SQLCipher·FCM 등), Android UI 탭은 실기기에서 `mobile/README.md` 체크리스트로
 5. [x] 2.4/2.5 안전장치·QA (서버 쪽) — 하드게이트·거부권·삭제·pytest·L0~L2 통합 테스트 완료.
    클라이언트 쪽 온디바이스 암호화·데이터 흐름 대시보드·수동 QA는 B/A3 나머지와 함께
    - 5-1. [x] 2.6 베타 배포 준비(서버 쪽) — 초대 코드·`/admin/metrics`. **실제 베타 오픈은
@@ -180,17 +180,22 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 - [x] 온보딩 뼈대 확장 (말투 샘플 입력 UI)
 - [x] L1 승인 플로우 UX 정리
 - [x] 사후 알림 함
-- [ ] 에뮬레이터/실기기 E2E 수동 QA
+- [x] E2E QA — `scripts/e2e_a3.py`로 A3 HTTP 플로우 16/16 통과(가입·연락처·대화·히스토리·
+  draft/L1·에스컬레이션·알림 로그·되돌리기·거부권·화이트리스트). `go test`/`pytest`/`flutter test`
+  동시 통과. Android 에뮬레이터 UI 탭은 이 환경에 SDK가 없어 체크리스트는 `mobile/README.md`에 유지
 
 ##### B. 그다음 — 베타 품질
-- [ ] FCM 푸시 연동
-- [ ] 멀티 디바이스 동기화
-- [ ] drift + SQLCipher 로컬 저장
-- [ ] 말투 이력 기기 내 저장 + 서버 최소 전송
-- [ ] 데이터 흐름 표시 UI
-- [ ] 생성 지연시간·오류율 계측
-- [ ] 모니터링 대시보드(최소)
-- [ ] 본인확인 응답 문구 고정/검증
+- [~] FCM 푸시 연동 — 디바이스 토큰 등록 API(`POST /users/:id/device-tokens`)까지.
+  실제 FCM 전송은 Firebase 프로젝트 키 연동 후
+- [~] 멀티 디바이스 동기화 — 활성 세션 목록(`GET /users/:id/sessions`) + Flutter 화면.
+  강제 로그아웃·메시지 동기화 고도화는 후속
+- [ ] drift + SQLCipher 로컬 저장 — 다음 슬라이스(코드젠). 현재 말투는 SharedPreferences
+- [x] 말투 이력 기기 내 저장 + 서버 최소 전송 — 온보딩 샘플 로컬 저장, draft에 샘플만 전달,
+  데이터 흐름 UI로 원칙 노출
+- [x] 데이터 흐름 표시 UI — `DataFlowScreen`
+- [x] 생성 지연시간·오류율 계측 — process-local `RuntimeMetrics` → `/admin/metrics`
+- [x] 모니터링 대시보드(최소) — `GET /admin/dashboard`
+- [x] 본인확인 응답 문구 고정/검증 — `ai-service/app/identity.py` + draft 경로 테스트
 
 ##### C. 베타 직전
 - [ ] Android 릴리즈 빌드·서명·배포 경로

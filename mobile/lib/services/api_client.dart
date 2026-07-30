@@ -197,4 +197,21 @@ class ApiClient {
   Future<void> deleteWhitelist(int userId, int ruleId) async {
     await _json('DELETE', '/users/$userId/whitelist-rules/$ruleId');
   }
+
+  Future<List<Map<String, dynamic>>> listSessions(int userId) async {
+    final obj = await _getObject('/users/$userId/sessions');
+    final list = (obj['sessions'] as List<dynamic>? ?? const []);
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  Future<void> registerDeviceToken({
+    required int userId,
+    required String token,
+    String platform = 'android',
+  }) async {
+    await _json('POST', '/users/$userId/device-tokens', body: {
+      'token': token,
+      'platform': platform,
+    });
+  }
 }
