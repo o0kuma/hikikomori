@@ -8,6 +8,8 @@ Go(Gin + gorilla/websocket + GORM), PostgreSQL(프로덕션)/SQLite(로컬 개�
 
 ```bash
 go mod download
+export ADMIN_API_TOKEN="dev-admin-token"   # required for /invites and /admin/metrics
+go run . migrate                           # explicit schema migrate (also runs on startup)
 go run .
 ```
 
@@ -22,6 +24,12 @@ AI 서비스(`../ai-service/`)를 호출하려면:
 ```bash
 export AI_SERVICE_URL="http://localhost:8001"   # 기본값도 이 주소
 ```
+
+인증:
+
+- 가입 `POST /auth/signup` / 로그인 `POST /auth/login` → `{token}` (Bearer)
+- 사용자 스코프 API(`PATCH /users/:id/...`, contacts, conversations 목록 등)는 Bearer 필요
+- `/invites`, `/admin/metrics`는 `Authorization: Bearer $ADMIN_API_TOKEN`
 
 ## 테스트
 
@@ -109,18 +117,10 @@ go test ./... -v
 
 ## 아직 없는 것 (다음 워크스트림)
 
-- 상대별(`ContactID`) 화이트리스트/자율성 예외 매칭 (CRUD로 저장은 되지만 발송 시 매칭 로직은
-  아직 전역 키워드만 봄 — 대화방↔연락처 연결 모델링 필요)
-- 되돌리기 "UI" (API·브로드캐스트는 됨 — 사용자에게 사후 알림을 띄우고 되돌리기 버튼을 보여주는
-  건 Flutter 쪽)
-- 에스컬레이션 로그 조회 API (`escalation_logs`는 계속 쌓이지만, 사용자가 "본인 확인이 필요했던
-  목록"을 조회하는 API는 아직 없음 — 필요해지면 추가)
+- 되돌리기/사후알림 UX 고도화 (Flutter A3)
 - 온디바이스 말투 이력 저장 + 서버 최소 전송 (클라이언트 책임)
-- 데이터 흐름 대시보드, 온디바이스 암호화 (둘 다 Flutter 클라이언트 책임 — 이 저장소엔 SDK 없어
-  로컬 환경에서 진행)
-- 생성 지연시간·오류율 계측 (요청 타이밍/로깅 계층 필요, `/admin/metrics`는 카운트만 있음)
-- `/invites`·`/admin/metrics` 접근 제어 (지금은 인증이 없어 누구나 호출 가능 — 아래 인증 항목과 같이 해결)
+- 데이터 흐름 대시보드, 온디바이스 암호화 (Flutter)
+- 생성 지연시간·오류율 계측
 - 푸시 알림 연동
-- 인증 토큰/세션 (지금은 invite_code로 가입만 되고 로그인 세션 개념이 없음)
-- 프로덕션 마이그레이션 도구 (지금은 `AutoMigrate`로 시작 시 테이블 생성 — 스키마 안정되면 Atlas/golang-migrate 등 도입)
-- 멀티 디바이스 동기화 (같은 유저가 여러 기기로 접속하는 경우)
+- 멀티 디바이스 동기화
+- Atlas/golang-migrate 등 버전드 마이그레이션으로 승격 (지금은 `go run . migrate` + AutoMigrate)
