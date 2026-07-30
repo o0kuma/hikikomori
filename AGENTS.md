@@ -75,10 +75,9 @@ These apply at every autonomy level and must not be weakened for convenience:
 Follow `docs/PLANNING.md`: decide → narrow → validate → specify.
 
 PoC execution (real participant recruiting for PoC #1/#3, Q3 interviews) is
-currently on hold — that data collection is deferred, not cancelled. In the
-meantime, work has moved into Phase 1 app-build groundwork that doesn't
-depend on PoC results (see `docs/roadmap.md` Phase 1 §2 for which workstreams
-those are).
+deferred to the **very last** Phase 1 step — after Flutter client + remaining
+server infra are done. Do not start human PoC early and do not invent defaults
+for Phase 1 §3. See `docs/roadmap.md` Phase 1 §3/§4.
 
 The tech stack for Phase 1 is decided — see `docs/tech-design.md` §8
 (Flutter/Dart client, Go core backend + Python AI service, PostgreSQL,
