@@ -33,9 +33,11 @@
 #### 2. 워크스트림별 작업
 
 **2.1 백엔드 인프라** (PoC 결과 무관 — 지금 착수 가능)
-- [ ] 계정/인증 (초대 코드 기반 가입)
-- [ ] 메시지 릴레이 서버 (송수신, 멀티 디바이스 동기화)
-- [ ] DB 스키마: users, contacts, conversations, messages, twin_settings, escalation_logs, whitelist_rules
+- [x] 계정/인증 (초대 코드 기반 가입) — `backend/app/main.py` `POST /auth/signup`, 중복 코드 409 확인함
+- [x] 메시지 릴레이 서버 (송수신) — `backend/app/main.py` WebSocket + REST, 실제 TestClient로 브로드캐스트 확인함.
+  멀티 디바이스 동기화(같은 유저 여러 기기)는 아직 — 지금은 대화방 단위 인메모리 커넥션 매니저뿐
+- [x] DB 스키마: users, contacts, conversations, messages, twin_settings, escalation_logs, whitelist_rules
+  — `backend/app/models.py`
 - [ ] 푸시 알림 서비스 연동
 
 **2.2 AI 파이프라인 프로덕션화** (PoC 스크립트 → 서비스로 승격)
@@ -76,7 +78,8 @@
 #### 4. 권장 착수 순서 (진행 상황)
 
 1. [x] §1 기술 스택 결정
-2. [ ] 2.1 백엔드 기본 인프라 + 2.3 채팅 UI 뼈대 (병행) — **다음 작업**
+2. [~] 2.1 백엔드 기본 인프라 (계정/인증, DB 스키마, 메시지 릴레이 — `backend/` 완료, 푸시 알림만 남음)
+   + 2.3 채팅 UI 뼈대 (병행) — **안드로이드 클라이언트 쪽이 다음 작업**
 3. [ ] 2.2 AI 파이프라인 프로덕션화 (PoC 스크립트 재사용)
 4. [ ] 2.3 나머지 UX(온보딩·설정·뱃지)
 5. [ ] 2.4/2.5 안전장치·QA

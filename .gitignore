@@ -11,3 +11,6 @@ poc/tone-corpus/data/
 
 __pycache__/
 *.pyc
+
+# Local dev DB (backend/, SQLite fallback for DATABASE_URL)
+*.db
