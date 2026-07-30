@@ -88,6 +88,20 @@ func postJSON(t *testing.T, url string, body interface{}) *http.Response {
 	return resp
 }
 
+func setAutonomyLevel(t *testing.T, serverURL string, userID uint, level AutonomyLevel) {
+	t.Helper()
+	body, _ := json.Marshal(updateTwinSettingsRequest{AutonomyLevel: level})
+	req, _ := http.NewRequest(http.MethodPatch, serverURL+"/users/"+strconv.FormatUint(uint64(userID), 10)+"/twin-settings", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("set autonomy level: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 setting autonomy level, got %d", resp.StatusCode)
+	}
+}
+
 func TestHealth(t *testing.T) {
 	server, _ := setupTestServer(t)
 	resp, err := http.Get(server.URL + "/health")
@@ -139,6 +153,8 @@ func TestSendMessageAndWebSocketBroadcast(t *testing.T) {
 		t.Fatalf("create conversation: %v", err)
 	}
 
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
+
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/conversations/" +
 		strconv.FormatUint(uint64(conv.ID), 10)
 	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
@@ -151,6 +167,7 @@ func TestSendMessageAndWebSocketBroadcast(t *testing.T) {
 		SenderID:   senderID,
 		Text:       "안녕하세요",
 		SenderMode: SenderTwin,
+		Approved:   true,
 	})
 	if sendResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 sending message, got %d", sendResp.StatusCode)
@@ -213,7 +230,11 @@ func TestTwinMessageEscalatedIsBlockedAndNotBroadcast(t *testing.T) {
 	}
 }
 
-func TestTwinMessageNotEscalatedIsSent(t *testing.T) {
+// The four tests below cover PRD.md §2.1/§2.2's L0->L1->L2 autonomy flow:
+// L0 (기본값) never auto-sends, L1 requires explicit approval, L2 auto-sends
+// only for whitelisted topics and otherwise behaves like L1.
+
+func TestTwinSendBlockedAtDefaultL0(t *testing.T) {
 	server, db := setupTestServer(t)
 
 	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin2", DisplayName: "하늘"})
@@ -226,19 +247,143 @@ func TestTwinMessageNotEscalatedIsSent(t *testing.T) {
 		t.Fatalf("create conversation: %v", err)
 	}
 
+	// New users default to L0 (PRD.md §2.1) -- a non-escalating twin send
+	// must still be blocked, since L0 means no auto-send at all.
 	resp := postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv.ID), 10)+"/messages", sendMessageRequest{
 		SenderID:   senderID,
 		Text:       "ㅇㅇ 알겠어",
 		SenderMode: SenderTwin,
 	})
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 for non-escalated twin send, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 blocking twin auto-send at L0, got %d", resp.StatusCode)
+	}
+
+	var count int64
+	db.Model(&Message{}).Where("conversation_id = ?", conv.ID).Count(&count)
+	if count != 0 {
+		t.Fatalf("L0 must never persist a twin auto-send, found %d rows", count)
+	}
+}
+
+func TestTwinSendRequiresApprovalAtL1(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l1", DisplayName: "서준"})
+	var user map[string]interface{}
+	json.NewDecoder(signupResp.Body).Decode(&user)
+	senderID := uint(user["id"].(float64))
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convPath := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10) + "/messages"
+
+	unapproved := postJSON(t, convPath, sendMessageRequest{SenderID: senderID, Text: "ㅇㅇ 알겠어", SenderMode: SenderTwin})
+	if unapproved.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 without approval at L1, got %d", unapproved.StatusCode)
+	}
+
+	approved := postJSON(t, convPath, sendMessageRequest{SenderID: senderID, Text: "ㅇㅇ 알겠어", SenderMode: SenderTwin, Approved: true})
+	if approved.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with approval at L1, got %d", approved.StatusCode)
 	}
 
 	var count int64
 	db.Model(&Message{}).Where("conversation_id = ?", conv.ID).Count(&count)
 	if count != 1 {
-		t.Fatalf("expected 1 persisted message, got %d", count)
+		t.Fatalf("expected exactly 1 persisted message (the approved one), got %d", count)
+	}
+}
+
+func TestTwinSendAutoSendsAtL2WithWhitelistMatch(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l2-wl", DisplayName: "가은"})
+	var user map[string]interface{}
+	json.NewDecoder(signupResp.Body).Decode(&user)
+	senderID := uint(user["id"].(float64))
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+
+	// No approved:true -- L2 + whitelist match should auto-send without it.
+	resp := postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv.ID), 10)+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "저녁 뭐 먹었어?", SenderMode: SenderTwin,
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 auto-sending whitelisted topic at L2, got %d", resp.StatusCode)
+	}
+
+	var count int64
+	db.Model(&Message{}).Where("conversation_id = ?", conv.ID).Count(&count)
+	if count != 1 {
+		t.Fatalf("expected 1 auto-sent message, got %d", count)
+	}
+}
+
+func TestTwinSendRequiresApprovalAtL2WithoutWhitelistMatch(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l2-nowl", DisplayName: "도윤"})
+	var user map[string]interface{}
+	json.NewDecoder(signupResp.Body).Decode(&user)
+	senderID := uint(user["id"].(float64))
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convPath := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10) + "/messages"
+
+	// Text doesn't match any whitelist keyword -- L2 falls back to L1
+	// behavior (approval required), it does not just allow or just block.
+	unapproved := postJSON(t, convPath, sendMessageRequest{SenderID: senderID, Text: "주말에 영화 볼래?", SenderMode: SenderTwin})
+	if unapproved.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 for non-whitelisted topic at L2 without approval, got %d", unapproved.StatusCode)
+	}
+
+	approved := postJSON(t, convPath, sendMessageRequest{SenderID: senderID, Text: "주말에 영화 볼래?", SenderMode: SenderTwin, Approved: true})
+	if approved.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for non-whitelisted topic at L2 with approval, got %d", approved.StatusCode)
+	}
+}
+
+func TestEscalationOverridesAutonomyLevelAndWhitelist(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l2-esc", DisplayName: "은서"})
+	var user map[string]interface{}
+	json.NewDecoder(signupResp.Body).Decode(&user)
+	senderID := uint(user["id"].(float64))
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	// Whitelisted keyword happens to be the same word that also triggers
+	// the money escalation pattern in the mock AI service.
+	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "계좌"})
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+
+	resp := postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv.ID), 10)+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "계좌번호 알려줄게", SenderMode: SenderTwin, Approved: true,
+	})
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403: escalation must override L2 whitelist match and approved:true, got %d", resp.StatusCode)
+	}
+
+	var count int64
+	db.Model(&Message{}).Where("conversation_id = ?", conv.ID).Count(&count)
+	if count != 0 {
+		t.Fatalf("escalated message must never be sent regardless of level/whitelist/approval, found %d rows", count)
 	}
 }
 

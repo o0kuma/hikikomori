@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from typing import List, Optional
 
 from fastapi import FastAPI
@@ -7,12 +8,14 @@ from .escalation_filter import check as check_escalation
 from .generation import draft_reply, last_incoming_text, load_dotenv_if_present
 from .retrieve_style import retrieve as retrieve_style_examples
 
-app = FastAPI(title="분신 AI service")
 
-
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     load_dotenv_if_present()
+    yield
+
+
+app = FastAPI(title="분신 AI service", lifespan=lifespan)
 
 
 @app.get("/health")

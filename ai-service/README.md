@@ -16,6 +16,19 @@ export GEMINI_API_KEY=...   # 또는 이 디렉토리에 .env 파일
 uvicorn app.main:app --reload --port 8001
 ```
 
+## 테스트
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+`escalation_filter.py`(SELFTEST_CASES 승격 + 추가 케이스)·`retrieve_style.py`(overlap이 recency를
+항상 이긴다는 것, 동점일 때만 recency가 tie-break한다는 것)·`generation.py`(escalate/no_key/ok 세
+경로, Gemini 호출은 mock)·`main.py`(`/health`·`/escalate/check`·`/draft` 전부)를 `tests/`의 정식
+pytest 스위트로 승격함 (`docs/roadmap.md` Phase 1 §2.5). 이전엔 ad-hoc TestClient 스크립트로만
+확인했던 것들.
+
 ## API
 
 ### `POST /escalate/check`

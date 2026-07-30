@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -22,6 +23,14 @@ type sendMessageRequest struct {
 	SenderID   uint       `json:"sender_id" binding:"required"`
 	Text       string     `json:"text" binding:"required"`
 	SenderMode SenderMode `json:"sender_mode"`
+	// Approved represents the human tapping "승인" on an L1 draft, or on an
+	// L2 draft outside the whitelist (PRD.md §2.2). Ignored for
+	// human-authored messages.
+	Approved bool `json:"approved"`
+}
+
+type updateTwinSettingsRequest struct {
+	AutonomyLevel AutonomyLevel `json:"autonomy_level" binding:"required"`
 }
 
 type draftMessageRequest struct {
@@ -88,7 +97,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// so no client or upstream path can bypass it (AGENTS.md absolute
 		// safety invariants). Human-authored messages are the human's own
 		// words and are never gated. On any doubt (AI service unreachable
-		// or erroring) we fail closed and block the send.
+		// or erroring) we fail closed and block the send. Escalation is
+		// checked before autonomy level, and applies regardless of level or
+		// whitelist match -- L2 auto-send never overrides it.
 		if req.SenderMode == SenderTwin {
 			result, err := ai.checkEscalation(req.Text)
 			if err != nil {
@@ -103,6 +114,33 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 					MessageSnippet: req.Text,
 				})
 				c.JSON(http.StatusForbidden, gin.H{"detail": "escalated", "reason": result.Reason})
+				return
+			}
+
+			// Autonomy gate (PRD.md §2.1/§2.2, tech-design.md §3): missing
+			// settings fail closed to L0, the documented default.
+			level := AutonomyL0
+			var settings TwinSettings
+			if err := db.Where("user_id = ?", req.SenderID).First(&settings).Error; err == nil {
+				level = settings.AutonomyLevel
+			}
+
+			switch level {
+			case AutonomyL0:
+				c.JSON(http.StatusForbidden, gin.H{"detail": "L0(비서 모드)에서는 분신 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
+				return
+			case AutonomyL1:
+				if !req.Approved {
+					c.JSON(http.StatusForbidden, gin.H{"detail": "L1은 발송 전 사용자 승인이 필요합니다"})
+					return
+				}
+			case AutonomyL2:
+				if !req.Approved && !whitelistMatches(db, req.SenderID, req.Text) {
+					c.JSON(http.StatusForbidden, gin.H{"detail": "화이트리스트에 없는 주제는 L1과 동일하게 사용자 승인이 필요합니다"})
+					return
+				}
+			default:
+				c.JSON(http.StatusForbidden, gin.H{"detail": "알 수 없는 자율성 레벨이라 발송을 차단합니다"})
 				return
 			}
 		}
@@ -166,6 +204,36 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		}
 
 		c.JSON(http.StatusOK, gin.H{"status": result.Status, "text": result.Text})
+	})
+
+	r.PATCH("/users/:id/twin-settings", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var req updateTwinSettingsRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+			return
+		}
+		if req.AutonomyLevel != AutonomyL0 && req.AutonomyLevel != AutonomyL1 && req.AutonomyLevel != AutonomyL2 {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "autonomy_level must be one of L0, L1, L2"})
+			return
+		}
+
+		var settings TwinSettings
+		if err := db.Where("user_id = ?", userID).First(&settings).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "twin settings not found for user"})
+			return
+		}
+		settings.AutonomyLevel = req.AutonomyLevel
+		if err := db.Save(&settings).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"user_id": userID, "autonomy_level": settings.AutonomyLevel})
 	})
 
 	r.DELETE("/users/:id", func(c *gin.Context) {
@@ -245,6 +313,23 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	})
 
 	return r
+}
+
+// whitelistMatches is a v1-minimal check: any of the user's WhitelistRule
+// keywords appearing as a substring of the message text counts as a match.
+// It intentionally ignores WhitelistRule.ContactID (per-counterpart
+// whitelisting) because conversations aren't yet linked to a Contact row --
+// that link needs its own design pass once the client's contact model
+// exists, so this only supports the "any counterpart" case for now.
+func whitelistMatches(db *gorm.DB, userID uint, text string) bool {
+	var rules []WhitelistRule
+	db.Where("user_id = ?", userID).Find(&rules)
+	for _, rule := range rules {
+		if strings.Contains(text, rule.TopicKeyword) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseUintParam(c *gin.Context, name string) (uint, bool) {
