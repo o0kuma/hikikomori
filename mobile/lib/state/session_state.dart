@@ -16,14 +16,17 @@ class SessionState extends ChangeNotifier {
   static const _kUserId = 'user_id';
   static const _kDisplayName = 'display_name';
   static const _kInvite = 'invite_code';
+  static const _kToken = 'session_token';
 
   Future<void> restore() async {
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getInt(_kUserId);
     final name = prefs.getString(_kDisplayName);
     final invite = prefs.getString(_kInvite);
+    final token = prefs.getString(_kToken);
     if (id != null && name != null && invite != null) {
       user = User(id: id, displayName: name, inviteCode: invite);
+      _api.authToken = token;
       notifyListeners();
     }
   }
@@ -33,12 +36,13 @@ class SessionState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final created = await _api.signup(inviteCode: inviteCode, displayName: displayName);
-      user = created;
+      final result = await _api.signup(inviteCode: inviteCode, displayName: displayName);
+      user = result.user;
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_kUserId, created.id);
-      await prefs.setString(_kDisplayName, created.displayName);
-      await prefs.setString(_kInvite, created.inviteCode);
+      await prefs.setInt(_kUserId, result.user.id);
+      await prefs.setString(_kDisplayName, result.user.displayName);
+      await prefs.setString(_kInvite, result.user.inviteCode);
+      await prefs.setString(_kToken, result.token);
     } on ApiException catch (e) {
       error = '가입 실패 (${e.statusCode}): ${e.body}';
     } catch (e) {

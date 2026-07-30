@@ -69,6 +69,8 @@ func setupTestServer(t *testing.T) (*httptest.Server, *gorm.DB) {
 		t.Fatalf("migrate: %v", err)
 	}
 
+	t.Setenv("ADMIN_API_TOKEN", "test-admin-token")
+
 	ai := &AIServiceClient{BaseURL: mockAIService(t).URL, HTTP: http.DefaultClient}
 
 	gin.SetMode(gin.TestMode)
@@ -88,9 +90,24 @@ func postJSON(t *testing.T, url string, body interface{}) *http.Response {
 	return resp
 }
 
+func postJSONAuth(t *testing.T, url, token string, body interface{}) *http.Response {
+	t.Helper()
+	b, _ := json.Marshal(body)
+	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("post %s: %v", url, err)
+	}
+	return resp
+}
+
 func mintInvite(t *testing.T, serverURL string) string {
 	t.Helper()
-	resp := postJSON(t, serverURL+"/invites", nil)
+	resp := postJSONAuth(t, serverURL+"/invites", "test-admin-token", nil)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 minting invite, got %d", resp.StatusCode)
 	}
@@ -99,7 +116,7 @@ func mintInvite(t *testing.T, serverURL string) string {
 	return out["code"].(string)
 }
 
-func mustSignup(t *testing.T, serverURL, displayName string) uint {
+func mustSignup(t *testing.T, serverURL, displayName string) (uint, string) {
 	t.Helper()
 	resp := postJSON(t, serverURL+"/auth/signup", signupRequest{InviteCode: mintInvite(t, serverURL), DisplayName: displayName})
 	if resp.StatusCode != http.StatusOK {
@@ -107,14 +124,19 @@ func mustSignup(t *testing.T, serverURL, displayName string) uint {
 	}
 	var out map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&out)
-	return uint(out["id"].(float64))
+	token, _ := out["token"].(string)
+	if token == "" {
+		t.Fatalf("signup response missing token: %v", out)
+	}
+	return uint(out["id"].(float64)), token
 }
 
-func setAutonomyLevel(t *testing.T, serverURL string, userID uint, level AutonomyLevel) {
+func setAutonomyLevel(t *testing.T, serverURL string, userID uint, token string, level AutonomyLevel) {
 	t.Helper()
 	body, _ := json.Marshal(updateTwinSettingsRequest{AutonomyLevel: level})
 	req, _ := http.NewRequest(http.MethodPatch, serverURL+"/users/"+strconv.FormatUint(uint64(userID), 10)+"/twin-settings", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("set autonomy level: %v", err)
@@ -183,14 +205,14 @@ func TestSendMessageToMissingConversation(t *testing.T) {
 func TestSendMessageAndWebSocketBroadcast(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "정우")
+	senderID, token := mustSignup(t, server.URL, "정우")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
 		t.Fatalf("create conversation: %v", err)
 	}
 
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/conversations/" +
 		strconv.FormatUint(uint64(conv.ID), 10)
@@ -222,7 +244,7 @@ func TestSendMessageAndWebSocketBroadcast(t *testing.T) {
 func TestTwinMessageEscalatedIsBlockedAndNotBroadcast(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "민지")
+	senderID, _ := mustSignup(t, server.URL, "민지")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -271,7 +293,7 @@ func TestTwinMessageEscalatedIsBlockedAndNotBroadcast(t *testing.T) {
 func TestTwinSendBlockedAtDefaultL0(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "하늘")
+	senderID, _ := mustSignup(t, server.URL, "하늘")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -299,8 +321,8 @@ func TestTwinSendBlockedAtDefaultL0(t *testing.T) {
 func TestTwinSendRequiresApprovalAtL1(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "서준")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
+	senderID, token := mustSignup(t, server.URL, "서준")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -328,8 +350,8 @@ func TestTwinSendRequiresApprovalAtL1(t *testing.T) {
 func TestTwinSendAutoSendsAtL2WithWhitelistMatch(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "가은")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	senderID, token := mustSignup(t, server.URL, "가은")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL2)
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
 
 	conv := Conversation{IsGroup: false}
@@ -355,8 +377,8 @@ func TestTwinSendAutoSendsAtL2WithWhitelistMatch(t *testing.T) {
 func TestTwinSendRequiresApprovalAtL2WithoutWhitelistMatch(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "도윤")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	senderID, token := mustSignup(t, server.URL, "도윤")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL2)
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
 
 	conv := Conversation{IsGroup: false}
@@ -381,8 +403,8 @@ func TestTwinSendRequiresApprovalAtL2WithoutWhitelistMatch(t *testing.T) {
 func TestEscalationOverridesAutonomyLevelAndWhitelist(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "은서")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	senderID, token := mustSignup(t, server.URL, "은서")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL2)
 	// Whitelisted keyword happens to be the same word that also triggers
 	// the money escalation pattern in the mock AI service.
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "계좌"})
@@ -409,7 +431,7 @@ func TestEscalationOverridesAutonomyLevelAndWhitelist(t *testing.T) {
 func TestHumanMessageBypassesEscalationGate(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "재민")
+	senderID, _ := mustSignup(t, server.URL, "재민")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -429,6 +451,7 @@ func TestHumanMessageBypassesEscalationGate(t *testing.T) {
 }
 
 func TestTwinMessageFailsClosedWhenAIServiceUnreachable(t *testing.T) {
+	t.Setenv("ADMIN_API_TOKEN", "test-admin-token")
 	dbPath := t.TempDir() + "/test.db"
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
@@ -447,7 +470,7 @@ func TestTwinMessageFailsClosedWhenAIServiceUnreachable(t *testing.T) {
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 
-	senderID := mustSignup(t, server.URL, "소연")
+	senderID, _ := mustSignup(t, server.URL, "소연")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -473,7 +496,7 @@ func TestTwinMessageFailsClosedWhenAIServiceUnreachable(t *testing.T) {
 func TestDeleteUserPurgesData(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	userID := mustSignup(t, server.URL, "유나")
+	userID, token := mustSignup(t, server.URL, "유나")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -490,6 +513,7 @@ func TestDeleteUserPurgesData(t *testing.T) {
 	db.Create(&EscalationLog{UserID: userID, ConversationID: conv.ID, Reason: "금전", MessageSnippet: "..."})
 
 	req, _ := http.NewRequest(http.MethodDelete, server.URL+"/users/"+strconv.FormatUint(uint64(userID), 10), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("delete request: %v", err)
@@ -515,20 +539,22 @@ func TestDeleteUserPurgesData(t *testing.T) {
 	}
 
 	req2, _ := http.NewRequest(http.MethodDelete, server.URL+"/users/"+strconv.FormatUint(uint64(userID), 10), nil)
+	req2.Header.Set("Authorization", "Bearer "+token)
 	resp2, err := http.DefaultClient.Do(req2)
 	if err != nil {
 		t.Fatalf("second delete request: %v", err)
 	}
-	if resp2.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected 404 on repeat delete, got %d", resp2.StatusCode)
+	// After delete, session is gone -- unauthorized (or 404 if we checked user first).
+	if resp2.StatusCode != http.StatusUnauthorized && resp2.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 401/404 on repeat delete, got %d", resp2.StatusCode)
 	}
 }
 
 func TestPeerVetoBlocksTwinAutoSendEvenAtL2WithWhitelistMatch(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "지민")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	senderID, token := mustSignup(t, server.URL, "지민")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL2)
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
 
 	conv := Conversation{IsGroup: false}
@@ -561,7 +587,7 @@ func TestPeerVetoBlocksTwinAutoSendEvenAtL2WithWhitelistMatch(t *testing.T) {
 func TestPeerVetoDoesNotBlockHumanMessages(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "다은")
+	senderID, _ := mustSignup(t, server.URL, "다은")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -588,8 +614,8 @@ func TestVetoMissingConversation(t *testing.T) {
 func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	senderID := mustSignup(t, server.URL, "메트릭")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
+	senderID, token := mustSignup(t, server.URL, "메트릭")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -605,7 +631,9 @@ func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
 	db.Create(&conv2)
 	postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv2.ID), 10)+"/veto", nil)
 
-	resp, err := http.Get(server.URL + "/admin/metrics")
+	mreq, _ := http.NewRequest(http.MethodGet, server.URL+"/admin/metrics", nil)
+	mreq.Header.Set("Authorization", "Bearer test-admin-token")
+	resp, err := http.DefaultClient.Do(mreq)
 	if err != nil {
 		t.Fatalf("get metrics: %v", err)
 	}
@@ -641,10 +669,10 @@ func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
 
 func TestWhitelistRuleCRUD(t *testing.T) {
 	server, _ := setupTestServer(t)
-	userID := mustSignup(t, server.URL, "화이트")
+	userID, token := mustSignup(t, server.URL, "화이트")
 	base := server.URL + "/users/" + strconv.FormatUint(uint64(userID), 10) + "/whitelist-rules"
 
-	createResp := postJSON(t, base, createWhitelistRuleRequest{TopicKeyword: "저녁"})
+	createResp := postJSONAuth(t, base, token, createWhitelistRuleRequest{TopicKeyword: "저녁"})
 	if createResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 creating rule, got %d", createResp.StatusCode)
 	}
@@ -655,7 +683,9 @@ func TestWhitelistRuleCRUD(t *testing.T) {
 	}
 	ruleID := uint(created["id"].(float64))
 
-	listResp, err := http.Get(base)
+	listReq, _ := http.NewRequest(http.MethodGet, base, nil)
+	listReq.Header.Set("Authorization", "Bearer "+token)
+	listResp, err := http.DefaultClient.Do(listReq)
 	if err != nil {
 		t.Fatalf("list rules: %v", err)
 	}
@@ -667,6 +697,7 @@ func TestWhitelistRuleCRUD(t *testing.T) {
 	}
 
 	delReq, _ := http.NewRequest(http.MethodDelete, base+"/"+strconv.FormatUint(uint64(ruleID), 10), nil)
+	delReq.Header.Set("Authorization", "Bearer "+token)
 	delResp, err := http.DefaultClient.Do(delReq)
 	if err != nil {
 		t.Fatalf("delete rule: %v", err)
@@ -675,7 +706,12 @@ func TestWhitelistRuleCRUD(t *testing.T) {
 		t.Fatalf("expected 200 deleting rule, got %d", delResp.StatusCode)
 	}
 
-	listResp2, _ := http.Get(base)
+	listReq2, _ := http.NewRequest(http.MethodGet, base, nil)
+	listReq2.Header.Set("Authorization", "Bearer "+token)
+	listResp2, err := http.DefaultClient.Do(listReq2)
+	if err != nil {
+		t.Fatalf("list after delete: %v", err)
+	}
 	var list2 map[string]interface{}
 	json.NewDecoder(listResp2.Body).Decode(&list2)
 	if len(list2["whitelist_rules"].([]interface{})) != 0 {
@@ -683,6 +719,7 @@ func TestWhitelistRuleCRUD(t *testing.T) {
 	}
 
 	delAgain, _ := http.NewRequest(http.MethodDelete, base+"/"+strconv.FormatUint(uint64(ruleID), 10), nil)
+	delAgain.Header.Set("Authorization", "Bearer "+token)
 	delAgainResp, _ := http.DefaultClient.Do(delAgain)
 	if delAgainResp.StatusCode != http.StatusNotFound {
 		t.Fatalf("expected 404 deleting an already-deleted rule, got %d", delAgainResp.StatusCode)
@@ -692,15 +729,15 @@ func TestWhitelistRuleCRUD(t *testing.T) {
 func TestWhitelistRuleCRUDMissingUser(t *testing.T) {
 	server, _ := setupTestServer(t)
 	resp := postJSON(t, server.URL+"/users/9999/whitelist-rules", createWhitelistRuleRequest{TopicKeyword: "저녁"})
-	if resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without token, got %d", resp.StatusCode)
 	}
 }
 
 func TestRetractTwinMessage(t *testing.T) {
 	server, db := setupTestServer(t)
-	senderID := mustSignup(t, server.URL, "되돌리기")
-	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	senderID, token := mustSignup(t, server.URL, "되돌리기")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL2)
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
 
 	conv := Conversation{IsGroup: false}
@@ -761,7 +798,7 @@ func TestRetractTwinMessage(t *testing.T) {
 
 func TestRetractRejectsHumanMessage(t *testing.T) {
 	server, db := setupTestServer(t)
-	senderID := mustSignup(t, server.URL, "사람")
+	senderID, _ := mustSignup(t, server.URL, "사람")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
