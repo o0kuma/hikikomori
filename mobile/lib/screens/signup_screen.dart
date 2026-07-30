@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../config.dart';
 import '../state/session_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/twin_hero_backdrop.dart';
@@ -21,6 +23,12 @@ class _SignupScreenState extends State<SignupScreen> {
     _invite.dispose();
     _name.dispose();
     super.dispose();
+  }
+
+  void _fillDemoCredentials() {
+    _invite.text = AppConfig.demoInviteCode;
+    _name.text = AppConfig.demoDisplayName;
+    setState(() {});
   }
 
   @override
@@ -72,9 +80,23 @@ class _SignupScreenState extends State<SignupScreen> {
                     style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ),
-                const Spacer(flex: 3),
+                const Spacer(flex: 2),
                 TwinFadeUp(
-                  delay: const Duration(milliseconds: 220),
+                  delay: const Duration(milliseconds: 200),
+                  child: _DemoTestPanel(
+                    onFill: _fillDemoCredentials,
+                    onCopy: () async {
+                      await Clipboard.setData(const ClipboardData(text: AppConfig.demoInviteCode));
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('테스트 초대 코드를 복사했습니다')),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TwinFadeUp(
+                  delay: const Duration(milliseconds: 240),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -126,6 +148,68 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 28),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Visible test credentials so other people can try the closed beta without
+/// asking Master for a one-off invite mint.
+class _DemoTestPanel extends StatelessWidget {
+  const _DemoTestPanel({required this.onFill, required this.onCopy});
+
+  final VoidCallback onFill;
+  final VoidCallback onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: TwinTokens.mist.withValues(alpha: 0.85),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onFill,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '테스트용 (누구나)',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: TwinTokens.forest,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '초대 코드  ${AppConfig.demoInviteCode}\n표시 이름  ${AppConfig.demoDisplayName}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: TwinTokens.ink,
+                        height: 1.45,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '코드 복사',
+                    onPressed: onCopy,
+                    icon: const Icon(Icons.copy_rounded, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '탭하면 입력란에 채워집니다 · 여러 명이 같은 코드로 가입 가능',
+                style: theme.textTheme.bodySmall?.copyWith(color: TwinTokens.ink.withValues(alpha: 0.55)),
+              ),
+            ],
           ),
         ),
       ),

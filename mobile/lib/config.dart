@@ -8,6 +8,12 @@ class AppConfig {
     defaultValue: 'http://10.0.2.2:8080', // Android emulator → host localhost
   );
 
+  /// Shared demo invite (must match core-backend `demoInviteCode`).
+  /// Shown on the signup screen so other testers can join without admin mint.
+  static const demoInviteCode = 'DEMO-BUNSIN';
+  static const demoDisplayName = '테스터';
+
+
   static String wsBase() {
     final uri = Uri.parse(coreApiBase);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
