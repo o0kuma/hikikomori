@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,9 +11,39 @@ import 'state/session_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final session = SessionState();
-  await session.restore();
-  runApp(BunsinApp(session: session));
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught: $error\n$stack');
+    return true;
+  };
+
+  try {
+    final session = SessionState();
+    await session.restore().timeout(const Duration(seconds: 8));
+    runApp(BunsinApp(session: session));
+  } catch (e, st) {
+    debugPrint('BOOT FAIL: $e\n$st');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: SelectableText(
+                '앱 시작 실패\n\n$e\n\n$st',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class BunsinApp extends StatelessWidget {
