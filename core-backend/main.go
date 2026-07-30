@@ -82,6 +82,31 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			req.SenderMode = SenderHuman
 		}
 
+		// Hard gate: a twin-authored send is an unattended action, so it
+		// must clear escalation_filter regardless of how it got here --
+		// this is the one chokepoint every twin auto-send passes through,
+		// so no client or upstream path can bypass it (AGENTS.md absolute
+		// safety invariants). Human-authored messages are the human's own
+		// words and are never gated. On any doubt (AI service unreachable
+		// or erroring) we fail closed and block the send.
+		if req.SenderMode == SenderTwin {
+			result, err := ai.checkEscalation(req.Text)
+			if err != nil {
+				c.JSON(http.StatusBadGateway, gin.H{"detail": "escalation gate unavailable, twin send blocked: " + err.Error()})
+				return
+			}
+			if result.Escalate {
+				db.Create(&EscalationLog{
+					UserID:         req.SenderID,
+					ConversationID: convID,
+					Reason:         result.Reason,
+					MessageSnippet: req.Text,
+				})
+				c.JSON(http.StatusForbidden, gin.H{"detail": "escalated", "reason": result.Reason})
+				return
+			}
+		}
+
 		message := Message{
 			ConversationID: convID,
 			SenderID:       req.SenderID,
@@ -141,6 +166,60 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		}
 
 		c.JSON(http.StatusOK, gin.H{"status": result.Status, "text": result.Text})
+	})
+
+	r.DELETE("/users/:id", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var user User
+		if err := db.First(&user, userID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "user not found"})
+			return
+		}
+
+		// Right-to-erasure ("사용자가 언제든 초기화 가능", tech-design.md §5):
+		// wipes every row this user's ID appears on. Real chat history lives
+		// on-device first (tech-design.md §2/§5) -- the server only ever held
+		// a minimal relay copy, so deleting it here is not a partial erasure.
+		var messagesDeleted, escalationLogsDeleted int64
+		err := db.Transaction(func(tx *gorm.DB) error {
+			if res := tx.Where("user_id = ?", userID).Delete(&TwinSettings{}); res.Error != nil {
+				return res.Error
+			}
+			if res := tx.Where("user_id = ?", userID).Delete(&WhitelistRule{}); res.Error != nil {
+				return res.Error
+			}
+			if res := tx.Where("owner_user_id = ?", userID).Delete(&Contact{}); res.Error != nil {
+				return res.Error
+			}
+			if res := tx.Where("user_id = ?", userID).Delete(&ConversationParticipant{}); res.Error != nil {
+				return res.Error
+			}
+			res := tx.Where("sender_id = ?", userID).Delete(&Message{})
+			if res.Error != nil {
+				return res.Error
+			}
+			messagesDeleted = res.RowsAffected
+			res = tx.Where("user_id = ?", userID).Delete(&EscalationLog{})
+			if res.Error != nil {
+				return res.Error
+			}
+			escalationLogsDeleted = res.RowsAffected
+			return tx.Delete(&user).Error
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"deleted_user_id":         userID,
+			"messages_deleted":        messagesDeleted,
+			"escalation_logs_deleted": escalationLogsDeleted,
+		})
 	})
 
 	r.GET("/ws/conversations/:id", func(c *gin.Context) {

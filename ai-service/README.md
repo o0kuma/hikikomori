@@ -18,6 +18,19 @@ uvicorn app.main:app --reload --port 8001
 
 ## API
 
+### `POST /escalate/check`
+
+```json
+{ "text": "계좌번호 알려줄래?" }
+```
+
+응답: `{ "escalate": true, "reason": "금전" }`
+
+`/draft`와 별개로 존재하는 독립 하드게이트 엔드포인트 — `core-backend`가 트윈(자동발송) 메시지를
+저장하기 *직전에* 이걸 직접 호출해서, `/draft`를 거치지 않은 발송 경로도 전부 이 게이트를 통과하게
+만든다 (`docs/roadmap.md` Phase 1 §2.4, `AGENTS.md` 안전 불변식). TestClient로 금전/약속/감정
+케이스와 비대상 텍스트 전부 확인함.
+
 ### `POST /draft`
 
 ```json
@@ -45,6 +58,6 @@ TestClient로 style_examples/history 두 경로, 에스컬레이션 케이스, �
 
 ## 아직 없는 것
 
-- `core-backend/`에서 이 서비스를 실제로 호출하는 클라이언트 코드 (지금은 이 서비스 자체만 있음)
 - 온디바이스 말투 이력 저장 (이건 클라이언트/코어 백엔드 쪽 책임 — `tech-design.md` §2 참고)
-- 사후 알림 + 되돌리기 로그 (코어 백엔드의 `escalation_logs` 테이블과 연동 필요)
+- 사후 알림 + 되돌리기 UI/전체 흐름 (코어 백엔드는 이제 에스컬레이션 시 `escalation_logs`에 기록은
+  하지만, 사용자에게 사후 알림을 띄우고 되돌리는 클라이언트 UX는 아직 — Flutter 쪽 작업)

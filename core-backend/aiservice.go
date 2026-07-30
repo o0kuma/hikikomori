@@ -52,3 +52,40 @@ func (c *AIServiceClient) requestDraft(req draftRequest) (*draftResponse, error)
 	}
 	return &out, nil
 }
+
+type escalationCheckRequest struct {
+	Text string `json:"text"`
+}
+
+type escalationCheckResponse struct {
+	Escalate bool   `json:"escalate"`
+	Reason   string `json:"reason"`
+}
+
+// checkEscalation calls ai-service's POST /escalate/check -- the hard gate
+// that any twin-authored (auto-sent) message must pass, independent of
+// whether a draft was generated through this client. Callers must fail
+// closed (treat an error here as "escalate") per AGENTS.md's fail-safe
+// invariant: uncertainty must never resolve to an unattended send.
+func (c *AIServiceClient) checkEscalation(text string) (*escalationCheckResponse, error) {
+	body, err := json.Marshal(escalationCheckRequest{Text: text})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.HTTP.Post(c.BaseURL+"/escalate/check", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("ai service unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ai service returned %d", resp.StatusCode)
+	}
+
+	var out escalationCheckResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
