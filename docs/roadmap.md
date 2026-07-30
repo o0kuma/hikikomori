@@ -33,13 +33,14 @@
 #### 2. 워크스트림별 작업
 
 **2.1 코어 백엔드** (Go, PoC 결과 무관 — 지금 착수 가능)
-- [ ] 계정/인증 (초대 코드 기반 가입) — Python(`backend/app/main.py`)으로 프로토타입 구현·검증
-  완료(중복 코드 409 등), **Go로 포팅 필요** (스택 결정이 Python→Go로 바뀜)
-- [ ] 메시지 릴레이 서버 (송수신) — 마찬가지로 Python 프로토타입은 WebSocket 브로드캐스트까지
-  검증됨, **Go(`gorilla/websocket` 등)로 포팅 필요**. 멀티 디바이스 동기화는 프로토타입에도 아직 없음
-- [ ] DB 스키마: users, contacts, conversations, messages, twin_settings, escalation_logs, whitelist_rules
-  — 스키마 설계 자체는 `backend/app/models.py`(SQLAlchemy)로 확정됨, Go 쪽 ORM(`pgx`/GORM)으로 재작성
+- [x] 계정/인증 (초대 코드 기반 가입) — `core-backend/` (Go, Gin), 중복 코드 409 실제 테스트로 확인함
+- [x] 메시지 릴레이 서버 (송수신) — `core-backend/` WebSocket + REST, 실제 테스트로 브로드캐스트 확인함.
+  멀티 디바이스 동기화(같은 유저 여러 기기)는 아직 — 지금은 대화방 단위 인메모리 커넥션 매니저뿐
+- [x] DB 스키마: users, contacts, conversations, messages, twin_settings, escalation_logs, whitelist_rules
+  — `core-backend/models.go` (GORM), `backend/app/models.py`(Python 프로토타입)와 동일 스키마
 - [ ] 푸시 알림 서비스 연동
+
+`backend/`(Python 프로토타입)는 그대로 참고용으로 남겨둔다 — `core-backend/`(Go)가 실제로 쓰는 것.
 
 **2.2 AI 서비스** (Python, PoC 스크립트 → 내부 API로 승격)
 - [ ] `poc/tone-corpus/generate_draft.py`·`escalation_filter.py`·`retrieve_style.py`를 감싸는
@@ -89,7 +90,8 @@
 
 1. [x] §1 기술 스택 결정 (Go 코어 + Python AI 서비스로 재확정, `backend/`는 Python 프로토타입 —
    설계 참고용으로 남기고 Go로 포팅 필요)
-2. [ ] 2.1 코어 백엔드를 Go로 (신규 구현) + 2.3 Flutter 채팅 UI 뼈대 (병행) — **다음 작업**
+2. [~] 2.1 코어 백엔드 Go 구현 — `core-backend/` 완료(가입·메시지·WebSocket 릴레이, 푸시 알림만 남음).
+   2.3 Flutter 채팅 UI 뼈대는 아직 — **다음 작업**
 3. [ ] 2.2 AI 서비스 (Python, PoC 스크립트를 FastAPI로 승격)
 4. [ ] 2.3 나머지 UX(온보딩·설정·뱃지)
 5. [ ] 2.4/2.5 안전장치·QA
