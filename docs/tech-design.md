@@ -109,14 +109,24 @@ v1에서는 커스텀 모델을 새로 학습하지 않는다. 대신 **검색 �
 `roadmap.md` Phase 1 §1의 "착수 전 확정 필요" 항목에 대한 결정. PoC 데이터와 무관하게 지금
 확정할 수 있는 것들이라 여기서 정리한다 — 자율성 기본값 같은 PoC 의존 값은 여전히 미정으로 남는다.
 
+백엔드는 단일 서비스가 아니라 **두 개로 나눈다** — 코어(인증·메시지·DB)는 Go, AI 파이프라인은
+Python. 순수 성능/동시성만 보면 이 프로젝트 규모(소규모 지인 네트워크 베타)에서 Python
+비동기(FastAPI/asyncio)로도 충분하다 — 메신저 릴레이는 CPU-bound가 아니라 I/O-bound라 GIL이
+병목이 되지 않고, 실제 지연은 백엔드 언어가 아니라 Gemini API 왕복 시간이 좌우한다. 그럼에도
+Go를 코어에 쓰기로 한 건 향후 스케일 대비 선제적 판단이며, `poc/tone-corpus/`의 이미 검증된
+AI 파이프라인(generate_draft·escalation_filter·retrieve_style)을 다시 짜지 않기 위해 AI 쪽만
+Python으로 남긴다.
+
 | 항목 | 결정 | 근거 |
 |---|---|---|
 | 클라이언트 | Flutter (Dart) | Q7이 안드로이드 우선을 확정했지만 네이티브를 강제하진 않음. 채팅 UI(이미 클릭 프로토타입으로 검증된 디자인)를 핫리로드로 빠르게 만들 수 있어 v1 개발 속도에 유리. v2 OS 레이어의 알림 접근 권한(NotificationListenerService)은 platform channel로 네이티브 Android 모듈을 붙여 해결 — 클라이언트 전체를 네이티브로 갈 필요는 없음 |
-| 백엔드 | Python (FastAPI) | `poc/tone-corpus/`의 AI 파이프라인(generate_draft·escalation_filter·retrieve_style)이 이미 Python — 언어를 바꾸면 그대로 재사용 못 하고 다시 짜야 함. 클로즈드 베타 규모에서 성능은 병목이 아님 |
-| 메시지 릴레이 | FastAPI WebSocket | 자체 서버로 충분한 규모(소규모 지인 네트워크 베타). Kafka·관리형 pub-sub 같은 건 지금 시점에 과한 인프라 |
-| 데이터베이스 | PostgreSQL | users/contacts/conversations/messages/escalation_logs/whitelist_rules 관계형 스키마에 적합, 운영 경험 풍부 |
+| 백엔드 — 코어 서비스 | Go (Gin/Echo + `gorilla/websocket`) | 인증, 메시지 릴레이, DB 접근. 동시성·성능 이점, 향후 스케일 대비. 이 프로젝트 규모에선 Python으로도 충분했지만 선제적으로 Go 선택 |
+| 백엔드 — AI 서비스 | Python (FastAPI) | `generate_draft.py`·`escalation_filter.py`·`retrieve_style.py`를 그대로 감싸는 내부 API. 이미 실행 검증까지 끝난 코드를 다시 짜지 않기 위함 |
+| 서비스 간 통신 | Go 코어 → Python AI 서비스, 내부망 HTTP(REST) | 처음부터 gRPC 등으로 과설계하지 않음 — 필요해지면 그때 전환 |
+| 메시지 릴레이 | Go 코어 서비스 내 WebSocket | 자체 서버로 충분한 규모. Kafka·관리형 pub-sub은 지금 시점에 과한 인프라 |
+| 데이터베이스 | PostgreSQL | users/contacts/conversations/messages/escalation_logs/whitelist_rules 관계형 스키마에 적합. Go 쪽 접근은 `pgx`나 GORM |
 | 온디바이스 저장소 | Flutter `drift`(SQLite) + `sqlcipher_flutter_libs` 암호화 | 말투 이력·설정을 기기 내 암호화 저장한다는 §2/§5 원칙을 그대로 구현 |
-| Gemini API 키 관리 | 프로덕션 키는 서버 환경변수/시크릿 매니저로, PoC 키와 분리 | `poc/tone-corpus/.env`는 PoC 전용 — 프로덕션 트래픽과 쿼터를 섞지 않음 |
+| Gemini API 키 관리 | Python AI 서비스에서만 보관 (Go 코어는 키를 안 가짐) | `poc/tone-corpus/.env`는 PoC 전용 — 프로덕션 키·쿼터는 AI 서비스 환경에서만 분리 관리 |
 
 이 표 밖의 결정(자율성 기본값, 화이트리스트 기본 주제, 신뢰 UX 문구)은 `roadmap.md` Phase 1 §3에
 남아있는 PoC 의존 항목이다 — 여기서 같이 정하지 않는다.

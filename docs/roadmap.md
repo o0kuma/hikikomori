@@ -27,23 +27,26 @@
 
 #### 1. 착수 전 확정 필요 (기술 스택)
 
-- [x] 기술 스택 결정 — `tech-design.md` §8 (Flutter/Dart, 백엔드 Python/FastAPI,
-  PostgreSQL, WebSocket 릴레이, drift+SQLCipher, Gemini 키 분리)
+- [x] 기술 스택 결정 — `tech-design.md` §8 (Flutter/Dart 클라이언트, Go 코어 백엔드 +
+  Python AI 서비스 투트랙, PostgreSQL, WebSocket 릴레이, drift+SQLCipher, Gemini 키 분리)
 
 #### 2. 워크스트림별 작업
 
-**2.1 백엔드 인프라** (PoC 결과 무관 — 지금 착수 가능)
-- [x] 계정/인증 (초대 코드 기반 가입) — `backend/app/main.py` `POST /auth/signup`, 중복 코드 409 확인함
-- [x] 메시지 릴레이 서버 (송수신) — `backend/app/main.py` WebSocket + REST, 실제 TestClient로 브로드캐스트 확인함.
-  멀티 디바이스 동기화(같은 유저 여러 기기)는 아직 — 지금은 대화방 단위 인메모리 커넥션 매니저뿐
-- [x] DB 스키마: users, contacts, conversations, messages, twin_settings, escalation_logs, whitelist_rules
-  — `backend/app/models.py`
+**2.1 코어 백엔드** (Go, PoC 결과 무관 — 지금 착수 가능)
+- [ ] 계정/인증 (초대 코드 기반 가입) — Python(`backend/app/main.py`)으로 프로토타입 구현·검증
+  완료(중복 코드 409 등), **Go로 포팅 필요** (스택 결정이 Python→Go로 바뀜)
+- [ ] 메시지 릴레이 서버 (송수신) — 마찬가지로 Python 프로토타입은 WebSocket 브로드캐스트까지
+  검증됨, **Go(`gorilla/websocket` 등)로 포팅 필요**. 멀티 디바이스 동기화는 프로토타입에도 아직 없음
+- [ ] DB 스키마: users, contacts, conversations, messages, twin_settings, escalation_logs, whitelist_rules
+  — 스키마 설계 자체는 `backend/app/models.py`(SQLAlchemy)로 확정됨, Go 쪽 ORM(`pgx`/GORM)으로 재작성
 - [ ] 푸시 알림 서비스 연동
 
-**2.2 AI 파이프라인 프로덕션화** (PoC 스크립트 → 서비스로 승격)
-- [ ] `poc/tone-corpus/generate_draft.py`·`escalation_filter.py`·`retrieve_style.py`를 백엔드 API로 이식
+**2.2 AI 서비스** (Python, PoC 스크립트 → 내부 API로 승격)
+- [ ] `poc/tone-corpus/generate_draft.py`·`escalation_filter.py`·`retrieve_style.py`를 감싸는
+  FastAPI 서비스로 승격 (Go 코어가 내부망 HTTP로 호출)
 - [ ] 자율성 엔진(L0~L2) 오케스트레이션: 에스컬레이션 게이트 → 검색 → 초안 생성 → 승인/자동발송 분기
-  (`tech-design.md` §3 흐름 그대로)
+  (`tech-design.md` §3 흐름 그대로) — 이 오케스트레이션이 Go 코어와 Python AI 서비스 중 어디
+  책임인지는 구현 시작 시 정할 것 (에스컬레이션 하드게이트는 Go 코어에 두는 게 안전선 원칙상 더 맞을 수 있음)
 - [ ] 온디바이스 말투 이력 저장 + 서버 최소 전송 원칙 구현
 - [ ] 사후 알림 + 되돌리기 로그 스키마/API
 
@@ -77,10 +80,10 @@
 
 #### 4. 권장 착수 순서 (진행 상황)
 
-1. [x] §1 기술 스택 결정
-2. [~] 2.1 백엔드 기본 인프라 (계정/인증, DB 스키마, 메시지 릴레이 — `backend/` 완료, 푸시 알림만 남음)
-   + 2.3 채팅 UI 뼈대 (병행) — **안드로이드 클라이언트 쪽이 다음 작업**
-3. [ ] 2.2 AI 파이프라인 프로덕션화 (PoC 스크립트 재사용)
+1. [x] §1 기술 스택 결정 (Go 코어 + Python AI 서비스로 재확정, `backend/`는 Python 프로토타입 —
+   설계 참고용으로 남기고 Go로 포팅 필요)
+2. [ ] 2.1 코어 백엔드를 Go로 (신규 구현) + 2.3 Flutter 채팅 UI 뼈대 (병행) — **다음 작업**
+3. [ ] 2.2 AI 서비스 (Python, PoC 스크립트를 FastAPI로 승격)
 4. [ ] 2.3 나머지 UX(온보딩·설정·뱃지)
 5. [ ] 2.4/2.5 안전장치·QA
 6. [ ] PoC 결과 반영 → §3 확정 → 2.6 베타 오픈

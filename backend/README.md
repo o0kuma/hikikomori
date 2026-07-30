@@ -1,8 +1,10 @@
-# 분신 backend
+# 분신 backend (Python 프로토타입 — 참고용, Go로 포팅 예정)
 
-Phase 1 백엔드 인프라 뼈대 (`docs/roadmap.md` Phase 1 §2.1). 스택 결정은
-`docs/tech-design.md` §8 참고 — Python/FastAPI, PostgreSQL(프로덕션)/SQLite(로컬 개발),
-WebSocket 릴레이.
+**스택이 바뀌었다**: `docs/tech-design.md` §8에서 코어 백엔드를 Go로 재확정했다
+(성능/동시성, 향후 스케일 대비). 이 디렉토리는 그 결정 전에 만든 Python/FastAPI 프로토타입으로,
+인증·메시지 릴레이·DB 스키마가 실제로 동작하는 걸 검증하는 용도로는 여전히 유효하다 —
+**API 설계·DB 스키마 참고용으로 남겨두고, Go 코어 백엔드를 새로 만들 때 이 동작을 그대로 재현한다.**
+AI 서비스(2.2)는 그대로 Python으로 간다 — 그건 이 디렉토리가 아니라 별도 서비스로 만들 것.
 
 ## 실행
 

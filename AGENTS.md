@@ -81,9 +81,10 @@ depend on PoC results (see `docs/roadmap.md` Phase 1 §2 for which workstreams
 those are).
 
 The tech stack for Phase 1 is decided — see `docs/tech-design.md` §8
-(Flutter/Dart client, Python/FastAPI backend, PostgreSQL, WebSocket relay,
-drift+SQLCipher on-device). Do not re-litigate or invent a different stack;
-build within this one unless a decision-log-style update changes it.
+(Flutter/Dart client, Go core backend + Python AI service, PostgreSQL,
+WebSocket relay, drift+SQLCipher on-device). Do not re-litigate or invent a
+different stack; build within this one unless a decision-log-style update
+changes it.
 
 ### Phase 1 앱 빌드 작업 규칙
 
