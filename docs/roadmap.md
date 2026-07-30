@@ -98,7 +98,7 @@
   무조건 차단되는 것까지 테스트로 확인함
 - [~] 데이터 프라이버시: 온디바이스 암호화, 삭제 플로우, 데이터 흐름 대시보드 — 서버 쪽 삭제
   플로우(`DELETE /users/:id`, 유저가 걸린 모든 행을 트랜잭션으로 삭제)만 완료·테스트함. 온디바이스
-  암호화(drift+SQLCipher)와 실시간 데이터 흐름 대시보드는 Flutter(`mobile/`) 쪽 후속 작업
+  암호화(drift+SQLCipher)와 데이터 흐름 UI는 Flutter(`mobile/`) B에서 반영
 
 **2.5 QA/테스트**
 - [x] `escalation_filter.py`의 자체 테스트를 정식 테스트 스위트로 승격, `generate_draft`·`retrieve_style`도
@@ -148,8 +148,8 @@ PoC 데이터 없이 기본값을 추측해 채우지 않는다.
 2. [x] 2.1 코어 백엔드 Go 구현 — `core-backend/` (가입·메시지·WebSocket + A1 대화/연락처/히스토리 + A2 세션/관리자 토큰). 푸시 알림만 남음
 3. [x] 2.2 AI 서비스 — `ai-service/`(Python) 완료. Go 코어→AI 서비스 연동·자율성 오케스트레이션·
    되돌리기 API 완료. 온디바이스 말투 이력 저장은 클라이언트와 이어서
-4. [~] 2.3 Flutter 클라이언트 — A3까지 완료 + API E2E(`scripts/e2e_a3.py`). 남은 것: B
-   (drift+SQLCipher·FCM 등), Android UI 탭은 실기기에서 `mobile/README.md` 체크리스트로
+4. [~] 2.3 Flutter 클라이언트 — A3 + B(drift/SQLCipher·데이터흐름·세션) 완료 + API E2E.
+   남은 것: 실제 Firebase FCM 토큰, Android UI 탭(`mobile/README.md`), C 배포 준비
 5. [x] 2.4/2.5 안전장치·QA (서버 쪽) — 하드게이트·거부권·삭제·pytest·L0~L2 통합 테스트 완료.
    클라이언트 쪽 온디바이스 암호화·데이터 흐름 대시보드·수동 QA는 B/A3 나머지와 함께
    - 5-1. [x] 2.6 베타 배포 준비(서버 쪽) — 초대 코드·`/admin/metrics`. **실제 베타 오픈은
