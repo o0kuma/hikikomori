@@ -74,17 +74,31 @@ These apply at every autonomy level and must not be weakened for convenience:
 
 Follow `docs/PLANNING.md`: decide → narrow → validate → specify.
 
-Current next priorities (do not invent a full stack first):
+PoC execution (real participant recruiting for PoC #1/#3, Q3 interviews) is
+currently on hold — that data collection is deferred, not cancelled. In the
+meantime, work has moved into Phase 1 app-build groundwork that doesn't
+depend on PoC results (see `docs/roadmap.md` Phase 1 §2 for which workstreams
+those are).
 
-1. PoC #1 — on-device tone realism
-2. PoC #3 — impersonation / trust acceptance (badge, veto UX)
-3. Clickable prototype (badge + veto)
-4. Small user interviews
-5. Meeting review to promote Q1~Q7 from 제안 → 확정
+The tech stack for Phase 1 is decided — see `docs/tech-design.md` §8
+(Android native/Kotlin, Python/FastAPI backend, PostgreSQL, WebSocket relay,
+Room+SQLCipher on-device). Do not re-litigate or invent a different stack;
+build within this one unless a decision-log-style update changes it.
 
-Do not invent frameworks, folder layouts, or CI conventions until real code
-exists. When code work starts, prefer Android-first changes aligned with
-`docs/tech-design.md` and keep L0~L2 + safety invariants intact.
+### Phase 1 앱 빌드 작업 규칙
+
+- Before starting any Phase 1 app-build task, check `docs/roadmap.md`'s
+  "Phase 1 상세 작업 분해" checklist for what's already done and what's next.
+- Follow the "권장 착수 순서" there — don't skip ahead in the numbered order
+  without a reason, and note the reason in the checklist if you do.
+- When a task is finished, check it off in that same checklist. When you
+  discover a new sub-task, add it there rather than tracking it elsewhere.
+- Items under Phase 1 §3 ("PoC 결과가 있어야 정할 수 있는 것") stay unresolved
+  until real PoC data comes in — don't guess a default to unblock yourself;
+  leave a placeholder and move on to other checklist items instead.
+
+Do not invent frameworks, folder layouts, or CI conventions beyond what
+`docs/tech-design.md` §8 and `docs/roadmap.md` already specify.
 
 ## Documentation conventions
 

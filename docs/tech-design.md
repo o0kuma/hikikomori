@@ -103,3 +103,20 @@ v1에서는 커스텀 모델을 새로 학습하지 않는다. 대신 **검색 �
   파싱 로직을 유지보수해야 해서, 아직 검증 안 된 v1 핵심 가설과 리스크가 섞인다.
 - 분신 간 프로토콜(L4) — 네트워크 효과가 필요해 사용자 기반이 있어야 의미 있음.
 - 서버 측 전체 대화 분석/추천 — 온디바이스 우선 원칙과 상충.
+
+## 8. 기술 스택 결정 (Phase 1)
+
+`roadmap.md` Phase 1 §1의 "착수 전 확정 필요" 항목에 대한 결정. PoC 데이터와 무관하게 지금
+확정할 수 있는 것들이라 여기서 정리한다 — 자율성 기본값 같은 PoC 의존 값은 여전히 미정으로 남는다.
+
+| 항목 | 결정 | 근거 |
+|---|---|---|
+| 클라이언트 | Android 네이티브 (Kotlin, Jetpack Compose) | Q7이 이미 안드로이드 우선을 확정함. 크로스플랫폼은 v2 OS 레이어(알림 접근 권한 API)에서 결국 네이티브가 필요해지므로, 처음부터 네이티브로 시작하면 나중에 다시 만들 일이 없음 |
+| 백엔드 | Python (FastAPI) | `poc/tone-corpus/`의 AI 파이프라인(generate_draft·escalation_filter·retrieve_style)이 이미 Python — 언어를 바꾸면 그대로 재사용 못 하고 다시 짜야 함. 클로즈드 베타 규모에서 성능은 병목이 아님 |
+| 메시지 릴레이 | FastAPI WebSocket | 자체 서버로 충분한 규모(소규모 지인 네트워크 베타). Kafka·관리형 pub-sub 같은 건 지금 시점에 과한 인프라 |
+| 데이터베이스 | PostgreSQL | users/contacts/conversations/messages/escalation_logs/whitelist_rules 관계형 스키마에 적합, 운영 경험 풍부 |
+| 온디바이스 저장소 | Android Room (SQLite) + SQLCipher 암호화 | 말투 이력·설정을 기기 내 암호화 저장한다는 §2/§5 원칙을 그대로 구현 |
+| Gemini API 키 관리 | 프로덕션 키는 서버 환경변수/시크릿 매니저로, PoC 키와 분리 | `poc/tone-corpus/.env`는 PoC 전용 — 프로덕션 트래픽과 쿼터를 섞지 않음 |
+
+이 표 밖의 결정(자율성 기본값, 화이트리스트 기본 주제, 신뢰 UX 문구)은 `roadmap.md` Phase 1 §3에
+남아있는 PoC 의존 항목이다 — 여기서 같이 정하지 않는다.
