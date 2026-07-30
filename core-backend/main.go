@@ -24,7 +24,14 @@ type sendMessageRequest struct {
 	SenderMode SenderMode `json:"sender_mode"`
 }
 
-func setupRouter(db *gorm.DB, relay *ConnectionManager) *gin.Engine {
+type draftMessageRequest struct {
+	ContextLines  []string `json:"context_lines" binding:"required"`
+	StyleExamples []string `json:"style_examples"`
+	History       []string `json:"history"`
+	K             int      `json:"k"`
+}
+
+func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -96,6 +103,46 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager) *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{"id": message.ID})
 	})
 
+	r.POST("/conversations/:id/draft", func(c *gin.Context) {
+		convID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var conversation Conversation
+		if err := db.First(&conversation, convID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "conversation not found"})
+			return
+		}
+
+		var req draftMessageRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+			return
+		}
+		if len(req.StyleExamples) == 0 && len(req.History) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "provide style_examples or history"})
+			return
+		}
+
+		// EscalationLog persistence (sender's post-hoc notification + undo
+		// trail) is a separate checklist item -- roadmap.md Phase 1 §2.2
+		// "사후 알림 + 되돌리기 로그 스키마/API". This endpoint only proxies
+		// to the AI service for now.
+		result, err := ai.requestDraft(draftRequest{
+			ContextLines:  req.ContextLines,
+			StyleExamples: req.StyleExamples,
+			History:       req.History,
+			K:             req.K,
+		})
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": result.Status, "text": result.Text})
+	})
+
 	r.GET("/ws/conversations/:id", func(c *gin.Context) {
 		convID, ok := parseUintParam(c, "id")
 		if !ok {
@@ -133,6 +180,7 @@ func parseUintParam(c *gin.Context, name string) (uint, bool) {
 func main() {
 	db := openDB()
 	relay := newConnectionManager()
-	r := setupRouter(db, relay)
+	ai := newAIServiceClient()
+	r := setupRouter(db, relay, ai)
 	r.Run(":8080")
 }

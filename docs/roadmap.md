@@ -46,7 +46,9 @@
 - [x] `poc/tone-corpus/generate_draft.py`·`escalation_filter.py`·`retrieve_style.py`를 감싸는
   FastAPI 서비스로 승격 — `ai-service/` (`POST /draft`, style_examples/history 두 경로 +
   에스컬레이션 하드게이트 + 검증 오류 전부 실제 테스트로 확인함)
-- [ ] Go 코어가 이 서비스를 실제로 호출하는 클라이언트 코드 (`core-backend/`에서 `AI_SERVICE_URL` 사용)
+- [x] Go 코어가 이 서비스를 실제로 호출하는 클라이언트 코드 (`core-backend/`에서 `AI_SERVICE_URL` 사용)
+  — `core-backend/aiservice.go`(`AIServiceClient.requestDraft`) + `POST /conversations/:id/draft`
+  라우트, mock AI 서비스로 정상 프록시·404·400(스타일 소스 없음) 전부 실제 테스트로 확인함
 - [ ] 자율성 엔진(L0~L2) 오케스트레이션: 에스컬레이션 게이트 → 검색 → 초안 생성 → 승인/자동발송 분기
   (`tech-design.md` §3 흐름 그대로) — 이 오케스트레이션이 Go 코어와 Python AI 서비스 중 어디
   책임인지는 구현 시작 시 정할 것 (에스컬레이션 하드게이트는 Go 코어에 두는 게 안전선 원칙상 더 맞을 수 있음)
@@ -95,9 +97,12 @@
 2. [x] 2.1 코어 백엔드 Go 구현 — `core-backend/` (가입·메시지·WebSocket 릴레이 완료, 푸시 알림만 남음).
    병행하려던 2.3 Flutter 채팅 UI 뼈대는 **이 작업 환경에 Flutter/Dart SDK가 없어 빌드 검증이
    불가능**해서 보류 — Flutter는 Windows에 SDK가 설치된 환경(본인 로컬)에서 시작
-3. [~] 2.2 AI 서비스 — `ai-service/`(Python) 완료. Go 코어에서 실제 호출하는 연동 코드는 아직 —
-   **다음 작업**. 2.3 Flutter는 여전히 로컬 환경 대기 중
-4. [ ] 2.3 나머지 UX(온보딩·설정·뱃지)
+3. [x] 2.2 AI 서비스 — `ai-service/`(Python) 완료. Go 코어→AI 서비스 연동(`core-backend/aiservice.go`,
+   `POST /conversations/:id/draft`)도 완료·테스트 통과. 남은 건 자율성 엔진 오케스트레이션, 온디바이스
+   말투 이력 저장, 사후 알림/되돌리기 로그 — 이건 2.4/2.5와 겹치므로 그쪽에서 이어감. 2.3 Flutter는
+   여전히 로컬 환경 대기 중
+4. [ ] 2.3 나머지 UX(온보딩·설정·뱃지) — **다음 작업 대상은 이 항목이지만 Flutter SDK가 없는 이
+   환경에서는 착수 불가. 2.4(안전장치 통합)으로 순서를 당겨 진행**
 5. [ ] 2.4/2.5 안전장치·QA
 6. [ ] §3 확정 (PoC 결과 필요 — 1~5번 전부 끝난 뒤에만) → 2.6 베타 오픈
 
