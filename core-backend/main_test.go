@@ -88,6 +88,28 @@ func postJSON(t *testing.T, url string, body interface{}) *http.Response {
 	return resp
 }
 
+func mintInvite(t *testing.T, serverURL string) string {
+	t.Helper()
+	resp := postJSON(t, serverURL+"/invites", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 minting invite, got %d", resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+	return out["code"].(string)
+}
+
+func mustSignup(t *testing.T, serverURL, displayName string) uint {
+	t.Helper()
+	resp := postJSON(t, serverURL+"/auth/signup", signupRequest{InviteCode: mintInvite(t, serverURL), DisplayName: displayName})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 signing up %s, got %d", displayName, resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+	return uint(out["id"].(float64))
+}
+
 func setAutonomyLevel(t *testing.T, serverURL string, userID uint, level AutonomyLevel) {
 	t.Helper()
 	body, _ := json.Marshal(updateTwinSettingsRequest{AutonomyLevel: level})
@@ -115,8 +137,9 @@ func TestHealth(t *testing.T) {
 
 func TestSignupAndDuplicateRejected(t *testing.T) {
 	server, _ := setupTestServer(t)
+	code := mintInvite(t, server.URL)
 
-	resp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "abc123", DisplayName: "지우"})
+	resp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: code, DisplayName: "지우"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
@@ -126,9 +149,26 @@ func TestSignupAndDuplicateRejected(t *testing.T) {
 		t.Fatalf("unexpected body: %v", out)
 	}
 
-	dup := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "abc123", DisplayName: "dup"})
+	dup := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: code, DisplayName: "dup"})
 	if dup.StatusCode != http.StatusConflict {
-		t.Fatalf("expected 409 for duplicate invite_code, got %d", dup.StatusCode)
+		t.Fatalf("expected 409 for a reused invite code, got %d", dup.StatusCode)
+	}
+}
+
+func TestSignupRejectsUnknownInviteCode(t *testing.T) {
+	server, _ := setupTestServer(t)
+	resp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "never-minted", DisplayName: "누구"})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for an invite code nobody minted, got %d", resp.StatusCode)
+	}
+}
+
+func TestMintInviteReturnsUniqueCodes(t *testing.T) {
+	server, _ := setupTestServer(t)
+	a := mintInvite(t, server.URL)
+	b := mintInvite(t, server.URL)
+	if a == b {
+		t.Fatalf("expected distinct invite codes, got %q twice", a)
 	}
 }
 
@@ -143,10 +183,7 @@ func TestSendMessageToMissingConversation(t *testing.T) {
 func TestSendMessageAndWebSocketBroadcast(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "sender1", DisplayName: "정우"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "정우")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -185,10 +222,7 @@ func TestSendMessageAndWebSocketBroadcast(t *testing.T) {
 func TestTwinMessageEscalatedIsBlockedAndNotBroadcast(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin1", DisplayName: "민지"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "민지")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -237,10 +271,7 @@ func TestTwinMessageEscalatedIsBlockedAndNotBroadcast(t *testing.T) {
 func TestTwinSendBlockedAtDefaultL0(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin2", DisplayName: "하늘"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "하늘")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -268,10 +299,7 @@ func TestTwinSendBlockedAtDefaultL0(t *testing.T) {
 func TestTwinSendRequiresApprovalAtL1(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l1", DisplayName: "서준"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "서준")
 	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
 
 	conv := Conversation{IsGroup: false}
@@ -300,10 +328,7 @@ func TestTwinSendRequiresApprovalAtL1(t *testing.T) {
 func TestTwinSendAutoSendsAtL2WithWhitelistMatch(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l2-wl", DisplayName: "가은"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "가은")
 	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
 
@@ -330,10 +355,7 @@ func TestTwinSendAutoSendsAtL2WithWhitelistMatch(t *testing.T) {
 func TestTwinSendRequiresApprovalAtL2WithoutWhitelistMatch(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l2-nowl", DisplayName: "도윤"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "도윤")
 	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
 	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
 
@@ -359,10 +381,7 @@ func TestTwinSendRequiresApprovalAtL2WithoutWhitelistMatch(t *testing.T) {
 func TestEscalationOverridesAutonomyLevelAndWhitelist(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin-l2-esc", DisplayName: "은서"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "은서")
 	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
 	// Whitelisted keyword happens to be the same word that also triggers
 	// the money escalation pattern in the mock AI service.
@@ -390,10 +409,7 @@ func TestEscalationOverridesAutonomyLevelAndWhitelist(t *testing.T) {
 func TestHumanMessageBypassesEscalationGate(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "human1", DisplayName: "재민"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "재민")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -431,10 +447,7 @@ func TestTwinMessageFailsClosedWhenAIServiceUnreachable(t *testing.T) {
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "twin3", DisplayName: "소연"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	senderID := uint(user["id"].(float64))
+	senderID := mustSignup(t, server.URL, "소연")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -460,10 +473,7 @@ func TestTwinMessageFailsClosedWhenAIServiceUnreachable(t *testing.T) {
 func TestDeleteUserPurgesData(t *testing.T) {
 	server, db := setupTestServer(t)
 
-	signupResp := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: "erase1", DisplayName: "유나"})
-	var user map[string]interface{}
-	json.NewDecoder(signupResp.Body).Decode(&user)
-	userID := uint(user["id"].(float64))
+	userID := mustSignup(t, server.URL, "유나")
 
 	conv := Conversation{IsGroup: false}
 	if err := db.Create(&conv).Error; err != nil {
@@ -511,6 +521,121 @@ func TestDeleteUserPurgesData(t *testing.T) {
 	}
 	if resp2.StatusCode != http.StatusNotFound {
 		t.Fatalf("expected 404 on repeat delete, got %d", resp2.StatusCode)
+	}
+}
+
+func TestPeerVetoBlocksTwinAutoSendEvenAtL2WithWhitelistMatch(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	senderID := mustSignup(t, server.URL, "지민")
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL2)
+	db.Create(&WhitelistRule{UserID: senderID, TopicKeyword: "저녁"})
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	vetoResp := postJSON(t, convBase+"/veto", nil)
+	if vetoResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 triggering veto, got %d", vetoResp.StatusCode)
+	}
+
+	// Would otherwise auto-send (L2 + whitelist match + approved), but the
+	// veto must override every other check.
+	resp := postJSON(t, convBase+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "저녁 뭐 먹었어?", SenderMode: SenderTwin, Approved: true,
+	})
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403: peer veto must override L2 whitelist + approval, got %d", resp.StatusCode)
+	}
+
+	var count int64
+	db.Model(&Message{}).Where("conversation_id = ?", conv.ID).Count(&count)
+	if count != 0 {
+		t.Fatalf("no twin message should be sent after veto, found %d rows", count)
+	}
+}
+
+func TestPeerVetoDoesNotBlockHumanMessages(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	senderID := mustSignup(t, server.URL, "다은")
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	postJSON(t, convBase+"/veto", nil)
+
+	resp := postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "안녕", SenderMode: SenderHuman})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("veto must not block the human's own messages, got %d", resp.StatusCode)
+	}
+}
+
+func TestVetoMissingConversation(t *testing.T) {
+	server, _ := setupTestServer(t)
+	resp := postJSON(t, server.URL+"/conversations/9999/veto", nil)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
+	server, db := setupTestServer(t)
+
+	senderID := mustSignup(t, server.URL, "메트릭")
+	setAutonomyLevel(t, server.URL, senderID, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "안녕", SenderMode: SenderHuman})
+	postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "ㅇㅇ", SenderMode: SenderTwin, Approved: true})
+	postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "계좌번호 알려줄게", SenderMode: SenderTwin})
+
+	conv2 := Conversation{IsGroup: false}
+	db.Create(&conv2)
+	postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv2.ID), 10)+"/veto", nil)
+
+	resp, err := http.Get(server.URL + "/admin/metrics")
+	if err != nil {
+		t.Fatalf("get metrics: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+
+	if out["messages_human_total"].(float64) != 1 {
+		t.Fatalf("expected 1 human message, got %v", out["messages_human_total"])
+	}
+	if out["messages_twin_total"].(float64) != 1 {
+		t.Fatalf("expected 1 twin message, got %v", out["messages_twin_total"])
+	}
+	if out["escalations_total"].(float64) != 1 {
+		t.Fatalf("expected 1 escalation, got %v", out["escalations_total"])
+	}
+	byReason := out["escalations_by_reason"].(map[string]interface{})
+	if byReason["금전"].(float64) != 1 {
+		t.Fatalf("expected 1 금전 escalation, got %v", byReason)
+	}
+	if out["conversations_total"].(float64) != 2 || out["conversations_vetoed"].(float64) != 1 {
+		t.Fatalf("expected 2 conversations, 1 vetoed, got %v", out)
+	}
+	if out["peer_veto_rate"].(float64) != 0.5 {
+		t.Fatalf("expected 0.5 veto rate, got %v", out["peer_veto_rate"])
+	}
+	if out["invites_minted"].(float64) < 1 || out["invites_used"].(float64) < 1 {
+		t.Fatalf("expected at least 1 minted/used invite, got %v", out)
 	}
 }
 

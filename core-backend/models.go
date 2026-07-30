@@ -24,22 +24,37 @@ type User struct {
 	CreatedAt   time.Time
 }
 
-// Contact carries per-peer state like the veto flag (tech-design.md §4:
-// twin_disabled_by_peer), independent of any one conversation.
-type Contact struct {
-	ID                 uint `gorm:"primaryKey"`
-	OwnerUserID        uint `gorm:"not null;index"`
-	ContactUserID      *uint
-	DisplayName        string `gorm:"not null"`
-	RelationshipNote   string
-	TwinDisabledByPeer bool `gorm:"not null;default:false"`
-	CreatedAt          time.Time
+// InviteCode is a pre-minted, single-use code (roadmap.md Phase 1 §2.6
+// "초대 기반 베타 가입 플로우") -- signup validates against this table instead
+// of just deduping User.InviteCode, so joining actually requires a code
+// someone handed out, not any never-used string.
+type InviteCode struct {
+	ID           uint   `gorm:"primaryKey"`
+	Code         string `gorm:"uniqueIndex;not null"`
+	CreatedAt    time.Time
+	UsedAt       *time.Time
+	UsedByUserID *uint
 }
 
+type Contact struct {
+	ID               uint `gorm:"primaryKey"`
+	OwnerUserID      uint `gorm:"not null;index"`
+	ContactUserID    *uint
+	DisplayName      string `gorm:"not null"`
+	RelationshipNote string
+	CreatedAt        time.Time
+}
+
+// TwinDisabledByPeer is the veto flag (tech-design.md §4: "대화방 단위
+// 플래그(twin_disabled_by_peer)") -- per conversation, not per contact, so
+// it lives here rather than on Contact. Set by POST /conversations/:id/veto
+// when the counterpart asks to talk to the human only; checked before any
+// twin auto-send in that conversation (main.go).
 type Conversation struct {
-	ID        uint `gorm:"primaryKey"`
-	IsGroup   bool `gorm:"not null;default:false"`
-	CreatedAt time.Time
+	ID                 uint `gorm:"primaryKey"`
+	IsGroup            bool `gorm:"not null;default:false"`
+	TwinDisabledByPeer bool `gorm:"not null;default:false"`
+	CreatedAt          time.Time
 }
 
 type ConversationParticipant struct {
@@ -91,6 +106,7 @@ type EscalationLog struct {
 
 var allModels = []interface{}{
 	&User{},
+	&InviteCode{},
 	&Contact{},
 	&Conversation{},
 	&ConversationParticipant{},

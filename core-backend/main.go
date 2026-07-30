@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -47,6 +50,70 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	r.POST("/invites", func(c *gin.Context) {
+		code, err := generateInviteCode()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+		invite := InviteCode{Code: code}
+		if err := db.Create(&invite).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": invite.Code})
+	})
+
+	r.GET("/admin/metrics", func(c *gin.Context) {
+		// v1-minimal (roadmap.md §2.6): only counts honestly derivable from
+		// the current schema. Draft-generation latency and AI-service error
+		// rate need a request-timing/logging layer that doesn't exist yet --
+		// not fabricated here, left for that future work.
+		var usersTotal, humanMessages, twinMessages, escalationsTotal int64
+		var conversationsTotal, conversationsVetoed, invitesMinted, invitesUsed int64
+		db.Model(&User{}).Count(&usersTotal)
+		db.Model(&Message{}).Where("sender_mode = ?", SenderHuman).Count(&humanMessages)
+		db.Model(&Message{}).Where("sender_mode = ?", SenderTwin).Count(&twinMessages)
+		db.Model(&EscalationLog{}).Count(&escalationsTotal)
+		db.Model(&Conversation{}).Count(&conversationsTotal)
+		db.Model(&Conversation{}).Where("twin_disabled_by_peer = ?", true).Count(&conversationsVetoed)
+		db.Model(&InviteCode{}).Count(&invitesMinted)
+		db.Model(&InviteCode{}).Where("used_at IS NOT NULL").Count(&invitesUsed)
+
+		type reasonCount struct {
+			Reason string
+			Count  int64
+		}
+		var reasonCounts []reasonCount
+		db.Model(&EscalationLog{}).Select("reason, count(*) as count").Group("reason").Scan(&reasonCounts)
+		escalationsByReason := map[string]int64{}
+		for _, rc := range reasonCounts {
+			escalationsByReason[rc.Reason] = rc.Count
+		}
+
+		var peerVetoRate float64
+		if conversationsTotal > 0 {
+			peerVetoRate = float64(conversationsVetoed) / float64(conversationsTotal)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"users_total":           usersTotal,
+			"messages_human_total":  humanMessages,
+			"messages_twin_total":   twinMessages,
+			"escalations_total":     escalationsTotal,
+			"escalations_by_reason": escalationsByReason,
+			"conversations_total":   conversationsTotal,
+			"conversations_vetoed":  conversationsVetoed,
+			// Approximates vision.md's "분신 거부율" metric at conversation
+			// granularity (vetoed conversations / all conversations) --
+			// vision.md doesn't pin down the exact denominator, so treat
+			// this as a first approximation, not the final definition.
+			"peer_veto_rate": peerVetoRate,
+			"invites_minted": invitesMinted,
+			"invites_used":   invitesUsed,
+		})
+	})
+
 	r.POST("/auth/signup", func(c *gin.Context) {
 		var req signupRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -54,9 +121,16 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			return
 		}
 
-		var existing User
-		if err := db.Where("invite_code = ?", req.InviteCode).First(&existing).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"detail": "invite_code already used"})
+		// 초대 기반 베타(roadmap.md §2.6): 가입은 누군가 실제로 발급한 미사용
+		// 코드가 있어야만 된다 -- 아무 문자열이나 처음 쓰면 통과되던 이전
+		// 방식은 "초대 기반"이 아니었음.
+		var invite InviteCode
+		if err := db.Where("code = ?", req.InviteCode).First(&invite).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "invalid invite code"})
+			return
+		}
+		if invite.UsedAt != nil {
+			c.JSON(http.StatusConflict, gin.H{"detail": "invite code already used"})
 			return
 		}
 
@@ -66,6 +140,11 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			return
 		}
 		db.Create(&TwinSettings{UserID: user.ID, AutonomyLevel: AutonomyL0})
+
+		now := time.Now()
+		invite.UsedAt = &now
+		invite.UsedByUserID = &user.ID
+		db.Save(&invite)
 
 		c.JSON(http.StatusOK, gin.H{"id": user.ID, "display_name": user.DisplayName})
 	})
@@ -97,10 +176,16 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// so no client or upstream path can bypass it (AGENTS.md absolute
 		// safety invariants). Human-authored messages are the human's own
 		// words and are never gated. On any doubt (AI service unreachable
-		// or erroring) we fail closed and block the send. Escalation is
-		// checked before autonomy level, and applies regardless of level or
-		// whitelist match -- L2 auto-send never overrides it.
+		// or erroring) we fail closed and block the send. Peer veto is
+		// checked first (it's a total kill switch for this conversation,
+		// independent of content), then escalation, then autonomy level --
+		// none of the later checks can override an earlier block.
 		if req.SenderMode == SenderTwin {
+			if conversation.TwinDisabledByPeer {
+				c.JSON(http.StatusForbidden, gin.H{"detail": "상대방이 분신을 거부해서 이 대화방에서는 자동 발송이 꺼져 있습니다"})
+				return
+			}
+
 			result, err := ai.checkEscalation(req.Text)
 			if err != nil {
 				c.JSON(http.StatusBadGateway, gin.H{"detail": "escalation gate unavailable, twin send blocked: " + err.Error()})
@@ -206,6 +291,31 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		c.JSON(http.StatusOK, gin.H{"status": result.Status, "text": result.Text})
 	})
 
+	r.POST("/conversations/:id/veto", func(c *gin.Context) {
+		convID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var conversation Conversation
+		if err := db.First(&conversation, convID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "conversation not found"})
+			return
+		}
+
+		// Peer veto (PRD.md §3.1, tech-design.md §4, AGENTS.md absolute
+		// safety invariants): the counterpart asked to talk to the human
+		// only. One-way for v1 -- no "un-veto" endpoint, matching the
+		// PRD's "즉시 중단" wording; nothing in scope calls for reversing it.
+		conversation.TwinDisabledByPeer = true
+		if err := db.Save(&conversation).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"conversation_id": convID, "twin_disabled_by_peer": true})
+	})
+
 	r.PATCH("/users/:id/twin-settings", func(c *gin.Context) {
 		userID, ok := parseUintParam(c, "id")
 		if !ok {
@@ -254,6 +364,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// a minimal relay copy, so deleting it here is not a partial erasure.
 		var messagesDeleted, escalationLogsDeleted int64
 		err := db.Transaction(func(tx *gorm.DB) error {
+			if res := tx.Model(&InviteCode{}).Where("used_by_user_id = ?", userID).Update("used_by_user_id", nil); res.Error != nil {
+				return res.Error
+			}
 			if res := tx.Where("user_id = ?", userID).Delete(&TwinSettings{}); res.Error != nil {
 				return res.Error
 			}
@@ -330,6 +443,14 @@ func whitelistMatches(db *gorm.DB, userID uint, text string) bool {
 		}
 	}
 	return false
+}
+
+func generateInviteCode() (string, error) {
+	buf := make([]byte, 5)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
 }
 
 func parseUintParam(c *gin.Context, name string) (uint, bool) {
