@@ -54,7 +54,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: '표시 이름', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: '표시 이름'),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -63,13 +63,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
               decoration: const InputDecoration(
                 labelText: '상대 사용자 ID (선택)',
                 helperText: '대화 시작에 필요',
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: noteCtrl,
-              decoration: const InputDecoration(labelText: '관계 메모 (선택)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
             ),
           ],
         ),
@@ -118,54 +117,102 @@ class _ContactsScreenState extends State<ContactsScreen> {
     }
   }
 
+  Future<void> _delete(Contact c) async {
+    final session = context.read<SessionState>();
+    if (session.user == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('연락처 삭제'),
+        content: Text('${c.displayName}을(를) 삭제할까요?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          FilledButton.tonal(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await session.api.deleteContact(session.user!.id, c.id);
+    if (!mounted) return;
+    setState(() => _contacts = _contacts.where((x) => x.id != c.id).toList());
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('연락처')),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
+        tooltip: '연락처 추가',
         child: const Icon(Icons.person_add_alt_1),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? ListView(children: const [SizedBox(height: 120), Center(child: CircularProgressIndicator())])
+            ? ListView(children: const [SizedBox(height: 160), Center(child: CircularProgressIndicator())])
             : ListView(
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 children: [
                   if (_error != null)
                     Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
                     ),
                   if (_contacts.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('연락처가 없습니다. + 버튼으로 추가하세요.'),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 32),
+                      child: Column(
+                        children: [
+                          Icon(Icons.person_add_outlined, size: 40, color: theme.colorScheme.outline),
+                          const SizedBox(height: 12),
+                          Text('연락처가 없습니다', style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 4),
+                          Text(
+                            '오른쪽 아래 버튼으로 첫 연락처를 추가해 보세요.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
                     ),
                   for (final c in _contacts)
-                    ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                      title: Text(c.displayName),
-                      subtitle: Text(
-                        [
-                          if (c.contactUserId != null) '사용자 #${c.contactUserId}',
-                          if (c.relationshipNote.isNotEmpty) c.relationshipNote,
-                        ].join(' · '),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: theme.colorScheme.secondaryContainer,
+                          child: Text(
+                            c.displayName.isEmpty ? '?' : c.displayName.substring(0, 1),
+                            style: TextStyle(
+                              color: theme.colorScheme.onSecondaryContainer,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        title: Text(c.displayName, style: theme.textTheme.titleSmall),
+                        subtitle: Text(
+                          [
+                            if (c.contactUserId != null) '사용자 #${c.contactUserId}',
+                            if (c.relationshipNote.isNotEmpty) c.relationshipNote,
+                          ].join(' · '),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (c.contactUserId != null)
+                              TextButton(onPressed: () => _startChat(c), child: const Text('대화')),
+                            IconButton(
+                              tooltip: '삭제',
+                              icon: const Icon(Icons.delete_outline, size: 20),
+                              onPressed: () => _delete(c),
+                            ),
+                          ],
+                        ),
                       ),
-                      trailing: c.contactUserId == null
-                          ? null
-                          : TextButton(onPressed: () => _startChat(c), child: const Text('대화')),
-                      onLongPress: () async {
-                        final session = context.read<SessionState>();
-                        if (session.user == null) return;
-                        await session.api.deleteContact(session.user!.id, c.id);
-                        setState(() => _contacts = _contacts.where((x) => x.id != c.id).toList());
-                      },
                     ),
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('길게 누르면 삭제됩니다.', textAlign: TextAlign.center),
-                  ),
+                  const SizedBox(height: 72),
                 ],
               ),
       ),

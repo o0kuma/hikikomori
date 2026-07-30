@@ -205,6 +205,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _veto() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('거부권을 쓸까요?'),
+        content: const Text('이 대화방에서 분신 자동응대가 즉시 중단됩니다. 이후에는 다시 켤 수 없습니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          FilledButton.tonal(onPressed: () => Navigator.pop(ctx, true), child: const Text('거부권 사용')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
     final session = context.read<SessionState>();
     try {
       await session.api.vetoConversation(widget.conversationId);
@@ -229,74 +241,86 @@ class _ChatScreenState extends State<ChatScreen> {
     if (draft == null) return const SizedBox.shrink();
 
     if (draft.isEscalate) {
-      return Material(
-        color: theme.colorScheme.errorContainer,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('직접 확인 필요', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 4),
-              Text(draft.text.isEmpty ? '민감·확정성 내용으로 분신 발송이 보류되었습니다.' : draft.text),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(onPressed: _rejectDraft, child: const Text('닫기')),
-              ),
-            ],
-          ),
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(16),
         ),
-      );
-    }
-
-    return Material(
-      elevation: 2,
-      color: theme.colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome, size: 18, color: theme.colorScheme.onSecondaryContainer),
+                Icon(Icons.warning_amber_rounded, size: 18, color: theme.colorScheme.onErrorContainer),
                 const SizedBox(width: 6),
                 Text(
-                  'L1 승인 — 수정 후 보내기',
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  '직접 확인 필요',
+                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onErrorContainer),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _draftEdit,
-              minLines: 2,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.white70,
-              ),
+            const SizedBox(height: 6),
+            Text(
+              draft.text.isEmpty ? '민감·확정성 내용으로 분신 발송이 보류되었습니다.' : draft.text,
+              style: TextStyle(color: theme.colorScheme.onErrorContainer),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                TextButton(onPressed: _busy ? null : _rejectDraft, child: const Text('버리기')),
-                const Spacer(),
-                FilledButton.tonal(
-                  onPressed: _busy ? null : _requestDraft,
-                  child: const Text('다시 초안'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _busy ? null : _sendTwinApproved,
-                  child: const Text('승인하고 보내기'),
-                ),
-              ],
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(onPressed: _rejectDraft, child: const Text('닫기')),
             ),
           ],
         ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 18, color: theme.colorScheme.onSecondaryContainer),
+              const SizedBox(width: 6),
+              Text(
+                'L1 승인 — 수정 후 보내기',
+                style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _draftEdit,
+            minLines: 2,
+            maxLines: 5,
+            style: TextStyle(color: theme.colorScheme.onSurface),
+            decoration: InputDecoration(fillColor: theme.colorScheme.surface),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              TextButton(onPressed: _busy ? null : _rejectDraft, child: const Text('버리기')),
+              const Spacer(),
+              FilledButton.tonal(
+                onPressed: _busy ? null : _requestDraft,
+                child: const Text('다시 초안'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _busy ? null : _sendTwinApproved,
+                child: const Text('승인하고 보내기'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -306,17 +330,23 @@ class _ChatScreenState extends State<ChatScreen> {
     final session = context.watch<SessionState>();
     final me = session.user?.id;
 
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title ?? '대화방 #${widget.conversationId}'),
         actions: [
-          TextButton(onPressed: _busy ? null : _veto, child: const Text('거부권')),
+          IconButton(
+            tooltip: '거부권 (분신 자동응대 중단)',
+            onPressed: _busy ? null : _veto,
+            icon: const Icon(Icons.block),
+          ),
         ],
       ),
       body: Column(
         children: [
           if (_banner != null)
             MaterialBanner(
+              leading: Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),
               content: Text(_banner!),
               actions: [
                 TextButton(onPressed: () => setState(() => _banner = null), child: const Text('닫기')),
@@ -325,35 +355,40 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: _loadingHistory
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, i) {
-                      final m = _messages[i];
-                      return MessageBubble(
-                        message: m,
-                        isMine: me != null && m.senderId == me,
-                        onRetract: m.isTwin ? () => _retract(m) : null,
-                      );
-                    },
-                  ),
+                : _messages.isEmpty
+                    ? Center(
+                        child: Text(
+                          '아직 메시지가 없습니다. 첫 메시지를 보내 보세요.',
+                          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scroll,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, i) {
+                          final m = _messages[i];
+                          return MessageBubble(
+                            message: m,
+                            isMine: me != null && m.senderId == me,
+                            onRetract: m.isTwin ? () => _retract(m) : null,
+                          );
+                        },
+                      ),
           ),
           _buildL1Panel(context),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _input,
                       minLines: 1,
                       maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText: '메시지',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(hintText: '메시지'),
                     ),
                   ),
                   const SizedBox(width: 8),

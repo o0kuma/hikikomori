@@ -46,6 +46,7 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('말투 샘플'),
@@ -54,20 +55,28 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
             onPressed: () => context.read<SessionState>().skipToneOnboarding(),
             child: const Text('나중에'),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            Text('분신이 따라 쓸 말투', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(16)),
+              child: Icon(Icons.record_voice_over_outlined, size: 28, color: scheme.onPrimaryContainer),
+            ),
+            const SizedBox(height: 16),
+            Text('분신이 따라 쓸 말투', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
               '자주 쓰는 짧은 문장을 3~4개 적어 주세요. 기기에만 저장되며, 초안 요청 시 참고로 씁니다. '
               '최종 문구·수집 방식은 사람 PoC 이후에 다듬습니다.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             for (var i = 0; i < _samples.length; i++) ...[
               TextField(
                 controller: _samples[i],
@@ -75,12 +84,26 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
                 decoration: InputDecoration(
                   labelText: '샘플 ${i + 1}',
                   hintText: i == 0 ? '예: ㅇㅇ 알겠음' : null,
-                  border: const OutlineInputBorder(),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 4, right: 4, top: 4),
+                    child: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: scheme.secondaryContainer,
+                      child: Text(
+                        '${i + 1}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             FilledButton(
               onPressed: () => _save(markDone: true),
               child: const Text('저장하고 시작'),
