@@ -1,0 +1,19 @@
+# PoC data — large, and AI-Hub source data may not be redistributed.
+# Keep scripts in git; keep the actual datasets out.
+poc/tone-corpus/data/
+*.jsonl
+*.zip
+
+# Local secrets (API keys). Commit .env.example only.
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.pyc
+
+# Local dev DB (backend/, SQLite fallback for DATABASE_URL)
+*.db
+
+# Go build output (core-backend/)
+/core-backend/core-backend
