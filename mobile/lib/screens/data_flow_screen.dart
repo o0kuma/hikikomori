@@ -32,7 +32,9 @@ class DataFlowScreen extends StatelessWidget {
               subtitle: Text(
                 [
                   samples.isEmpty ? '(아직 없음 — 말투 샘플 화면에서 추가)' : samples.take(3).join(' · '),
-                  session.localDbEncrypted ? '저장: drift + SQLCipher(암호화)' : '저장: 메모리 폴백(이 환경에 SQLCipher 없음)',
+                  session.localDbEncrypted
+                      ? '저장: drift + SQLCipher(암호화)'
+                      : '저장: 메모리/웹 스텁(이 환경에 SQLCipher 없음 — Chrome·Linux 폴백)',
                 ].join('\n'),
               ),
               isThreeLine: true,
