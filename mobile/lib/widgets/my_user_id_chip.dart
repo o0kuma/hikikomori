@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/app_theme.dart';
+
 /// Shows the signed-in numeric user id with one-tap copy.
 class MyUserIdChip extends StatelessWidget {
   const MyUserIdChip({super.key, required this.userId, this.compact = false});
@@ -29,18 +31,23 @@ class MyUserIdChip extends StatelessWidget {
         icon: const Icon(Icons.badge_outlined),
       );
     }
+    final brightness = theme.brightness;
     return Material(
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-      borderRadius: BorderRadius.circular(12),
+      color: AppTheme.glassFill(brightness),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         onTap: () => _copy(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.glassBorder(brightness)),
+          ),
           child: Row(
             children: [
               Icon(Icons.badge_outlined, size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,16 +62,17 @@ class MyUserIdChip extends StatelessWidget {
                       '$userId',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.4,
                       ),
                     ),
                   ],
                 ),
               ),
               Text(
-                '탭하여 복사',
+                '복사',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(width: 4),

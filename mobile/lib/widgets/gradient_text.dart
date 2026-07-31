@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Renders [text] filled with [AppTheme.brandGradient] instead of a flat
-/// color — used for the "와카뷰" wordmark so the brand reads as designed
-/// rather than default black-on-gradient body text.
+/// Brand wordmark — ink (not rainbow gradient) so Quiet Ink stays calm.
 class GradientText extends StatelessWidget {
   const GradientText(this.text, {super.key, this.style, this.textAlign});
 
@@ -14,10 +12,11 @@ class GradientText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => AppTheme.brandGradient.createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-      child: Text(text, style: style, textAlign: textAlign),
+    final ink = Theme.of(context).brightness == Brightness.dark ? AppTheme.inkDark : AppTheme.inkLight;
+    return Text(
+      text,
+      textAlign: textAlign,
+      style: (style ?? const TextStyle()).copyWith(color: ink, fontWeight: FontWeight.w800),
     );
   }
 }

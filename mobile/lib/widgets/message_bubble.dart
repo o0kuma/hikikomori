@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
-/// Twin messages get a dashed border + badge (PRD §3.1 와카뷰 뱃지) so an
-/// auto-sent bubble never reads as something the human actually typed.
+/// Twin messages get a dashed border + badge (PRD §3.1 와카뷰 뱃지).
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -31,6 +30,7 @@ class MessageBubble extends StatelessWidget {
     final twin = message.isTwin;
     final retracted = message.retracted;
     final accent = AppTheme.twinAccent(theme.brightness);
+    final brightness = theme.brightness;
 
     final Color bg;
     final Color fg;
@@ -38,18 +38,18 @@ class MessageBubble extends StatelessWidget {
       bg = scheme.surfaceContainerHigh;
       fg = scheme.onSurfaceVariant;
     } else if (isMine) {
-      bg = scheme.primaryContainer;
-      fg = scheme.onPrimaryContainer;
+      bg = AppTheme.mineBubble(brightness);
+      fg = AppTheme.mineBubbleFg(brightness);
     } else {
-      bg = scheme.surfaceContainerHighest;
+      bg = AppTheme.peerBubble(brightness);
       fg = scheme.onSurface;
     }
 
     final radius = BorderRadius.only(
       topLeft: const Radius.circular(18),
       topRight: const Radius.circular(18),
-      bottomLeft: Radius.circular(isMine ? 18 : 4),
-      bottomRight: Radius.circular(isMine ? 4 : 18),
+      bottomLeft: Radius.circular(isMine ? 18 : 5),
+      bottomRight: Radius.circular(isMine ? 5 : 18),
     );
 
     final bubble = Container(
@@ -94,12 +94,12 @@ class MessageBubble extends StatelessWidget {
           else
             Text(
               message.text,
-              style: theme.textTheme.bodyMedium?.copyWith(color: fg, height: 1.35),
+              style: theme.textTheme.bodyMedium?.copyWith(color: fg, height: 1.4),
             ),
           const SizedBox(height: 4),
           Text(
             _time(message.createdAt),
-            style: theme.textTheme.labelSmall?.copyWith(color: fg.withOpacity(0.55), fontSize: 10),
+            style: theme.textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.55), fontSize: 10),
           ),
         ],
       ),
@@ -135,7 +135,7 @@ class MessageBubble extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
       child: Align(
         alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
         child: content,
@@ -155,11 +155,10 @@ class _DashedRRectPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
+      ..strokeWidth = 1.2;
     final rrect = radius.toRRect(Rect.fromLTWH(0.7, 0.7, size.width - 1.4, size.height - 1.4));
     final path = Path()..addRRect(rrect);
-    final dashed = _dashPath(path, dashLength: 5, gapLength: 4);
-    canvas.drawPath(dashed, paint);
+    canvas.drawPath(_dashPath(path, dashLength: 5, gapLength: 4), paint);
   }
 
   Path _dashPath(Path source, {required double dashLength, required double gapLength}) {

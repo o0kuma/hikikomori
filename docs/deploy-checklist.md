@@ -37,8 +37,8 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
-- 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
-- 실 FCM 전송·Android 실기기 탭 · 사람 PoC 실행은 남음
+- UI: **Quiet Ink** (틸 액센트 · 라이트/다크) 전면 적용 중 — FCM 실기기는 잠시 후순위
+- 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
 

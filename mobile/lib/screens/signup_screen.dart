@@ -143,9 +143,6 @@ class _DemoTestPanel extends StatelessWidget {
             color: AppTheme.glassFill(brightness),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppTheme.glassBorder(brightness)),
-            boxShadow: [
-              BoxShadow(color: AppTheme.glassShadow(brightness), blurRadius: 20, offset: const Offset(0, 8)),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +151,7 @@ class _DemoTestPanel extends StatelessWidget {
                 '테스트용 (누구나)',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
-                  letterSpacing: 0.4,
+                  letterSpacing: 0.2,
                 ),
               ),
               const SizedBox(height: 6),

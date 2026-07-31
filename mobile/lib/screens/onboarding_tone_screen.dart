@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/primary_gradient_button.dart';
 
 /// Phase 1 onboarding skeleton: capture a few style samples locally.
@@ -70,13 +69,10 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: AppTheme.brandGradient,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(color: const Color(0xFF6D5BD0).withValues(alpha: 0.3), blurRadius: 18, offset: const Offset(0, 8)),
-                  ],
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.record_voice_over_outlined, size: 28, color: Colors.white),
+                child: Icon(Icons.record_voice_over_outlined, size: 28, color: scheme.onPrimary),
               ),
             ),
             const SizedBox(height: 16),

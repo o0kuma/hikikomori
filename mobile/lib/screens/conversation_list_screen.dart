@@ -155,14 +155,18 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   }
 
   Color _avatarColor(BuildContext context, int seed) {
-    final scheme = Theme.of(context).colorScheme;
-    final palette = [scheme.primaryContainer, scheme.tertiaryContainer, scheme.secondaryContainer];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = isDark
+        ? const [Color(0xFF1F3A37), Color(0xFF2A3140), Color(0xFF3A3224)]
+        : const [Color(0xFFD9F3F0), Color(0xFFE8E6E1), Color(0xFFFFE8C8)];
     return palette[seed % palette.length];
   }
 
   Color _onAvatarColor(BuildContext context, int seed) {
-    final scheme = Theme.of(context).colorScheme;
-    final palette = [scheme.onPrimaryContainer, scheme.onTertiaryContainer, scheme.onSecondaryContainer];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = isDark
+        ? const [Color(0xFF2DD4BF), Color(0xFFF2F1EF), Color(0xFFFBBF24)]
+        : const [Color(0xFF0F766E), Color(0xFF1C1B1A), Color(0xFFB45309)];
     return palette[seed % palette.length];
   }
 
@@ -251,26 +255,19 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                     ),
                   if (_rooms.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
+                      padding: const EdgeInsets.fromLTRB(32, 56, 32, 32),
                       child: Column(
                         children: [
                           Container(
-                            width: 72,
-                            height: 72,
+                            width: 68,
+                            height: 68,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: AppTheme.brandGradient,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF6D5BD0).withValues(alpha: 0.3),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
+                              color: theme.colorScheme.primaryContainer,
                             ),
-                            child: const Icon(Icons.chat_bubble_outline, size: 30, color: Colors.white),
+                            child: Icon(Icons.chat_bubble_outline, size: 28, color: theme.colorScheme.primary),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 18),
                           Text('대화방이 없습니다', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),
                           Text(
@@ -280,10 +277,10 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.45,
+                              height: 1.5,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 18),
                           FilledButton.tonalIcon(
                             onPressed: () async {
                               await Navigator.of(context).push(
@@ -299,49 +296,73 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                     ),
                   for (final room in _rooms)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: _avatarColor(context, room.id),
-                          child: Icon(
-                            room.isGroup ? Icons.groups_outlined : Icons.person_outline,
-                            color: _onAvatarColor(context, room.id),
-                          ),
-                        ),
-                        title: Text(
-                          _titleFor(room, me),
-                          style: theme.textTheme.titleSmall,
-                        ),
-                        subtitle: Row(
-                          children: [
-                            if (room.twinDisabledByPeer) ...[
-                              Icon(Icons.block, size: 13, color: theme.colorScheme.error),
-                              const SizedBox(width: 4),
-                            ],
-                            Expanded(
-                              child: Text(
-                                _subtitleFor(room, me),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: room.twinDisabledByPeer
-                                      ? theme.colorScheme.error
-                                      : theme.colorScheme.onSurfaceVariant,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      child: Material(
+                        color: AppTheme.glassFill(theme.brightness),
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ChatScreen(
+                                  conversationId: room.id,
+                                  title: _titleFor(room, me),
                                 ),
                               ),
+                            );
+                            await _load();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: _avatarColor(context, room.id),
+                                  child: Icon(
+                                    room.isGroup ? Icons.groups_outlined : Icons.person_outline,
+                                    color: _onAvatarColor(context, room.id),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _titleFor(room, me),
+                                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Row(
+                                        children: [
+                                          if (room.twinDisabledByPeer) ...[
+                                            Icon(Icons.block, size: 13, color: theme.colorScheme.error),
+                                            const SizedBox(width: 4),
+                                          ],
+                                          Expanded(
+                                            child: Text(
+                                              _subtitleFor(room, me),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: room.twinDisabledByPeer
+                                                    ? theme.colorScheme.error
+                                                    : theme.colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right, size: 20, color: theme.colorScheme.onSurfaceVariant),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatScreen(
-                                conversationId: room.id,
-                                title: _titleFor(room, me),
-                              ),
-                            ),
-                          );
-                          await _load();
-                        },
                       ),
                     ),
                   const SizedBox(height: 72),
