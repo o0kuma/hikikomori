@@ -29,7 +29,7 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 ### NOW
 
 - 앱 코드는 클로즈드 베타 직전 수준
-- **프로덕션 Docker / `msn.iykyka.com` 배포는 미착수**
+- 프로덕션 Docker **이미지·compose 준비 완료**. `msn.iykyka.com` **컷오버는 SSH/Portainer 자격 대기**
 - 실 FCM · Android UI 수동 QA · 사람 PoC 실행은 남음
 
 ### NEXT 순서
@@ -113,14 +113,14 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N2-B5** | env 템플릿 | **done** | `.env.example`에 Postgres/`PUBLIC_API_BASE`/`WEB_HOST_PORT` 등 추가 |
 | **N2-B6** | 데이터 볼륨 | **done** | compose 볼륨 `ykavu_pgdata` |
 | **N2-B7** | 내부 DNS | **done** (정의) | compose 서비스명 `postgres` / `ai-service` / `core-backend`. *에이전트 VM은 bridge TCP 제한으로 런타임 검증 불가 — Portainer 호스트에서 확인* |
-| **N2-B8** | CORS + API base | todo | `PUBLIC_API_BASE=https://msn.iykyka.com` 빌드 + 브라우저 가입 |
-| **N2-B9** | 리버스 프록시 | todo | HTTPS로 도메인 → `web:80` |
-| **N2-B10** | Portainer 스택 | todo | 스택 Up — 절차 [`deploy-docker.md`](./deploy-docker.md) |
-| **N2-B11** | 구 MSN 컷오버 | todo | 새 스택이 도메인 응답 + 롤백 메모 |
-| **N2-B12** | 배포 스모크 | todo | N1-3~N1-5를 프로덕션 URL로 재실행 |
-| **N2-B13** | 운영 runbook | **done** (초안) | [`deploy-docker.md`](./deploy-docker.md) — 백업 상세는 N3-5에서 보강 |
+| **N2-B8** | CORS + API base | **blocked** | `PUBLIC_API_BASE=https://msn.iykyka.com` — 스택 Up 후 검증. *에이전트 SSH/Portainer 권한 없음* |
+| **N2-B9** | 리버스 프록시 | **blocked** | OpenResty → `web` 포트. 절차 [`deploy-portainer.md`](./deploy-portainer.md) |
+| **N2-B10** | Portainer 스택 | **blocked** | 절차 문서화 완료. Up은 Master 또는 자격 제공 후 |
+| **N2-B11** | 구 MSN 컷오버 | **blocked** | 현재 `msn` = Express/`{"ok":true}` (구스택). 컷오버 절차 문서화됨 |
+| **N2-B12** | 배포 스모크 | **blocked** | 컷오버 후 [`deploy-portainer.md`](./deploy-portainer.md) §C |
+| **N2-B13** | 운영 runbook | **done** (초안) | [`deploy-docker.md`](./deploy-docker.md) · [`deploy-portainer.md`](./deploy-portainer.md) |
 
-관련: Portainer `https://portainer.iykyka.com/`, 호스트 SSH는 인프라 메모 참고(시크릿은 커밋 금지).
+관련: Portainer `https://portainer.iykyka.com/`, SSH `iykyka@iykyka.com:7788` (키 필요). 시크릿 git 금지.
 
 ---
 
@@ -192,7 +192,7 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 1. ~~N2-A1~A6 결정 체크~~ **done**  
 2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
 3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
-4. **N2-B8~B12** 도메인·Portainer·컷오버·스모크 ← **다음**  
+4. **N2-B8~B12** Portainer/SSH 컷오버 ← **blocked (자격 필요)** — [`deploy-portainer.md`](./deploy-portainer.md)  
 5. **N3-6** 테스터 안내  
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.
