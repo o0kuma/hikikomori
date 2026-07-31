@@ -17,6 +17,13 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - [x] 스택 확정: Flutter + Go core + Python AI
 - [x] `core-backend/` · `ai-service/` · 하드게이트·거부권·초대·되돌리기·L0~L2 QA
 - [x] Flutter UI 테마 폴리시 (`app_theme` + 화면별 시각 개선)
+- [x] UI 2차 리디자인 — "아우로라 글래스"로 강화: 채도 높인 그라디언트+블러 글로우 orb, 고대비
+  글래스 카드/그림자, `BrandMark`/`GradientText`/`PrimaryGradientButton` 신규 위젯으로 스플래시·
+  가입·온보딩·대화목록 재적용. 실제 Flutter SDK 설치해 로컬 빌드+스크린샷(가입→온보딩→대화목록→
+  채팅)으로 검증, 부수적으로 onboarding 헤더 뱃지가 `ListView` 직계 자식이라 전체폭으로 늘어나던
+  기존 레이아웃 버그도 발견해 수정 (`Align`로 감쌈). **주의: GitHub `main`에는 반영됐지만
+  `msn.iykyka.com` 프로덕션 재배포는 안 됨** — 이 작업 세션은 iykyka 호스트 접근 권한이 없어
+  `scripts/server-up.sh` 재기동은 Master가 해당 호스트에서 직접 해야 함
 
 ### DONE — Cursor 후속
 
