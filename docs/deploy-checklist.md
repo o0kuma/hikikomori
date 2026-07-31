@@ -106,19 +106,19 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N2-B1** | `core-backend` Dockerfile | todo | `docker build` 성공, migrate/기동 (`DATABASE_URL` → Postgres) |
-| **N2-B2** | `ai-service` Dockerfile | todo | `docker build` 성공 |
-| **N2-B3** | Flutter web 빌드/서빙 | todo | `flutter build web` + nginx(또는 Caddy)로 `/` 로딩 |
-| **N2-B4** | `docker-compose.yml` | todo | `postgres` + core + ai (+ web) `up` 후 healthy |
-| **N2-B5** | env 템플릿 | todo | `.env.example`에 키만: `GEMINI_API_KEY`, `ADMIN_API_TOKEN`, `AI_SERVICE_URL`, `DATABASE_URL` / Postgres 비밀번호, `ALLOW_DEMO_INVITE`, CORS/origins, `FCM_*` |
-| **N2-B6** | 데이터 볼륨 | todo | Postgres 데이터 볼륨 persist (재시작 후 데이터 유지) |
-| **N2-B7** | 내부 DNS | todo | Go → `http://ai-service:…` draft/escalate, Go → `postgres:5432` 동작 |
-| **N2-B8** | CORS + API base | todo | `https://msn.iykyka.com`에서 브라우저 가입 성공 |
-| **N2-B9** | 리버스 프록시 | todo | HTTPS로 도메인 접속 |
-| **N2-B10** | Portainer 스택 | todo | 스택 Up, 절차를 Notes에 기록 |
+| **N2-B1** | `core-backend` Dockerfile | **done** | `core-backend/Dockerfile` — 이미지 빌드 성공 (`GOTOOLCHAIN=auto`, CGO) |
+| **N2-B2** | `ai-service` Dockerfile | **done** | `ai-service/Dockerfile` — 이미지 빌드 성공 |
+| **N2-B3** | Flutter web 빌드/서빙 | **done** | `mobile/Dockerfile` (flutter multi-stage) + `deploy/nginx-web.conf` (API/WS 프록시). 대안: `mobile/Dockerfile.prebuilt` |
+| **N2-B4** | `docker-compose.yml` | **done** | root `docker-compose.yml` — postgres + ai(internal) + core(internal) + web 포트 |
+| **N2-B5** | env 템플릿 | **done** | `.env.example`에 Postgres/`PUBLIC_API_BASE`/`WEB_HOST_PORT` 등 추가 |
+| **N2-B6** | 데이터 볼륨 | **done** | compose 볼륨 `ykavu_pgdata` |
+| **N2-B7** | 내부 DNS | **done** (정의) | compose 서비스명 `postgres` / `ai-service` / `core-backend`. *에이전트 VM은 bridge TCP 제한으로 런타임 검증 불가 — Portainer 호스트에서 확인* |
+| **N2-B8** | CORS + API base | todo | `PUBLIC_API_BASE=https://msn.iykyka.com` 빌드 + 브라우저 가입 |
+| **N2-B9** | 리버스 프록시 | todo | HTTPS로 도메인 → `web:80` |
+| **N2-B10** | Portainer 스택 | todo | 스택 Up — 절차 [`deploy-docker.md`](./deploy-docker.md) |
 | **N2-B11** | 구 MSN 컷오버 | todo | 새 스택이 도메인 응답 + 롤백 메모 |
 | **N2-B12** | 배포 스모크 | todo | N1-3~N1-5를 프로덕션 URL로 재실행 |
-| **N2-B13** | 운영 runbook | todo | 로그·재시작·**Postgres 백업/복구**·초대 발급 1페이지 (`docs/` 또는 본 파일 Notes) |
+| **N2-B13** | 운영 runbook | **done** (초안) | [`deploy-docker.md`](./deploy-docker.md) — 백업 상세는 N3-5에서 보강 |
 
 관련: Portainer `https://portainer.iykyka.com/`, 호스트 SSH는 인프라 메모 참고(시크릿은 커밋 금지).
 
@@ -191,8 +191,8 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 
 1. ~~N2-A1~A6 결정 체크~~ **done**  
 2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
-3. **N2-B1~B4** Dockerfile + compose (**Postgres** + AI 내부망 + Web) ← **다음**  
-4. **N2-B8~B12** 도메인·Portainer·컷오버·스모크  
+3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
+4. **N2-B8~B12** 도메인·Portainer·컷오버·스모크 ← **다음**  
 5. **N3-6** 테스터 안내  
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

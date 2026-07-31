@@ -54,3 +54,16 @@ go run . migrate && go run .
 # 터미널 3 — Flutter (Android)
 cd mobile && flutter run --dart-define=CORE_API_BASE=http://10.0.2.2:8080
 ```
+
+## Docker (N2-B / `msn.iykyka.com`)
+
+절차·구성: [`docs/deploy-docker.md`](./docs/deploy-docker.md)
+
+```bash
+cp .env.example .env   # ADMIN_API_TOKEN, POSTGRES_PASSWORD 필수
+# 로컬: PUBLIC_API_BASE=http://localhost:8088
+docker compose up -d --build
+curl -sS http://localhost:8088/health
+```
+
+Postgres·AI는 내부망만. 엣지 프록시는 `web:80`만 공개.

@@ -1,0 +1,83 @@
+# 와카뷰 — msn.iykyka.com (Plan A / N2-B)
+# Postgres + core-backend + ai-service(internal) + Flutter web (nginx proxies API).
+#
+# Usage:
+#   cp .env.example .env   # fill secrets
+#   docker compose up -d --build
+#   # edge proxy → web:80  (AI/Postgres not published)
+#
+# Local smoke without domain:
+#   PUBLIC_API_BASE=http://localhost:8088 docker compose up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ykavu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ykavu}
+    volumes:
+      - ykavu_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ykavu} -d ${POSTGRES_DB:-ykavu}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    # N2-A: no host port — internal only
+
+  ai-service:
+    build:
+      context: ./ai-service
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    # N2-A3: internal only — do not publish ports
+
+  core-backend:
+    build:
+      context: ./core-backend
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ykavu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ykavu}?sslmode=disable
+      AI_SERVICE_URL: http://ai-service:8001
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?set ADMIN_API_TOKEN in .env}
+      ALLOW_DEMO_INVITE: ${ALLOW_DEMO_INVITE:-1}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    # Not published — reached via web nginx proxy (same origin)
+
+  web:
+    build:
+      context: .
+      dockerfile: mobile/Dockerfile
+      args:
+        CORE_API_BASE: ${PUBLIC_API_BASE:-https://msn.iykyka.com}
+    ports:
+      - "${WEB_HOST_PORT:-8088}:80"
+    depends_on:
+      core-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  ykavu_pgdata:
