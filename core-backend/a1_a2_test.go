@@ -7,6 +7,46 @@ import (
 	"testing"
 )
 
+func TestPatchContactSetsPeerUserID(t *testing.T) {
+	server, _ := setupTestServer(t)
+	ownerID, ownerToken := mustSignup(t, server.URL, "주인")
+	peerID, _ := mustSignup(t, server.URL, "상대")
+
+	createResp := postJSONAuth(t, server.URL+"/users/"+strconv.FormatUint(uint64(ownerID), 10)+"/contacts", ownerToken, createContactRequest{
+		DisplayName: "이름만",
+	})
+	if createResp.StatusCode != http.StatusOK {
+		t.Fatalf("create contact without peer: %d", createResp.StatusCode)
+	}
+	var created map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&created)
+	contactID := uint(created["id"].(float64))
+	if created["contact_user_id"] != nil {
+		t.Fatalf("expected null peer id, got %v", created["contact_user_id"])
+	}
+
+	patchResp := patchJSONAuth(
+		t,
+		server.URL+"/users/"+strconv.FormatUint(uint64(ownerID), 10)+"/contacts/"+strconv.FormatUint(uint64(contactID), 10),
+		ownerToken,
+		updateContactRequest{
+			DisplayName:   "상대방",
+			ContactUserID: &peerID,
+		},
+	)
+	if patchResp.StatusCode != http.StatusOK {
+		t.Fatalf("patch contact: %d", patchResp.StatusCode)
+	}
+	var updated map[string]interface{}
+	json.NewDecoder(patchResp.Body).Decode(&updated)
+	if uint(updated["contact_user_id"].(float64)) != peerID {
+		t.Fatalf("expected peer %d, got %v", peerID, updated["contact_user_id"])
+	}
+	if updated["display_name"] != "상대방" {
+		t.Fatalf("display_name: %v", updated["display_name"])
+	}
+}
+
 func TestInvitesRequireAdminToken(t *testing.T) {
 	server, _ := setupTestServer(t)
 	resp := postJSON(t, server.URL+"/invites", nil)

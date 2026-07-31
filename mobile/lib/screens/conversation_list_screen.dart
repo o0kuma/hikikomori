@@ -266,6 +266,17 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                               height: 1.45,
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          FilledButton.tonalIcon(
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const ContactsScreen()),
+                              );
+                              await _load();
+                            },
+                            icon: const Icon(Icons.contacts_outlined),
+                            label: const Text('연락처 열기'),
+                          ),
                         ],
                       ),
                     ),

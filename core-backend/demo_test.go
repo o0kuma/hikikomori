@@ -24,6 +24,10 @@ func TestDemoInviteReusableForMultipleSignups(t *testing.T) {
 	if demo["demo_invite_code"] != demoInviteCode {
 		t.Fatalf("demo code: %v", demo["demo_invite_code"])
 	}
+	steps, ok := demo["pairing_steps"].([]any)
+	if !ok || len(steps) < 3 {
+		t.Fatalf("expected pairing_steps on /demo, got %#v", demo["pairing_steps"])
+	}
 
 	a := postJSON(t, server.URL+"/auth/signup", signupRequest{
 		InviteCode:  demoInviteCode,

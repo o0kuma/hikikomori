@@ -20,6 +20,21 @@ type createContactRequest struct {
 	RelationshipNote string `json:"relationship_note"`
 }
 
+type updateContactRequest struct {
+	DisplayName      string `json:"display_name" binding:"required"`
+	ContactUserID    *uint  `json:"contact_user_id"`
+	RelationshipNote string `json:"relationship_note"`
+}
+
+func contactJSON(ct Contact) gin.H {
+	return gin.H{
+		"id":                ct.ID,
+		"display_name":      ct.DisplayName,
+		"contact_user_id":   ct.ContactUserID,
+		"relationship_note": ct.RelationshipNote,
+	}
+}
+
 type loginRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }
@@ -242,12 +257,7 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"id":                contact.ID,
-			"display_name":      contact.DisplayName,
-			"contact_user_id":   contact.ContactUserID,
-			"relationship_note": contact.RelationshipNote,
-		})
+		c.JSON(http.StatusOK, contactJSON(contact))
 	})
 
 	r.GET("/users/:id/contacts", func(c *gin.Context) {
@@ -262,14 +272,45 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 		db.Where("owner_user_id = ?", userID).Order("id").Find(&contacts)
 		out := make([]gin.H, 0, len(contacts))
 		for _, ct := range contacts {
-			out = append(out, gin.H{
-				"id":                ct.ID,
-				"display_name":      ct.DisplayName,
-				"contact_user_id":   ct.ContactUserID,
-				"relationship_note": ct.RelationshipNote,
-			})
+			out = append(out, contactJSON(ct))
 		}
 		c.JSON(http.StatusOK, gin.H{"contacts": out})
+	})
+
+	r.PATCH("/users/:id/contacts/:contactId", func(c *gin.Context) {
+		userID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+		if !requireSelf(c, db, userID) {
+			return
+		}
+		contactID, ok := parseUintParam(c, "contactId")
+		if !ok {
+			return
+		}
+		var req updateContactRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+			return
+		}
+		var contact Contact
+		if err := db.Where("id = ? AND owner_user_id = ?", contactID, userID).First(&contact).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "contact not found"})
+			return
+		}
+		if req.ContactUserID != nil && *req.ContactUserID == userID {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "cannot set contact_user_id to yourself"})
+			return
+		}
+		contact.DisplayName = req.DisplayName
+		contact.ContactUserID = req.ContactUserID
+		contact.RelationshipNote = req.RelationshipNote
+		if err := db.Save(&contact).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, contactJSON(contact))
 	})
 
 	r.DELETE("/users/:id/contacts/:contactId", func(c *gin.Context) {

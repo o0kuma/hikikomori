@@ -105,6 +105,21 @@ func postJSONAuth(t *testing.T, url, token string, body interface{}) *http.Respo
 	return resp
 }
 
+func patchJSONAuth(t *testing.T, url, token string, body interface{}) *http.Response {
+	t.Helper()
+	b, _ := json.Marshal(body)
+	req, _ := http.NewRequest(http.MethodPatch, url, bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("patch %s: %v", url, err)
+	}
+	return resp
+}
+
 func deleteJSONAuth(t *testing.T, url, token string) *http.Response {
 	t.Helper()
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
