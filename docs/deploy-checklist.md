@@ -29,7 +29,7 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 ### NOW
 
 - 앱 코드는 클로즈드 베타 직전 수준
-- **`https://msn.iykyka.com` 라이브 + N3 안정화 완료**. Gemini 키 미설정(`no_key`). 다음: N4 또는 키 주입
+- **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK**. 다음: N4 FCM·Android QA (선택)
 - 실 FCM · Android UI 수동 QA · 사람 PoC 실행은 남음
 
 ### NEXT 순서
@@ -138,6 +138,16 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 ---
 
 ## N4 — 베타 품질 잔여
+
+### Track A — 메신저 UX (대화 열기 경로)
+
+| ID | 작업 | Status | 완료 조건 |
+|----|------|--------|-----------|
+| **N4-A1** | 내 사용자 ID 표시·복사 | done | 대화목록·연락처에 `MyUserIdChip` |
+| **N4-A2** | 연락처 원탭 대화 + ID 필수 | done | 숫자 peer ID 없으면 추가/대화 차단·안내 |
+| **N4-A3** | 빈 상태·에러·L0 패널 | done | L0는「입력창으로 옮기기」 |
+| **N4-A4** | 대화 목록 이름·밀도 | done | 연락처 표시명 매핑 |
+| **N4-A5** | 프로덕션 web 재빌드 | todo | `msn.iykyka.com` 스모크 |
 
 ### FCM
 

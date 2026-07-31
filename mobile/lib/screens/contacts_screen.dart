@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
+import '../widgets/my_user_id_chip.dart';
 import 'chat_screen.dart';
 
 class ContactsScreen extends StatefulWidget {
@@ -45,32 +46,44 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final nameCtrl = TextEditingController();
     final peerCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
+    final session = context.read<SessionState>();
+    final myId = session.user?.id;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('연락처 추가'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: '표시 이름'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: peerCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '상대 사용자 ID (선택)',
-                helperText: '대화 시작에 필요',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (myId != null) ...[
+                MyUserIdChip(userId: myId),
+                const SizedBox(height: 12),
+              ],
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '표시 이름',
+                  helperText: '목록에 보일 이름 (예: 친구 닉네임)',
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: noteCtrl,
-              decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: peerCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: '상대 사용자 ID (숫자, 필수)',
+                  helperText: '대화하려면 상대의 숫자 ID가 필요합니다. 이름만으로는 안 됩니다.',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
@@ -79,20 +92,30 @@ class _ContactsScreenState extends State<ContactsScreen> {
       ),
     );
     if (ok != true || !mounted) return;
-    final session = context.read<SessionState>();
     final name = nameCtrl.text.trim();
+    final peer = int.tryParse(peerCtrl.text.trim());
     if (name.isEmpty || session.user == null) return;
+    if (peer == null) {
+      setState(() => _error = '상대 사용자 ID(숫자)를 입력해야 대화를 시작할 수 있습니다.');
+      return;
+    }
+    if (peer == session.user!.id) {
+      setState(() => _error = '자기 자신은 연락처에 넣을 수 없습니다.');
+      return;
+    }
     try {
-      final peer = int.tryParse(peerCtrl.text.trim());
       final created = await session.api.createContact(
         userId: session.user!.id,
         displayName: name,
         contactUserId: peer,
         relationshipNote: noteCtrl.text.trim(),
       );
-      setState(() => _contacts = [..._contacts, created]);
+      setState(() {
+        _contacts = [..._contacts, created];
+        _error = null;
+      });
     } on ApiException catch (e) {
-      setState(() => _error = '추가 실패 (${e.statusCode})');
+      setState(() => _error = '추가 실패 (${e.statusCode}): ${e.body}');
     }
   }
 
@@ -100,7 +123,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final session = context.read<SessionState>();
     final me = session.user;
     if (me == null || contact.contactUserId == null) {
-      setState(() => _error = '상대 사용자 ID가 있는 연락처만 대화를 시작할 수 있습니다.');
+      setState(() => _error = '이 연락처에는 상대 사용자 ID가 없습니다. 삭제 후 숫자 ID와 함께 다시 추가하세요.');
       return;
     }
     try {
@@ -110,7 +133,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
       );
       if (!mounted) return;
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ChatScreen(conversationId: conv.id, title: contact.displayName)),
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(conversationId: conv.id, title: contact.displayName),
+        ),
       );
     } on ApiException catch (e) {
       setState(() => _error = '대화 생성 실패 (${e.statusCode}): ${e.body}');
@@ -140,8 +165,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final me = context.watch<SessionState>().user?.id;
     return Scaffold(
-      appBar: AppBar(title: const Text('연락처')),
+      appBar: AppBar(
+        title: const Text('연락처'),
+        actions: [
+          if (me != null) MyUserIdChip(userId: me, compact: true),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
         tooltip: '연락처 추가',
@@ -154,6 +185,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
             : ListView(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 children: [
+                  if (me != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: MyUserIdChip(userId: me),
+                    ),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -161,17 +197,21 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     ),
                   if (_contacts.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 32),
+                      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 32),
                       child: Column(
                         children: [
                           Icon(Icons.person_add_outlined, size: 40, color: theme.colorScheme.outline),
                           const SizedBox(height: 12),
                           Text('연락처가 없습니다', style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Text(
-                            '오른쪽 아래 버튼으로 첫 연락처를 추가해 보세요.',
+                            '상대에게 내 ID를 알려 주고, 상대의 숫자 ID를 받아 추가하세요.\n'
+                            '표시 이름만 넣고 ID를 비우면 대화를 시작할 수 없습니다.',
                             textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              height: 1.45,
+                            ),
                           ),
                         ],
                       ),
@@ -192,17 +232,34 @@ class _ContactsScreenState extends State<ContactsScreen> {
                         ),
                         title: Text(c.displayName, style: theme.textTheme.titleSmall),
                         subtitle: Text(
-                          [
-                            if (c.contactUserId != null) '사용자 #${c.contactUserId}',
-                            if (c.relationshipNote.isNotEmpty) c.relationshipNote,
-                          ].join(' · '),
-                          style: theme.textTheme.bodySmall,
+                          c.contactUserId == null
+                              ? '사용자 ID 없음 — 대화 불가 (다시 추가 필요)'
+                              : [
+                                  '사용자 #${c.contactUserId}',
+                                  if (c.relationshipNote.isNotEmpty) c.relationshipNote,
+                                ].join(' · '),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: c.contactUserId == null
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (c.contactUserId != null)
-                              TextButton(onPressed: () => _startChat(c), child: const Text('대화')),
+                              FilledButton.tonal(
+                                onPressed: () => _startChat(c),
+                                child: const Text('대화'),
+                              )
+                            else
+                              TextButton(
+                                onPressed: () {
+                                  setState(() => _error =
+                                      '${c.displayName}: 숫자 ID가 없어 대화할 수 없습니다. 삭제 후 ID와 함께 다시 추가하세요.');
+                                },
+                                child: const Text('안내'),
+                              ),
                             IconButton(
                               tooltip: '삭제',
                               icon: const Icon(Icons.delete_outline, size: 20),
@@ -210,6 +267,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             ),
                           ],
                         ),
+                        onTap: c.contactUserId == null ? null : () => _startChat(c),
                       ),
                     ),
                   const SizedBox(height: 72),
