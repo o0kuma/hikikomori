@@ -14,3 +14,6 @@ key.properties
 **/*.jks
 *.jks
 *.keystore
+
+# Firebase — never commit real project credentials (see docs/fcm-setup.md).
+app/google-services.json

@@ -63,9 +63,14 @@ HTTP로 검증한다.
 sudo apt-get install -y libsqlite3-dev libsqlcipher1
 ```
 
+## 푸시 (FCM)
+
+- 코드: `lib/services/push_token_service.dart` — Firebase 가능 시 실 토큰, 아니면 `install:`
+- Master 설정: [`docs/fcm-setup.md`](../docs/fcm-setup.md) (`google-services.json` + `FCM_SERVER_KEY`)
+
 ## 아직 없는 것
 
-- Firebase 프로젝트의 실제 FCM registration token 연동 (`google-services.json`)
+- Master Firebase 시크릿 주입 후 실기기 푸시 스모크 (N4-1/3/4)
 - 오프라인 메시지 큐 / 멀티디바이스 실시간 설정 동기화 고도화
 - 온보딩 말투 UX 디테일 (PoC #1 결과는 맨 마지막에 반영)
 - iOS 빌드 (v1 범위 밖)

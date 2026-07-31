@@ -29,8 +29,9 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 ### NOW
 
 - 앱 코드는 클로즈드 베타 직전 수준
-- **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK**. 다음: N4 FCM·Android QA (선택)
-- 실 FCM · Android UI 수동 QA · 사람 PoC 실행은 남음
+- **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
+- 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
+- 실 FCM 전송·Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
 
@@ -159,25 +160,28 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-B3** | 가입 화면 페어링 안내 | done | Signup 데모 패널에 한 줄 팁 |
 | **N4-B4** | 프로덕션 core+web 재배포 | done | `/demo` pairing_steps OK (`c7029ab`) |
 
-### FCM
+### FCM — [`fcm-setup.md`](./fcm-setup.md)
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N4-1** | Firebase + `google-services.json` | todo | Android 앱 연결 |
-| **N4-2** | 실 FCM registration token | todo | install-id 플레이스홀더 제거 |
-| **N4-3** | 서버 FCM 자격증명 | todo | env만 (`FCM_SERVER_KEY` 또는 HTTP v1) |
-| **N4-4** | 푸시 수신 | todo | `/admin/push-test` + 에스컬레이션 수신 |
+| **N4-1** | Firebase + `google-services.json` | blocked | Master: Console 앱 + `mobile/android/app/google-services.json` (git 금지) |
+| **N4-2** | 실 FCM registration token | done* | `PushTokenService` — Firebase 있으면 실 토큰, 없으면 `install:` (*전송은 N4-1 후) |
+| **N4-3** | 서버 FCM 자격증명 | blocked | Master: 호스트 `.env`의 `FCM_SERVER_KEY`만 |
+| **N4-4** | 푸시 수신 | blocked | N4-1+N4-3 후 `/admin/push-test` + 기기 수신 |
 
 ### Android UI 탭 (`mobile/README.md`)
 
-| ID | 작업 | Status |
-|----|------|--------|
-| **N4-5** | 가입 → 말투 저장 | todo |
-| **N4-6** | 연락처 → 대화 → 메시지·히스토리 | todo |
-| **N4-7** | L1 초안 수정/버리기/승인·뱃지 | todo |
-| **N4-8** | 에스컬레이션 → 사후알림 함 | todo |
-| **N4-9** | 되돌리기·거부권 | todo |
-| **N4-10** | 자율성 L0~L2 + 화이트리스트 | todo |
+API 계층은 프로덕션에서 검증됨 (`CORE_API_BASE=https://msn.iykyka.com` → e2e **16/16**, 2026-07-31).  
+실기기/에뮬레이터 **화면 탭**은 Master 로컬에서 1회.
+
+| ID | 작업 | Status | 비고 |
+|----|------|--------|------|
+| **N4-5** | 가입 → 말투 저장 | api-done | 실기기 UI 탭 남음 |
+| **N4-6** | 연락처 → 대화 → 메시지·히스토리 | api-done | 실기기 UI 탭 남음 |
+| **N4-7** | L1 초안 수정/버리기/승인·뱃지 | api-done | 실기기 UI 탭 남음 |
+| **N4-8** | 에스컬레이션 → 사후알림 함 | api-done | 실기기 UI 탭 남음 |
+| **N4-9** | 되돌리기·거부권 | api-done | 실기기 UI 탭 남음 |
+| **N4-10** | 자율성 L0~L2 + 화이트리스트 | api-done | 실기기 UI 탭 남음 |
 
 ### 후순위
 
@@ -213,7 +217,7 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
 3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
 4. ~~N2-B8~B12 컷오버~~ **done** (`msn.iykyka.com` 라이브)  
-5. ~~N3 배포 안정화~~ **done** — 다음: **N4 FCM/Android QA** 또는 서버에 `GEMINI_API_KEY` 주입  
+5. ~~N3 안정화 + Track A/B~~ **done** — 다음: **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

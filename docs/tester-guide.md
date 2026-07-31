@@ -30,7 +30,7 @@ API 메타: `GET https://msn.iykyka.com/demo` — `pairing_steps` / `notes` 포�
 
 - **초안(AI)**: Gemini 키가 서버에 설정되어 있어 **실제 초안**이 생성됩니다.
 - **L0(비서)**: 와카뷰 발송이 서버에서 막혀 있습니다. 초안 → 입력창 → 직접 전송.
-- 푸시(FCM)는 아직 플레이스홀더 단계일 수 있습니다.
+- 푸시(FCM): 코드 경로는 준비됨. Master가 Firebase/`FCM_SERVER_KEY`를 넣기 전에는 플레이스홀더(`docs/fcm-setup.md`).
 - 문제/스크린샷은 Master에게 전달해 주세요.
 - 민감 정보·실명 대화는 베타 특성상 최소화해 주세요.
 
