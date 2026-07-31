@@ -30,9 +30,10 @@
 
 ## 현재 단계
 
-- Phase 1 **A~C**까지 반영됨 (서버·Flutter·베타 직전 문서/배포 경로)
-- **다음:** [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) — N1 스모크 → N2 `msn.iykyka.com` Docker → N3 안정화 → N4 FCM/Android QA
+- Phase 1 **A~C** + **N2 Docker 컷오버 완료** — 라이브: [`https://msn.iykyka.com`](https://msn.iykyka.com)
+- **다음:** [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) N3 안정화 → N4 FCM/Android QA
 - **맨 마지막:** N5 / D — 사람 PoC #1/#3·Q3 인터뷰 (`docs/roadmap.md` §3). §3 기본값 추측 금지
+- 테스터 데모 초대: **`DEMO-YKAVU`**
 - 프로토타입 공유 URL은 [`docs/prototype.md`](./docs/prototype.md)의 `SHARE_URL`에 Master가 기입
 
 ## 로컬 실행 (요약)
