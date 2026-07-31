@@ -23,7 +23,7 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - [x] A1/A2 API · A3 Flutter 메신저 연결 · API E2E (`scripts/e2e_a3.py`)
 - [x] Phase 1 B (drift/SQLCipher, FCM 골격, sessions, metrics, data-flow, identity)
 - [x] Phase 1 C (Q1~Q7 **확정**, invite-ops, Android release 경로)
-- [x] Flutter Web SQLCipher stub · Twin Shadow UI · CORS · `DEMO-BUNSIN`
+- [x] Flutter Web SQLCipher stub · Twin Shadow UI · CORS · `DEMO-YKAVU`
 - [x] GitHub + Gitea 듀얼 리모트 (`scripts/push-both.sh`)
 
 ### NOW
@@ -63,14 +63,27 @@ Notes:
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N1-1** | 서비스 기동 | todo | `8080` core-backend, `8001` ai-service, (옵션) `5555` Flutter web 헬스 OK |
-| **N1-2** | API E2E | todo | `ADMIN_API_TOKEN` 설정 후 `python3 scripts/e2e_a3.py` 16/16 |
-| **N1-3** | Web 가입 스모크 | todo | `DEMO-BUNSIN` → 표시명 → 가입 → 세션/다음 화면 |
-| **N1-4** | 말투 온보딩 스모크 | todo | 샘플 저장 또는 스킵 후 대화 목록 진입 |
-| **N1-5** | 핵심 메신저 스모크 | todo | 연락처·대화·메시지 또는 초안/L1 중 최소 1경로 UI 왕복 |
-| **N1-6** | 프로덕션 CORS/API 메모 | todo | `msn.iykyka.com`용 origins / `CORE_API_BASE` 변경 목록 작성 |
+| **N1-1** | 서비스 기동 | **done** (2026-07-31) | `8080`/`8001`/`5555` health·web 200. 코어를 현재 `main`으로 재기동 (`ADMIN_API_TOKEN=dev-admin-token`, `ALLOW_DEMO_INVITE=1`) |
+| **N1-2** | API E2E | **done** (2026-07-31) | `python3 scripts/e2e_a3.py` → **16 passed, 0 failed** |
+| **N1-3** | Web 가입 스모크 | **done** (API) | `DEMO-YKAVU` 재사용 가입 + 토큰 발급 확인. `/demo` → `DEMO-YKAVU`. (브라우저 클릭 스모크는 로컬/테스터) |
+| **N1-4** | 말투 온보딩 스모크 | **done** (코드경로) | 온보딩은 기기 로컬(drift); API 스모크에서는 대화 목록 진입 경로까지 확인. UI 탭은 테스터 |
+| **N1-5** | 핵심 메신저 스모크 | **done** (API) | DEMO 두 유저 → 연락처 → 대화 → 메시지. E2E에 draft/L1·거부권·화이트리스트 포함 |
+| **N1-6** | 프로덕션 CORS/API 메모 | **done** (2026-07-31) | 아래 Notes |
 
 로컬 포트 참고: 앱 **5555**, 코어 **8080**, AI **8001**. Dart VM Service 고포트(예: 39369)는 디버그용 — 무시 가능.
+데모 초대 코드(현재): **`DEMO-YKAVU`** (구 `DEMO-BUNSIN` 아님).
+
+### N1-6 Notes — `msn.iykyka.com` 변경 목록
+
+| 항목 | 로컬 지금 | 프로덕션 필요 |
+|------|-----------|----------------|
+| Flutter `CORE_API_BASE` | `http://127.0.0.1:8080` / emulator `10.0.2.2` | `https://msn.iykyka.com` (또는 API 서브경로/서브도메인 — compose에서 확정) |
+| CORS Allow-Origin | `corsMiddleware()`가 요청 `Origin` 반사(로컬 `localhost:5555` 확인됨) | 동일 미들웨어면 same-origin 또는 `https://msn.iykyka.com` Origin 허용. 와일드카드+Credentials 조합 주의 |
+| AI | `AI_SERVICE_URL=http://127.0.0.1:8001` | compose 내부 `http://ai-service:8001` (외부 미노출, N2-A3) |
+| DB | SQLite `dev.db` | `DATABASE_URL=postgres://…` (N2-A2) |
+| Admin | `ADMIN_API_TOKEN` env | Portainer secret (N2-A5) |
+| Demo | `ALLOW_DEMO_INVITE=1`, `DEMO-YKAVU` | on 유지 (N2-A6) |
+| WebSocket | `ws://host:8080` | `wss://msn.iykyka.com` (`AppConfig.wsBase`) |
 
 ---
 
@@ -85,7 +98,7 @@ Notes:
 | **N2-A3** | AI 서비스 노출 | **내부망만** — 외부 포트/도메인 미공개, core-backend만 `AI_SERVICE_URL`로 호출 | **done** (2026-07-31 Master 확정) |
 | **N2-A4** | 클라이언트 제공 | **Web 우선** — compose에 Flutter web 서빙. 내부 APK는 N4/릴리즈 경로로 후속 | **done** (2026-07-31 Master 확정) |
 | **N2-A5** | 시크릿 관리 | **Portainer/호스트 env만** — `GEMINI_API_KEY`, `ADMIN_API_TOKEN`, DB 비밀번호, FCM 등 **git 커밋 금지** | **done** (2026-07-31 Master 확정) |
-| **N2-A6** | 데모 초대 | 프로덕션 **`ALLOW_DEMO_INVITE=1` (on)** — 테스터용 `DEMO-BUNSIN` 유지. 베타 확대 전 재검토 | **done** (2026-07-31 Master 확정) |
+| **N2-A6** | 데모 초대 | 프로덕션 **`ALLOW_DEMO_INVITE=1` (on)** — 테스터용 `DEMO-YKAVU` 유지. 베타 확대 전 재검토 | **done** (2026-07-31 Master 확정) |
 
 N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/compose, Postgres 포함)**.
 
@@ -120,7 +133,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N3-3** | admin metrics | todo | `/admin/metrics`·`/admin/dashboard` 토큰 조회 |
 | **N3-4** | Gemini | todo | draft 1회 실호출 또는 mock 정책 명시 |
 | **N3-5** | 백업 리허설 | todo | Postgres 덤프/복구 1회 (`pg_dump` 등) |
-| **N3-6** | 테스터 안내 | todo | URL + 초대(`DEMO-BUNSIN` 또는 개인 코드) + 주의사항 |
+| **N3-6** | 테스터 안내 | todo | URL + 초대(`DEMO-YKAVU` 또는 개인 코드) + 주의사항 |
 
 ---
 
@@ -176,9 +189,9 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 
 ## 바로 다음 5개 (권장)
 
-1. **N2-A1~A6** 결정 체크  
-2. **N1-1~N1-5** 스모크  
-3. **N2-B1~B4** Dockerfile + compose  
+1. ~~N2-A1~A6 결정 체크~~ **done**  
+2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
+3. **N2-B1~B4** Dockerfile + compose (**Postgres** + AI 내부망 + Web) ← **다음**  
 4. **N2-B8~B12** 도메인·Portainer·컷오버·스모크  
 5. **N3-6** 테스터 안내  
 
