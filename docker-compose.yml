@@ -48,6 +48,11 @@ services:
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?set ADMIN_API_TOKEN in .env}
       ALLOW_DEMO_INVITE: ${ALLOW_DEMO_INVITE:-1}
       FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      # Prefer HTTP v1 (service account). Mount secrets/firebase-service-account.json on the host.
+      FCM_SERVICE_ACCOUNT_FILE: ${FCM_SERVICE_ACCOUNT_FILE:-/secrets/firebase-service-account.json}
+      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
+    volumes:
+      - ./secrets:/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy

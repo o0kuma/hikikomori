@@ -164,9 +164,9 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N4-1** | Firebase + `google-services.json` | blocked | Master: Console 앱 + `mobile/android/app/google-services.json` (git 금지) |
+| **N4-1** | Firebase + `google-services.json` | doing | Master: 앱 등록됨 · JSON을 Android 빌드 PC에 배치 |
 | **N4-2** | 실 FCM registration token | done* | `PushTokenService` — Firebase 있으면 실 토큰, 없으면 `install:` (*전송은 N4-1 후) |
-| **N4-3** | 서버 FCM 자격증명 | blocked | Master: 호스트 `.env`의 `FCM_SERVER_KEY`만 |
+| **N4-3** | 서버 FCM 자격증명 (HTTP v1) | doing | Master: `secrets/firebase-service-account.json` (레거시 서버 키 대신) |
 | **N4-4** | 푸시 수신 | blocked | N4-1+N4-3 후 `/admin/push-test` + 기기 수신 |
 
 ### Android UI 탭 (`mobile/README.md`)

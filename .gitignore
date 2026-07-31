@@ -9,6 +9,11 @@ poc/tone-corpus/data/
 .env.*
 !.env.example
 
+# Firebase / FCM service account JSON (never commit)
+secrets/**
+!secrets/.gitkeep
+!secrets/README.md
+
 __pycache__/
 *.pyc
 
