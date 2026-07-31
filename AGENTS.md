@@ -90,6 +90,9 @@ changes it.
 
 - Before starting any Phase 1 app-build task, check `docs/roadmap.md`'s
   "Phase 1 상세 작업 분해" checklist for what's already done and what's next.
+- After Phase 1 A~C, use [`docs/deploy-checklist.md`](docs/deploy-checklist.md)
+  (N1→N5) for smoke, Docker deploy, stabilize, FCM/Android QA, then human PoC.
+  Keep that file and `roadmap.md` in sync when status changes.
 - Follow the "권장 착수 순서" there — don't skip ahead in the numbered order
   without a reason, and note the reason in the checklist if you do.
 - When a task is finished, check it off in that same checklist. When you

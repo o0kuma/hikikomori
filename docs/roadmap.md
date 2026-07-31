@@ -212,9 +212,18 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 
 ##### D. 맨 마지막 — 사람 PoC (지금 안 함)
 - §3 항목과 동일. A~C 완료 후에만 착수.
+  **단, 프로덕션 Docker 배포·스모크(N1~N3)는 D보다 앞** — [`deploy-checklist.md`](./deploy-checklist.md).
 
 ##### E. 베타 이후 (지금은 설계만, 구현 금지)
 - Phase 2 L3 / Phase 3 OS 레이어 / Phase 4 L4·B2B
+
+#### 6. 배포·잔여 작업 (A~C 이후 실행 트랙)
+
+단일 실행 체크리스트: **[`deploy-checklist.md`](./deploy-checklist.md)**.
+
+순서: **N1 스모크 → N2 Docker(`msn.iykyka.com`) → N3 안정화 → N4 FCM/Android QA → N5 사람 PoC(D)**.
+Claude/Cursor 통합 DONE 목록과 항목 ID(N1-1 … N5-5)는 해당 문서를 본다. 완료 시 그 문서와
+본 로드맵 §2/§5의 `[~]`/`[ ]`를 함께 갱신한다.
 
 
 ## Phase 2 — L3 확장 + 베타 확대
