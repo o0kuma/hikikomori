@@ -17,3 +17,8 @@ __pycache__/
 
 # Go build output (core-backend/)
 /core-backend/core-backend
+
+# Flutter build output (use Docker multi-stage or Dockerfile.prebuilt locally)
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins-dependencies
