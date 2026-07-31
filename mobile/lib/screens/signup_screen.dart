@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../config.dart';
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -19,6 +22,12 @@ class _SignupScreenState extends State<SignupScreen> {
     _invite.dispose();
     _name.dispose();
     super.dispose();
+  }
+
+  void _fillDemoCredentials() {
+    _invite.text = AppConfig.demoInviteCode;
+    _name.text = AppConfig.demoDisplayName;
+    setState(() {});
   }
 
   @override
@@ -57,9 +66,20 @@ class _SignupScreenState extends State<SignupScreen> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
               ),
-              const Spacer(flex: 3),
+              const Spacer(flex: 2),
               Text('초대 코드로 클로즈드 베타에 참여합니다', style: theme.textTheme.labelLarge),
               const SizedBox(height: 12),
+              _DemoTestPanel(
+                onFill: _fillDemoCredentials,
+                onCopy: () async {
+                  await Clipboard.setData(const ClipboardData(text: AppConfig.demoInviteCode));
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('테스트 초대 코드를 복사했습니다')),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _invite,
                 decoration: const InputDecoration(
@@ -67,6 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   prefixIcon: Icon(Icons.vpn_key),
                 ),
                 textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.characters,
               ),
               const SizedBox(height: 12),
               TextField(
@@ -76,24 +97,125 @@ class _SignupScreenState extends State<SignupScreen> {
                   prefixIcon: Icon(Icons.person_outline),
                 ),
                 textInputAction: TextInputAction.done,
+                onSubmitted: (_) {
+                  if (!session.loading) {
+                    session.signup(_invite.text.trim(), _name.text.trim());
+                  }
+                },
               ),
               if (session.error != null) ...[
                 const SizedBox(height: 12),
                 Text(session.error!, style: TextStyle(color: scheme.error)),
               ],
               const SizedBox(height: 20),
-              FilledButton(
-                onPressed: session.loading
-                    ? null
-                    : () => session.signup(_invite.text.trim(), _name.text.trim()),
-                child: session.loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('시작하기'),
+              _PressScale(
+                child: FilledButton(
+                  onPressed: session.loading
+                      ? null
+                      : () => session.signup(_invite.text.trim(), _name.text.trim()),
+                  child: session.loading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('시작하기'),
+                ),
               ),
               const SizedBox(height: 32),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Visible test credentials so other people can try the closed beta without
+/// asking for a one-off invite mint.
+class _DemoTestPanel extends StatelessWidget {
+  const _DemoTestPanel({required this.onFill, required this.onCopy});
+
+  final VoidCallback onFill;
+  final VoidCallback onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    return Material(
+      color: AppTheme.glassFill(brightness),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onFill,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.glassBorder(brightness)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '테스트용 (누구나)',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '초대 코드  ${AppConfig.demoInviteCode}\n표시 이름  ${AppConfig.demoDisplayName}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        height: 1.45,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '코드 복사',
+                    onPressed: onCopy,
+                    icon: const Icon(Icons.copy_rounded, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '탭하면 입력란에 채워집니다 · 여러 명이 같은 코드로 가입 가능',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PressScale extends StatefulWidget {
+  const _PressScale({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  var _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => setState(() => _down = true),
+      onPointerUp: (_) => setState(() => _down = false),
+      onPointerCancel: (_) => setState(() => _down = false),
+      child: AnimatedScale(
+        scale: _down ? 0.98 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
       ),
     );
   }

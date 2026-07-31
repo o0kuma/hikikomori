@@ -16,7 +16,7 @@ v1은 **Android만** 대상 (`tech-design.md` §8). Play 스토어 공개가 아
 2. Master 머신에서 한 번 생성:
 
 ```bash
-keytool -genkey -v -keystore ~/bunsin-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias bunsin
+keytool -genkey -v -keystore ~/ykavu-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias ykavu
 ```
 
 3. `mobile/android/key.properties.example`을 복사해 `mobile/android/key.properties` 작성:
@@ -24,8 +24,8 @@ keytool -genkey -v -keystore ~/bunsin-release.jks -keyalg RSA -keysize 2048 -val
 ```
 storePassword=...
 keyPassword=...
-keyAlias=bunsin
-storeFile=/absolute/path/to/bunsin-release.jks
+keyAlias=ykavu
+storeFile=/absolute/path/to/ykavu-release.jks
 ```
 
 4. `key.properties`가 없으면 release 빌드는 **디버그 서명으로 폴백**하며 경고를 낸다

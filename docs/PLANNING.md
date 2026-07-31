@@ -143,7 +143,7 @@
   검색기의 recency 가중치가 키워드 겹침을 압도하는 버그 발견·수정함 (`poc/tone-corpus/README.md`
   "말투 검색기" 참고)
 - [x] 클릭 가능한 프로토타입 제작, 뱃지·거부권 UX 포함 — 읽씹 종결/거부권/에스컬레이션/자율성 설정
-  4개 장면. 공유 링크 docs 앵커: [`prototype.md`](./prototype.md) (`bunsin-prototype`).
+  4개 장면. 공유 링크 docs 앵커: [`prototype.md`](./prototype.md) (`ykavu-prototype`).
   PoC #3 역할극 자극재로 사용
 - [x] "AI 대리 응답 수용성"(Q3) 인터뷰 질문지 작성 — `user-interview-guide.md`
   (질문지만 완료. 5~10명 실제 인터뷰는 아직 미착수 — PoC#3과 이어서 진행 권장)

@@ -1,4 +1,4 @@
-import 'package:bunsin_mobile/db/app_database.dart';
+import 'package:ykavu_mobile/db/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

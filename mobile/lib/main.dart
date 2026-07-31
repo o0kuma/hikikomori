@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,13 +12,25 @@ import 'widgets/gradient_backdrop.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught: $error\n$stack');
+    return true;
+  };
+
   runApp(const _Bootstrap());
 }
 
 /// Shows [SplashScreen] while [SessionState.restore] is in flight, then
 /// swaps to the real app. Runs `runApp` immediately (rather than awaiting
 /// restore() first) so the branded splash actually paints instead of
-/// leaving a blank frame during the async gap.
+/// leaving a blank frame during the async gap. Falls back to a readable
+/// error screen if restore fails or hangs, rather than crashing silently.
 class _Bootstrap extends StatefulWidget {
   const _Bootstrap();
 
@@ -27,6 +40,8 @@ class _Bootstrap extends StatefulWidget {
 
 class _BootstrapState extends State<_Bootstrap> {
   SessionState? _session;
+  Object? _error;
+  StackTrace? _stackTrace;
 
   @override
   void initState() {
@@ -35,14 +50,38 @@ class _BootstrapState extends State<_Bootstrap> {
   }
 
   Future<void> _init() async {
-    final session = SessionState();
-    await session.restore();
-    if (!mounted) return;
-    setState(() => _session = session);
+    try {
+      final session = SessionState();
+      await session.restore().timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      setState(() => _session = session);
+    } catch (e, st) {
+      debugPrint('BOOT FAIL: $e\n$st');
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _stackTrace = st;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final error = _error;
+    if (error != null) {
+      return MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: SelectableText('앱 시작 실패\n\n$error\n\n${_stackTrace ?? ''}'),
+            ),
+          ),
+        ),
+      );
+    }
+
     final session = _session;
     if (session == null) {
       return MaterialApp(

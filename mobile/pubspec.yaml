@@ -1,4 +1,4 @@
-name: bunsin_mobile
+name: ykavu_mobile
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -44,6 +44,7 @@ dependencies:
   sqlite3: ^2.9.4
   flutter_secure_storage: ^10.3.1
   sqlcipher_flutter_libs: ^0.6.8
+  google_fonts: ^6.3.2
 
 dev_dependencies:
   flutter_test:

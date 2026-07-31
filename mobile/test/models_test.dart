@@ -1,4 +1,4 @@
-import 'package:bunsin_mobile/models/models.dart';
+import 'package:ykavu_mobile/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

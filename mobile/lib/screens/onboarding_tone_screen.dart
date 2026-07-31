@@ -106,7 +106,7 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
             const SizedBox(height: 12),
             FilledButton(
               onPressed: () => _save(markDone: true),
-              child: const Text('저장하고 시작'),
+              child: const Text('이 말투로 시작'),
             ),
           ],
         ),

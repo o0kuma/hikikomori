@@ -83,7 +83,7 @@ const _kDbPassphrase = 'db_passphrase_v1';
 QueryExecutor _openEncryptedExecutor() {
   return LazyDatabase(() async {
     final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'bunsin_encrypted.db'));
+    final file = File(p.join(dir.path, 'ykavu_encrypted.db'));
     final passphrase = await _loadOrCreatePassphrase();
 
     // Background isolate does not inherit open.overrideFor — re-apply there.

@@ -1,4 +1,4 @@
 storePassword=replace-me
 keyPassword=replace-me
-keyAlias=bunsin
-storeFile=/absolute/path/to/bunsin-release.jks
+keyAlias=ykavu
+storeFile=/absolute/path/to/ykavu-release.jks

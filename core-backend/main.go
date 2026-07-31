@@ -49,8 +49,32 @@ type draftMessageRequest struct {
 	K             int      `json:"k"`
 }
 
+// corsMiddleware allows Flutter Web (and other local origins) to call the API.
+// Browsers treat http://localhost:5555 and http://127.0.0.1:8080 as different
+// origins, so Chrome signup fails without OPTIONS + Allow-Origin headers.
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin == "" {
+			origin = "*"
+		}
+		c.Header("Access-Control-Allow-Origin", origin)
+		c.Header("Vary", "Origin")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Header("Access-Control-Max-Age", "600")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
+}
+
 func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gin.Engine {
 	r := gin.Default()
+	r.Use(corsMiddleware())
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -59,6 +83,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	registerA1A2Routes(r, db)
 	registerBRoutes(r, db)
 	registerInviteOpsRoutes(r, db)
+	registerDemoRoutes(r)
 
 	r.GET("/admin/metrics", func(c *gin.Context) {
 		if !requireAdmin(c) {
@@ -138,31 +163,52 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// 초대 기반 베타(roadmap.md §2.6): 가입은 누군가 실제로 발급한 미사용
 		// 코드가 있어야만 된다 -- 아무 문자열이나 처음 쓰면 통과되던 이전
 		// 방식은 "초대 기반"이 아니었음.
+		//
+		// Shared demo: DEMO-YKAVU (ALLOW_DEMO_INVITE, default on) can be reused
+		// by multiple testers; User.InviteCode still gets a unique stored value.
+		demo := demoInviteEnabled() && isDemoInviteCode(req.InviteCode)
 		var invite InviteCode
-		if err := db.Where("code = ?", req.InviteCode).First(&invite).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"detail": "invalid invite code"})
-			return
-		}
-		if ok, detail := inviteUsable(invite, time.Now()); !ok {
-			status := http.StatusBadRequest
-			if detail == "invite code already used" {
-				status = http.StatusConflict
+		storedInvite := req.InviteCode
+		if demo {
+			var err error
+			invite, err = demoSignupInviteCode(db)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+				return
 			}
-			c.JSON(status, gin.H{"detail": detail})
-			return
+			storedInvite, err = uniqueDemoUserInvite()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+				return
+			}
+		} else {
+			if err := db.Where("code = ?", req.InviteCode).First(&invite).Error; err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"detail": "invalid invite code"})
+				return
+			}
+			if ok, detail := inviteUsable(invite, time.Now()); !ok {
+				status := http.StatusBadRequest
+				if detail == "invite code already used" {
+					status = http.StatusConflict
+				}
+				c.JSON(status, gin.H{"detail": detail})
+				return
+			}
 		}
 
-		user := User{InviteCode: req.InviteCode, DisplayName: req.DisplayName}
+		user := User{InviteCode: storedInvite, DisplayName: req.DisplayName}
 		if err := db.Create(&user).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 			return
 		}
 		db.Create(&TwinSettings{UserID: user.ID, AutonomyLevel: AutonomyL0})
 
-		now := time.Now()
-		invite.UsedAt = &now
-		invite.UsedByUserID = &user.ID
-		db.Save(&invite)
+		if !demo {
+			now := time.Now()
+			invite.UsedAt = &now
+			invite.UsedByUserID = &user.ID
+			db.Save(&invite)
+		}
 
 		session, err := createSession(db, user.ID)
 		if err != nil {
@@ -650,6 +696,7 @@ func main() {
 		return
 	}
 	db := openDB()
+	seedDemoInvite(db)
 	relay := newConnectionManager()
 	ai := newAIServiceClient()
 	r := setupRouter(db, relay, ai)

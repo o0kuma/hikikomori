@@ -1,5 +1,5 @@
-import 'package:bunsin_mobile/main.dart';
-import 'package:bunsin_mobile/state/session_state.dart';
+import 'package:ykavu_mobile/main.dart';
+import 'package:ykavu_mobile/state/session_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

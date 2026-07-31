@@ -31,7 +31,7 @@ class DataFlowScreen extends StatelessWidget {
             width: 36,
             height: 36,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: tint.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: tint.withValues(alpha: 0.15), shape: BoxShape.circle),
             child: Icon(icon, size: 18, color: tint),
           ),
           const SizedBox(width: 12),

@@ -7,7 +7,7 @@ Phase 1 C: PoC #3 역할극에서 쓰는 **클릭 프로토타입**의 공식 �
 
 | 항목 | 값 |
 |------|-----|
-| **식별자** | `bunsin-prototype` (`poc-materials.md` §2와 동일) |
+| **식별자** | `ykavu-prototype` (`poc-materials.md` §2와 동일) |
 | **공유 URL** | **TBD — Master 기입** (Claude Artifacts 공개 permalink 또는 정적 호스팅 URL) |
 | **docs 앵커** | 이 파일. 다른 문서는 프로토타입을 말할 때 여기로 링크한다 |
 
@@ -33,4 +33,4 @@ SHARE_URL=
 
 1. 프로토타입 장면을 바꾸면 이 파일에 변경일·요약 한 줄을 추가한다.
 2. `SHARE_URL`이 비어 있거나 404면 PoC #3 / 외부 공유 전에 반드시 채운다.
-3. 호스팅을 옮겨도 식별자 `bunsin-prototype`과 이 앵커 문서는 유지한다.
+3. 호스팅을 옮겨도 식별자 `ykavu-prototype`과 이 앵커 문서는 유지한다.

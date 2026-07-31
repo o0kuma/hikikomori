@@ -1,4 +1,4 @@
-package com.bunsin.bunsin_mobile
+package com.ykavu.ykavu_mobile
 
 import io.flutter.embedding.android.FlutterActivity
 
