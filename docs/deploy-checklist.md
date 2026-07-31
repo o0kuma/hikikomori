@@ -147,7 +147,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-A2** | 연락처 원탭 대화 + ID 필수 | done | 숫자 peer ID 없으면 추가/대화 차단·안내 |
 | **N4-A3** | 빈 상태·에러·L0 패널 | done | L0는「입력창으로 옮기기」 |
 | **N4-A4** | 대화 목록 이름·밀도 | done | 연락처 표시명 매핑 |
-| **N4-A5** | 프로덕션 web 재빌드 | todo | `msn.iykyka.com` 스모크 |
+| **N4-A5** | 프로덕션 web 재빌드 | done | `msn.iykyka.com` health 200 (`3d00b00`) |
 
 ### FCM
 
