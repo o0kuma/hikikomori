@@ -32,7 +32,7 @@
 
 - Phase 1 **A~C** + **N2 컷오버 + N3 안정화 완료** — 라이브: [`https://msn.iykyka.com`](https://msn.iykyka.com)
 - 테스터 안내: [`docs/tester-guide.md`](./docs/tester-guide.md) · 데모 코드 **`DEMO-YKAVU`**
-- **다음:** 서버 `GEMINI_API_KEY` 주입(실초안) 및/또는 N4 FCM·Android QA
+- **다음 (선택):** N4 FCM·Android QA
 - **맨 마지막:** N5 / D — 사람 PoC (`docs/roadmap.md` §3). §3 기본값 추측 금지
 - 프로토타입 공유 URL은 [`docs/prototype.md`](./docs/prototype.md)의 `SHARE_URL`에 Master가 기입
 

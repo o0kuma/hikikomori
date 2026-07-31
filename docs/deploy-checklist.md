@@ -131,7 +131,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N3-1** | 헬스/로그 | **done** (2026-07-31) | 전 컨테이너 healthy. 공개 `/health` OK. 최근 로그에 OOM/502 없음 |
 | **N3-2** | 초대 발급 리허설 | **done** (2026-07-31) | `POST /invites` note=`N3-rehearsal` 발급·`GET /invites` 목록 확인 |
 | **N3-3** | admin metrics | **done** (2026-07-31) | Bearer로 `/admin/metrics`·`/admin/dashboard` 200 |
-| **N3-4** | Gemini | **done** (정책) | draft → `status=no_key` (서버 `GEMINI_API_KEY` 비어 있음). 키 넣으면 실호출로 전환 |
+| **N3-4** | Gemini | **done** (2026-07-31) | 서버 `GEMINI_API_KEY` 주입·ai-service 재기동. 라이브 draft `status=ok` (예: `딱히? ㅋㅋ`) |
 | **N3-5** | 백업 리허설 | **done** (2026-07-31) | `pg_dump` gzip → restore test DB → drop. [`ops-backup.md`](./ops-backup.md) |
 | **N3-6** | 테스터 안내 | **done** (2026-07-31) | [`tester-guide.md`](./tester-guide.md) |
 
