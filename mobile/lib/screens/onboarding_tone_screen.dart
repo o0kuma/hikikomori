@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/primary_gradient_button.dart';
 
 /// Phase 1 onboarding skeleton: capture a few style samples locally.
