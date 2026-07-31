@@ -78,10 +78,10 @@ Notes:
 
 ### N2-A. 착수 전 결정 (Master 확인)
 
-| ID | 결정 | 제안 기본값 | Status |
-|----|------|-------------|--------|
+| ID | 결정 | 값 | Status |
+|----|------|-----|--------|
 | **N2-A1** | 구 Node MSN 교체 | 교체(Plan A) | todo |
-| **N2-A2** | DB | 1차 SQLite 파일 볼륨 (PostgreSQL은 이후) | todo |
+| **N2-A2** | DB | **PostgreSQL** (`tech-design.md` §8). compose에 `postgres` 서비스 + `DATABASE_URL`. SQLite는 로컬/테스트 전용 | **done** (2026-07-31 Master 확정) |
 | **N2-A3** | AI 서비스 노출 | 내부망만 (외부 포트 미공개) | todo |
 | **N2-A4** | 클라이언트 제공 | Web 컨테이너 ± 내부 APK (둘 다/웹만 결정) | todo |
 | **N2-A5** | 시크릿 관리 | Portainer/호스트 env — **git 금지** | todo |
@@ -91,19 +91,19 @@ Notes:
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N2-B1** | `core-backend` Dockerfile | todo | `docker build` 성공, migrate/기동 |
+| **N2-B1** | `core-backend` Dockerfile | todo | `docker build` 성공, migrate/기동 (`DATABASE_URL` → Postgres) |
 | **N2-B2** | `ai-service` Dockerfile | todo | `docker build` 성공 |
 | **N2-B3** | Flutter web 빌드/서빙 | todo | `flutter build web` + nginx(또는 Caddy)로 `/` 로딩 |
-| **N2-B4** | `docker-compose.yml` | todo | `up` 후 서비스 healthy |
-| **N2-B5** | env 템플릿 | todo | `.env.example`에 키만: `GEMINI_API_KEY`, `ADMIN_API_TOKEN`, `AI_SERVICE_URL`, DB, `ALLOW_DEMO_INVITE`, CORS/origins, `FCM_*` |
-| **N2-B6** | 데이터 볼륨 | todo | 재시작 후 SQLite(및 필요 경로) 유지 |
-| **N2-B7** | 내부 DNS | todo | Go → `http://ai-service:…` draft/escalate 동작 |
+| **N2-B4** | `docker-compose.yml` | todo | `postgres` + core + ai (+ web) `up` 후 healthy |
+| **N2-B5** | env 템플릿 | todo | `.env.example`에 키만: `GEMINI_API_KEY`, `ADMIN_API_TOKEN`, `AI_SERVICE_URL`, `DATABASE_URL` / Postgres 비밀번호, `ALLOW_DEMO_INVITE`, CORS/origins, `FCM_*` |
+| **N2-B6** | 데이터 볼륨 | todo | Postgres 데이터 볼륨 persist (재시작 후 데이터 유지) |
+| **N2-B7** | 내부 DNS | todo | Go → `http://ai-service:…` draft/escalate, Go → `postgres:5432` 동작 |
 | **N2-B8** | CORS + API base | todo | `https://msn.iykyka.com`에서 브라우저 가입 성공 |
 | **N2-B9** | 리버스 프록시 | todo | HTTPS로 도메인 접속 |
 | **N2-B10** | Portainer 스택 | todo | 스택 Up, 절차를 Notes에 기록 |
 | **N2-B11** | 구 MSN 컷오버 | todo | 새 스택이 도메인 응답 + 롤백 메모 |
 | **N2-B12** | 배포 스모크 | todo | N1-3~N1-5를 프로덕션 URL로 재실행 |
-| **N2-B13** | 운영 runbook | todo | 로그·재시작·SQLite 백업·초대 발급 1페이지 (`docs/` 또는 본 파일 Notes) |
+| **N2-B13** | 운영 runbook | todo | 로그·재시작·**Postgres 백업/복구**·초대 발급 1페이지 (`docs/` 또는 본 파일 Notes) |
 
 관련: Portainer `https://portainer.iykyka.com/`, 호스트 SSH는 인프라 메모 참고(시크릿은 커밋 금지).
 
@@ -117,7 +117,7 @@ Notes:
 | **N3-2** | 초대 발급 리허설 | todo | `docs/invite-ops.md` 절차 1회 |
 | **N3-3** | admin metrics | todo | `/admin/metrics`·`/admin/dashboard` 토큰 조회 |
 | **N3-4** | Gemini | todo | draft 1회 실호출 또는 mock 정책 명시 |
-| **N3-5** | 백업 리허설 | todo | SQLite 볼륨 복사/복구 1회 |
+| **N3-5** | 백업 리허설 | todo | Postgres 덤프/복구 1회 (`pg_dump` 등) |
 | **N3-6** | 테스터 안내 | todo | URL + 초대(`DEMO-BUNSIN` 또는 개인 코드) + 주의사항 |
 
 ---

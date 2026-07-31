@@ -154,6 +154,6 @@ PoC 의존 하위 질문(자율성 기본값 등)만 열려 있다 — decision-
   무관 기반 작업(백엔드/클라이언트 뼈대)과 PoC 결과 필요 항목을 구분해둠
 - [x] 기술 스택 결정 — `tech-design.md` §8 / `roadmap.md` Phase 1 §1
   (Flutter/Dart, Go core + Python AI, WebSocket, drift+SQLCipher; 배포 DB는
-  [`deploy-checklist.md`](./deploy-checklist.md) N2-A에서 SQLite 1차 등 운영 결정)
+  [`deploy-checklist.md`](./deploy-checklist.md) N2-A — 프로덕션 DB는 **PostgreSQL** 확정)
 - [ ] A~C 이후 실행 트랙 — [`deploy-checklist.md`](./deploy-checklist.md)
   (N1 스모크 → N2 Docker → N3 안정화 → N4 FCM/Android QA → N5 사람 PoC)
