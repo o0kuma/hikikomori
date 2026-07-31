@@ -29,7 +29,7 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 ### NOW
 
 - 앱 코드는 클로즈드 베타 직전 수준
-- 프로덕션 Docker **이미지·compose 준비 완료**. `msn.iykyka.com` **컷오버는 SSH/Portainer 자격 대기**
+- **`https://msn.iykyka.com` 라이브 + N3 안정화 완료**. Gemini 키 미설정(`no_key`). 다음: N4 또는 키 주입
 - 실 FCM · Android UI 수동 QA · 사람 PoC 실행은 남음
 
 ### NEXT 순서
@@ -128,12 +128,12 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N3-1** | 헬스/로그 | todo | OOM·CORS·502 없음 |
-| **N3-2** | 초대 발급 리허설 | todo | `docs/invite-ops.md` 절차 1회 |
-| **N3-3** | admin metrics | todo | `/admin/metrics`·`/admin/dashboard` 토큰 조회 |
-| **N3-4** | Gemini | todo | draft 1회 실호출 또는 mock 정책 명시 |
-| **N3-5** | 백업 리허설 | todo | Postgres 덤프/복구 1회 (`pg_dump` 등) |
-| **N3-6** | 테스터 안내 | todo | URL + 초대(`DEMO-YKAVU` 또는 개인 코드) + 주의사항 |
+| **N3-1** | 헬스/로그 | **done** (2026-07-31) | 전 컨테이너 healthy. 공개 `/health` OK. 최근 로그에 OOM/502 없음 |
+| **N3-2** | 초대 발급 리허설 | **done** (2026-07-31) | `POST /invites` note=`N3-rehearsal` 발급·`GET /invites` 목록 확인 |
+| **N3-3** | admin metrics | **done** (2026-07-31) | Bearer로 `/admin/metrics`·`/admin/dashboard` 200 |
+| **N3-4** | Gemini | **done** (정책) | draft → `status=no_key` (서버 `GEMINI_API_KEY` 비어 있음). 키 넣으면 실호출로 전환 |
+| **N3-5** | 백업 리허설 | **done** (2026-07-31) | `pg_dump` gzip → restore test DB → drop. [`ops-backup.md`](./ops-backup.md) |
+| **N3-6** | 테스터 안내 | **done** (2026-07-31) | [`tester-guide.md`](./tester-guide.md) |
 
 ---
 
@@ -192,7 +192,8 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 1. ~~N2-A1~A6 결정 체크~~ **done**  
 2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
 3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
-4. **N2-B8~B12** Portainer/SSH 컷오버 ← **blocked (자격 필요)** — [`deploy-portainer.md`](./deploy-portainer.md)  
-5. **N3-6** 테스터 안내  
+4. ~~N2-B8~B12 컷오버~~ **done** (`msn.iykyka.com` 라이브)  
+5. ~~N3 배포 안정화~~ **done** — 다음: **N4 FCM/Android QA** 또는 서버에 `GEMINI_API_KEY` 주입  
+
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.
