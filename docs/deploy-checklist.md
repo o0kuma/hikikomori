@@ -80,12 +80,14 @@ Notes:
 
 | ID | 결정 | 값 | Status |
 |----|------|-----|--------|
-| **N2-A1** | 구 Node MSN 교체 | 교체(Plan A) | todo |
+| **N2-A1** | 구 Node MSN 교체 | **교체(Plan A)** — `msn.iykyka.com`에 와카뷰 스택으로 컷오버 | **done** (2026-07-31 Master 확정) |
 | **N2-A2** | DB | **PostgreSQL** (`tech-design.md` §8). compose에 `postgres` 서비스 + `DATABASE_URL`. SQLite는 로컬/테스트 전용 | **done** (2026-07-31 Master 확정) |
-| **N2-A3** | AI 서비스 노출 | 내부망만 (외부 포트 미공개) | todo |
-| **N2-A4** | 클라이언트 제공 | Web 컨테이너 ± 내부 APK (둘 다/웹만 결정) | todo |
-| **N2-A5** | 시크릿 관리 | Portainer/호스트 env — **git 금지** | todo |
-| **N2-A6** | 데모 초대 | 프로덕션 `ALLOW_DEMO_INVITE` on/off | todo |
+| **N2-A3** | AI 서비스 노출 | **내부망만** — 외부 포트/도메인 미공개, core-backend만 `AI_SERVICE_URL`로 호출 | **done** (2026-07-31 Master 확정) |
+| **N2-A4** | 클라이언트 제공 | **Web 우선** — compose에 Flutter web 서빙. 내부 APK는 N4/릴리즈 경로로 후속 | **done** (2026-07-31 Master 확정) |
+| **N2-A5** | 시크릿 관리 | **Portainer/호스트 env만** — `GEMINI_API_KEY`, `ADMIN_API_TOKEN`, DB 비밀번호, FCM 등 **git 커밋 금지** | **done** (2026-07-31 Master 확정) |
+| **N2-A6** | 데모 초대 | 프로덕션 **`ALLOW_DEMO_INVITE=1` (on)** — 테스터용 `DEMO-BUNSIN` 유지. 베타 확대 전 재검토 | **done** (2026-07-31 Master 확정) |
+
+N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/compose, Postgres 포함)**.
 
 ### N2-B. 이미지·compose
 
