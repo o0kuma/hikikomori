@@ -157,7 +157,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-B1** | `/demo` pairing_steps·notes | done | GET `/demo`에 페어링 단계 |
 | **N4-B2** | 테스터 가이드 페어링 문서화 | done | `docs/tester-guide.md` ID 교환 플로우 |
 | **N4-B3** | 가입 화면 페어링 안내 | done | Signup 데모 패널에 한 줄 팁 |
-| **N4-B4** | 프로덕션 core+web 재배포 | todo | `/demo` steps + UI 스모크 |
+| **N4-B4** | 프로덕션 core+web 재배포 | done | `/demo` pairing_steps OK (`c7029ab`) |
 
 ### FCM
 
