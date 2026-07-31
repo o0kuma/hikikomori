@@ -113,14 +113,14 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N2-B5** | env 템플릿 | **done** | `.env.example`에 Postgres/`PUBLIC_API_BASE`/`WEB_HOST_PORT` 등 추가 |
 | **N2-B6** | 데이터 볼륨 | **done** | compose 볼륨 `ykavu_pgdata` |
 | **N2-B7** | 내부 DNS | **done** (정의) | compose 서비스명 `postgres` / `ai-service` / `core-backend`. *에이전트 VM은 bridge TCP 제한으로 런타임 검증 불가 — Portainer 호스트에서 확인* |
-| **N2-B8** | CORS + API base | **blocked** | `PUBLIC_API_BASE=https://msn.iykyka.com` — 스택 Up 후 검증. *에이전트 SSH/Portainer 권한 없음* |
-| **N2-B9** | 리버스 프록시 | **blocked** | OpenResty → `web` 포트. 절차 [`deploy-portainer.md`](./deploy-portainer.md) |
-| **N2-B10** | Portainer 스택 | **blocked** | 절차 문서화 완료. Up은 Master 또는 자격 제공 후 |
-| **N2-B11** | 구 MSN 컷오버 | **blocked** | 현재 `msn` = Express/`{"ok":true}` (구스택). 컷오버 절차 문서화됨 |
-| **N2-B12** | 배포 스모크 | **blocked** | 컷오버 후 [`deploy-portainer.md`](./deploy-portainer.md) §C |
-| **N2-B13** | 운영 runbook | **done** (초안) | [`deploy-docker.md`](./deploy-docker.md) · [`deploy-portainer.md`](./deploy-portainer.md) |
+| **N2-B8** | CORS + API base | **done** (2026-07-31) | `PUBLIC_API_BASE=https://msn.iykyka.com`. OPTIONS CORS + 가입 확인 |
+| **N2-B9** | 리버스 프록시 | **done** (2026-07-31) | Nginx Proxy Manager host #7 → `ykavu-web-1:80` |
+| **N2-B10** | Portainer 스택 | **done** (compose CLI) | 서버 `~/project/ykavu` 에서 `docker compose up -d --build` (Portainer UI 아님) |
+| **N2-B11** | 구 MSN 컷오버 | **done** (2026-07-31) | `iykyk_msn-service` stop. NPM `msn.iykyka.com` → 와카뷰. 롤백: MSN start + NPM upstream 복구 |
+| **N2-B12** | 배포 스모크 | **done** (2026-07-31) | `/health`=`status`, `/demo`=`DEMO-YKAVU`, root 200, DEMO 가입 OK |
+| **N2-B13** | 운영 runbook | **done** | [`deploy-docker.md`](./deploy-docker.md) · [`deploy-portainer.md`](./deploy-portainer.md) |
 
-관련: Portainer `https://portainer.iykyka.com/`, SSH `iykyka@iykyka.com:7788` (키 필요). 시크릿 git 금지.
+관련: 라이브 `https://msn.iykyka.com` · 서버 path `~/project/ykavu` · web 포트 `8788`(+ NPM). 시크릿 git 금지.
 
 ---
 

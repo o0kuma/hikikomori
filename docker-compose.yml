@@ -78,6 +78,16 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    # Join Nginx Proxy Manager network so msn.iykyka.com can reach web by name.
+    networks:
+      - default
+      - npm
 
 volumes:
   ykavu_pgdata:
+
+networks:
+  default:
+  npm:
+    external: true
+    name: nginx-proxy_default

@@ -4,19 +4,19 @@
 스택 정의: 저장소 root [`docker-compose.yml`](../docker-compose.yml)  
 개요: [`deploy-docker.md`](./deploy-docker.md)
 
-## 현재 프로브 (에이전트, 2026-07-31)
+## 라이브 상태 (2026-07-31 컷오버 완료)
 
 | URL | 결과 |
 |-----|------|
-| `https://msn.iykyka.com/` | Express `Cannot GET /` (404) — 구 Node MSN으로 추정 |
-| `https://msn.iykyka.com/health` | `{"ok":true}` — 구 스택 |
-| `https://portainer.iykyka.com/` | 200, API `Version 2.39.2` |
-| 엣지 | `Server: openresty` |
+| `https://msn.iykyka.com/health` | `{"status":"ok"}` — 와카뷰 |
+| `https://msn.iykyka.com/demo` | `DEMO-YKAVU` |
+| `https://msn.iykyka.com/` | Flutter web 200 |
+| 서버 path | `~/project/ykavu` (`docker compose`) |
+| web host port | `8788` (NPM이 `ykavu-web-1:80`으로 프록시) |
+| 구 MSN | `iykyk_msn-service` **stopped** (롤백 시 start) |
+| 엣지 | Nginx Proxy Manager (`nginx-proxy-app-1`, openresty) |
 
-에이전트 VM에는 **SSH 키/`iykyka@iykyka.com:7788` 권한이 없음** → 실제 Up·컷오버는
-Master가 Portainer 또는 SSH로 수행(또는 키/토큰을 에이전트에 제공).
-
-새 스택 헬스 응답은 `{"status":"ok"}` (구스택 `{"ok":true}` 과 구분).
+`docker-compose.yml`의 `web` 서비스는 external network `nginx-proxy_default`에 연결됨.
 
 ---
 
