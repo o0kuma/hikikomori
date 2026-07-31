@@ -24,9 +24,10 @@ class AppTheme {
   static const inkDark = Color(0xFFF2F1EF);
   static const mutedDark = Color(0xFF9B9893);
   static const lineDark = Color(0xFF2A2D36);
-  static const tealBright = Color(0xFF2DD4BF);
-  static const tealSoftDark = Color(0xFF143D3A);
-  static const twinAmberDark = Color(0xFFFBBF24);
+  /// Dark accent — muted teal (avoid neon cyan against charcoal).
+  static const tealBright = Color(0xFF5EBBB0);
+  static const tealSoftDark = Color(0xFF1A3331);
+  static const twinAmberDark = Color(0xFFE0A84A);
 
   /// Kept for call sites that still reference a "brand" fill — solid teal, not a rainbow.
   static const brandGradient = LinearGradient(
@@ -70,7 +71,7 @@ class AppTheme {
       brightness == Brightness.dark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFF1C1B1A).withValues(alpha: 0.06);
 
   static Color mineBubble(Brightness brightness) =>
-      brightness == Brightness.dark ? tealSoftDark : teal;
+      brightness == Brightness.dark ? const Color(0xFF244844) : teal;
 
   static Color mineBubbleFg(Brightness brightness) =>
       brightness == Brightness.dark ? inkDark : Colors.white;
