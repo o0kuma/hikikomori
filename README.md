@@ -18,17 +18,21 @@
 - 기획: [`docs/PLANNING.md`](./docs/PLANNING.md) · 결정: [`docs/decision-log.md`](./docs/decision-log.md) (Q1~Q7 **확정**)
 - Vision / PRD / 기술설계: [`docs/vision.md`](./docs/vision.md) · [`docs/PRD.md`](./docs/PRD.md) · [`docs/tech-design.md`](./docs/tech-design.md)
 - 로드맵 (작업 체크리스트): [`docs/roadmap.md`](./docs/roadmap.md)
+- **배포·잔여 실행 트랙:** [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) (N1 스모크 → N2 Docker → … → N5 사람 PoC)
 - 베타 직전(C): [`docs/invite-ops.md`](./docs/invite-ops.md) · [`docs/android-release.md`](./docs/android-release.md) · [`docs/prototype.md`](./docs/prototype.md)
 - PoC 계획/준비물: [`docs/poc-plan.md`](./docs/poc-plan.md) · [`docs/poc-materials.md`](./docs/poc-materials.md)
 
 ## AI 에이전트 규칙
 
 - [`AGENTS.md`](./AGENTS.md) · [`CLAUDE.md`](./CLAUDE.md)
+- **브랜치:** 작업·머지는 항상 `main`
+- **리모트:** GitHub `origin` + Gitea `gitea`(iykyka) — `main` 갱신 후 `./scripts/push-both.sh`
 
 ## 현재 단계
 
 - Phase 1 **A~C**까지 반영됨 (서버·Flutter·베타 직전 문서/배포 경로)
-- 다음: **D — 사람 PoC #1/#3·Q3 인터뷰** (`docs/roadmap.md` §3, 맨 마지막)
+- **다음:** [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) — N1 스모크 → N2 `msn.iykyka.com` Docker → N3 안정화 → N4 FCM/Android QA
+- **맨 마지막:** N5 / D — 사람 PoC #1/#3·Q3 인터뷰 (`docs/roadmap.md` §3). §3 기본값 추측 금지
 - 프로토타입 공유 URL은 [`docs/prototype.md`](./docs/prototype.md)의 `SHARE_URL`에 Master가 기입
 
 ## 로컬 실행 (요약)
