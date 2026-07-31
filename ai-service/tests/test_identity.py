@@ -4,8 +4,9 @@ from app.generation import draft_reply
 
 def test_identity_phrases_match():
     for q in [
-        "지금 본인이야 분신이야?",
-        "분신이야?",
+        "지금 본인이야 와카뷰야?",
+        "와카뷰야?",
+        "와카뷰이야?",
         "너 본인 맞아?",
         "진짜야?",
     ]:
@@ -23,7 +24,7 @@ def test_draft_returns_fixed_identity_without_llm(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     status, text = draft_reply(
         ["ㅇㅇ 알겠음"],
-        ["상대: 지금 본인이야 분신이야?"],
+        ["상대: 지금 본인이야 와카뷰야?"],
     )
     assert status == "ok"
     assert text == IDENTITY_REPLY

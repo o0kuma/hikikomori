@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="분신 AI service", lifespan=lifespan)
+app = FastAPI(title="와카뷰 AI service", lifespan=lifespan)
 
 
 @app.get("/health")

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
 
 /// Shows what stays on-device vs what may leave the device (roadmap B / privacy).
 class DataFlowScreen extends StatelessWidget {
@@ -19,8 +20,9 @@ class DataFlowScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
+        color: AppTheme.glassFill(theme.brightness),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

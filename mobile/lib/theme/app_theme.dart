@@ -1,36 +1,74 @@
 import 'package:flutter/material.dart';
 
-/// Central design tokens for 분신 (Bunsin). One seed color drives the whole
-/// Material 3 palette; `twinAccent` is a separate warm accent used only for
-/// the AI-authored badge/border so a twin-written bubble never reads as
-/// something the human actually typed (PRD §3.1 분신 뱃지).
+/// Central design tokens for 와카뷰 (Ykavu) — soft-gradient + glassmorphism
+/// direction. `backgroundGradient` paints behind every screen (wired into
+/// `MaterialApp.builder`); cards/inputs/app bars are semi-transparent
+/// "glass" surfaces that let the gradient read through. `twinAccent` stays a
+/// separate warm accent so a twin-written bubble never reads as something
+/// the human actually typed (PRD §3.1 와카뷰 뱃지).
 class AppTheme {
   AppTheme._();
 
-  static const _seed = Color(0xFF1F6F5B);
+  static const _seed = Color(0xFF7C6FF0);
 
   static Color twinAccent(Brightness brightness) =>
       brightness == Brightness.dark ? Colors.amber.shade300 : Colors.amber.shade800;
+
+  /// Soft diagonal gradient painted behind every screen. Light: pastel
+  /// lavender → sky → pink. Dark: desaturated indigo → navy → plum.
+  static LinearGradient backgroundGradient(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1B1730), Color(0xFF161C34), Color(0xFF2A1830)],
+      );
+    }
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(0xFFEDE9FE), Color(0xFFE0F2FE), Color(0xFFFCE7F3)],
+    );
+  }
+
+  /// "Glass" fill for cards/panels — semi-transparent so the gradient
+  /// behind still reads through, with a faint light border for the classic
+  /// glassmorphism edge highlight.
+  static Color glassFill(Brightness brightness) => brightness == Brightness.dark
+      ? Colors.white.withOpacity(0.06)
+      : Colors.white.withOpacity(0.55);
+
+  static Color glassBorder(Brightness brightness) => brightness == Brightness.dark
+      ? Colors.white.withOpacity(0.10)
+      : Colors.white.withOpacity(0.65);
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
 
   static ThemeData _build(Brightness brightness) {
     final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
+    final glass = glassFill(brightness);
+    final glassEdge = glassBorder(brightness);
+    final glassShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+      side: BorderSide(color: glassEdge, width: 1),
+    );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
+      // Transparent so the gradient painted by MaterialApp.builder shows
+      // through behind every Scaffold.
+      scaffoldBackgroundColor: Colors.transparent,
       visualDensity: VisualDensity.comfortable,
       textTheme: _textTheme(),
       appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
-        surfaceTintColor: scheme.surfaceTint,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontSize: 20,
@@ -41,8 +79,8 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: scheme.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: glass,
+        shape: glassShape,
         margin: EdgeInsets.zero,
       ),
       listTileTheme: ListTileThemeData(
@@ -53,15 +91,15 @@ class AppTheme {
       dividerTheme: DividerThemeData(color: scheme.outlineVariant, space: 32, thickness: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest,
+        fillColor: glass,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: glassEdge, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: glassEdge, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -102,14 +140,18 @@ class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
+          backgroundColor: glass,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         ),
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: glassEdge, width: 1),
+        ),
         side: BorderSide.none,
-        backgroundColor: scheme.surfaceContainerHighest,
+        backgroundColor: glass,
         labelStyle: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 12),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
@@ -124,10 +166,13 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       bannerTheme: MaterialBannerThemeData(
-        backgroundColor: scheme.surfaceContainerHigh,
+        backgroundColor: glass,
         padding: const EdgeInsets.all(16),
       ),
       dialogTheme: DialogThemeData(
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xFF211D3D)
+            : Colors.white.withOpacity(0.92),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),

@@ -103,7 +103,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('분신'),
+        title: const Text('와카뷰'),
         actions: [
           IconButton(
             tooltip: '사후 알림',
@@ -213,7 +213,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                                   Icon(Icons.block, size: 13, color: theme.colorScheme.error),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '상대가 분신을 거부함',
+                                    '상대가 와카뷰를 거부함',
                                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                                   ),
                                 ],

@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/ws_client.dart';
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -141,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final contextLines = _messages
           .where((m) => !m.retracted)
-          .map((m) => '${m.isTwin ? "분신" : "상대"}: ${m.text}')
+          .map((m) => '${m.isTwin ? "와카뷰" : "상대"}: ${m.text}')
           .toList();
       if (_input.text.trim().isNotEmpty) {
         contextLines.add('상대: ${_input.text.trim()}');
@@ -190,7 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToEnd();
     } on ApiException catch (e) {
-      setState(() => _banner = '분신 발송 차단 (${e.statusCode}): ${e.body}');
+      setState(() => _banner = '와카뷰 발송 차단 (${e.statusCode}): ${e.body}');
     } finally {
       setState(() => _busy = false);
     }
@@ -209,7 +210,7 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('거부권을 쓸까요?'),
-        content: const Text('이 대화방에서 분신 자동응대가 즉시 중단됩니다. 이후에는 다시 켤 수 없습니다.'),
+        content: const Text('이 대화방에서 와카뷰 자동응대가 즉시 중단됩니다. 이후에는 다시 켤 수 없습니다.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
           FilledButton.tonal(onPressed: () => Navigator.pop(ctx, true), child: const Text('거부권 사용')),
@@ -220,7 +221,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final session = context.read<SessionState>();
     try {
       await session.api.vetoConversation(widget.conversationId);
-      setState(() => _banner = '거부권 적용: 이 대화방에서 분신 자동응대가 중단됩니다.');
+      setState(() => _banner = '거부권 적용: 이 대화방에서 와카뷰 자동응대가 중단됩니다.');
     } on ApiException catch (e) {
       setState(() => _banner = '거부권 실패 (${e.statusCode})');
     }
@@ -245,8 +246,9 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer,
+          color: theme.colorScheme.errorContainer.withOpacity(0.85),
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -263,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              draft.text.isEmpty ? '민감·확정성 내용으로 분신 발송이 보류되었습니다.' : draft.text,
+              draft.text.isEmpty ? '민감·확정성 내용으로 와카뷰 발송이 보류되었습니다.' : draft.text,
               style: TextStyle(color: theme.colorScheme.onErrorContainer),
             ),
             const SizedBox(height: 4),
@@ -280,8 +282,9 @@ class _ChatScreenState extends State<ChatScreen> {
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
+        color: theme.colorScheme.secondaryContainer.withOpacity(0.85),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -336,7 +339,7 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Text(widget.title ?? '대화방 #${widget.conversationId}'),
         actions: [
           IconButton(
-            tooltip: '거부권 (분신 자동응대 중단)',
+            tooltip: '거부권 (와카뷰 자동응대 중단)',
             onPressed: _busy ? null : _veto,
             icon: const Icon(Icons.block),
           ),

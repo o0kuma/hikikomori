@@ -1,4 +1,4 @@
-# 분신 core-backend (Go)
+# 와카뷰 core-backend (Go)
 
 Phase 1 코어 백엔드 (`docs/roadmap.md` Phase 1 §2.1). 스택 결정은 `docs/tech-design.md` §8 참고 —
 Go(Gin + gorilla/websocket + GORM), PostgreSQL(프로덕션)/SQLite(로컬 개발). `../backend/`(Python
@@ -127,7 +127,7 @@ go test ./... -v
 - `GET /admin/metrics` — `users_total`·`messages_human_total`·`messages_twin_total`·
   `escalations_total`·`escalations_by_reason`·`conversations_total`·`conversations_vetoed`·
   `peer_veto_rate`·`invites_minted`·`invites_used`. 지금 스키마로 정직하게 계산 가능한 것만 —
-  `peer_veto_rate`는 vision.md "분신 거부율" 지표의 1차 근사치(대화방 단위)이지 확정 정의는 아님.
+  `peer_veto_rate`는 vision.md "와카뷰 거부율" 지표의 1차 근사치(대화방 단위)이지 확정 정의는 아님.
   생성 지연시간·AI 서비스 오류율은 별도 계측/로깅 계층이 없어서 넣지 않음 (아래 "아직 없는 것")
 
 ## 아직 없는 것 (다음 워크스트림)

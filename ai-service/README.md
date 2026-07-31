@@ -1,4 +1,4 @@
-# 분신 AI service (Python)
+# 와카뷰 AI service (Python)
 
 Phase 1 AI 서비스 (`docs/roadmap.md` Phase 1 §2.2). `poc/tone-corpus/`의 세 스크립트
 (`generate_draft.py`·`escalation_filter.py`·`retrieve_style.py`)를 그대로 승격한 내부 API —

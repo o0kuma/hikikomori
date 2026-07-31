@@ -47,13 +47,13 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                '분신',
+                '와카뷰',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
               Text(
-                '나를 대신해 답하는, 나만의 분신',
+                '나를 대신해 답하는, 나만의 와카뷰',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
               ),

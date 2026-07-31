@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from . import models
 from .db import Base, engine, get_db
 
-app = FastAPI(title="분신 backend")
+app = FastAPI(title="와카뷰 backend")
 
 
 @app.on_event("startup")

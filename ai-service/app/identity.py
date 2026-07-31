@@ -10,17 +10,17 @@ from dataclasses import dataclass
 
 # Fixed product copy — tune only after PoC #3; do not invent alternate defaults.
 IDENTITY_REPLY = (
-    "지금은 분신이 답하고 있어. 본인이랑 바로 이야기하고 싶으면 그렇게 말해줘."
+    "지금은 와카뷰가 답하고 있어. 본인이랑 바로 이야기하고 싶으면 그렇게 말해줘."
 )
 
 # Incoming peer questions that should trigger the fixed identity reply.
 _IDENTITY_QUESTION = re.compile(
     r"("
     r"본인\s*(이야|인가요|이니|임\??|맞아|맞음)"
-    r"|분신\s*(이야|인가요|이니|임\??|맞아|맞음)"
-    r"|지금\s*(본인|분신)"
+    r"|와카뷰\s*(이야|야\??|인가요|이니|임\??|맞아|맞음)"
+    r"|지금\s*(본인|와카뷰)"
     r"|진짜\s*(야|임|인가요)"
-    r"|너\s*(사람|본인|분신)"
+    r"|너\s*(사람|본인|와카뷰)"
     r")",
     re.IGNORECASE,
 )

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
 import 'data_flow_screen.dart';
 import 'sessions_screen.dart';
 
@@ -50,8 +51,8 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
   }
 
   static const _levelDescriptions = {
-    AutonomyLevel.L0: '분신이 초안만 만들고, 발송은 항상 직접 합니다.',
-    AutonomyLevel.L1: '분신이 초안을 만들면 검토·수정 후 승인해야 보내집니다.',
+    AutonomyLevel.L0: '와카뷰가 초안만 만들고, 발송은 항상 직접 합니다.',
+    AutonomyLevel.L1: '와카뷰가 초안을 만들면 검토·수정 후 승인해야 보내집니다.',
     AutonomyLevel.L2: '아래 화이트리스트 주제는 승인 없이 자동으로 보내집니다.',
   };
 
@@ -106,8 +107,9 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh,
+              color: AppTheme.glassFill(theme.brightness),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

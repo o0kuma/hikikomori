@@ -1,11 +1,11 @@
 {
-    "name": "bunsin_mobile",
-    "short_name": "bunsin_mobile",
+    "name": "와카뷰 (Ykavu)",
+    "short_name": "와카뷰",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#7C6FF0",
+    "theme_color": "#7C6FF0",
+    "description": "나를 대신해 답하는, 나만의 와카뷰",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

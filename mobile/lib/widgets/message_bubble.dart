@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
-/// Twin messages get a dashed border + badge (PRD §3.1 분신 뱃지) so an
+/// Twin messages get a dashed border + badge (PRD §3.1 와카뷰 뱃지) so an
 /// auto-sent bubble never reads as something the human actually typed.
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -69,7 +69,7 @@ class MessageBubble extends StatelessWidget {
                   Icon(Icons.auto_awesome, size: 13, color: accent),
                   const SizedBox(width: 4),
                   Text(
-                    '분신',
+                    '와카뷰',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: accent,
                       fontWeight: FontWeight.w800,

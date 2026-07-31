@@ -1,6 +1,6 @@
-# Project Instructions — hikikomori / 분신 (가칭)
+# Project Instructions — hikikomori / 와카뷰 (가칭)
 
-This repository is an AI-twin messenger ("나를 대신해 남과 대화하는 AI 분신") with
+This repository is an AI-twin messenger ("나를 대신해 남과 대화하는 AI 와카뷰") with
 Phase 1 app code (`core-backend/`, `ai-service/`, `mobile/`) plus planning docs.
 
 Canonical product decisions live under `docs/`. Prefer linking to them over
@@ -29,8 +29,8 @@ Notes:
 
 ## Product identity (v1 working assumptions)
 
-- Name (working): **분신**
-- One-liner: ChatGPT talks *with* me; 분신 talks *as* me *to others*
+- Name (working): **와카뷰**
+- One-liner: ChatGPT talks *with* me; 와카뷰 talks *as* me *to others*
 - Target: consumer individuals first (not B2B)
 - Delivery: self-owned messenger, closed beta
 - Autonomy for v1: **L0~L2 only**
@@ -57,7 +57,7 @@ These apply at every autonomy level and must not be weakened for convenience:
 - Money, appointment confirmation, and emotional/sensitive topics always
   escalate to the human. When uncertain, escalate (fail-safe).
 - Twin-authored messages must be visually distinct (badge / `sender_mode`).
-- Honest identity answers: if asked “본인이야 분신이야?”, answer as twin.
+- Honest identity answers: if asked “본인이야 와카뷰가야?”, answer as twin.
 - Peer veto: if the other person rejects the twin, disable auto-reply for that
   conversation immediately.
 - Every automatic action needs post-hoc notification + one-tap undo.

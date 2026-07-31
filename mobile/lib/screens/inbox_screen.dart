@@ -58,8 +58,8 @@ class _InboxScreenState extends State<InboxScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
                     child: Text(
-                      '분신이 보류·차단한 내용과 에스컬레이션 기록입니다. '
-                      '이미 보낸 분신 메시지는 해당 대화방에서 되돌릴 수 있습니다.',
+                      '와카뷰가 보류·차단한 내용과 에스컬레이션 기록입니다. '
+                      '이미 보낸 와카뷰 메시지는 해당 대화방에서 되돌릴 수 있습니다.',
                       style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ),

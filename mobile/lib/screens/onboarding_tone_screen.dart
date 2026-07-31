@@ -69,7 +69,7 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
               child: Icon(Icons.record_voice_over_outlined, size: 28, color: scheme.onPrimaryContainer),
             ),
             const SizedBox(height: 16),
-            Text('분신이 따라 쓸 말투', style: theme.textTheme.headlineSmall),
+            Text('와카뷰가 따라 쓸 말투', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
               '자주 쓰는 짧은 문장을 3~4개 적어 주세요. 기기에만 저장되며, 초안 요청 시 참고로 씁니다. '

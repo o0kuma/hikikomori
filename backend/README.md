@@ -1,4 +1,4 @@
-# 분신 backend (Python 프로토타입 — 참고용, Go로 포팅 예정)
+# 와카뷰 backend (Python 프로토타입 — 참고용, Go로 포팅 예정)
 
 **스택이 바뀌었다**: `docs/tech-design.md` §8에서 코어 백엔드를 Go로 재확정했다
 (성능/동시성, 향후 스케일 대비). 이 디렉토리는 그 결정 전에 만든 Python/FastAPI 프로토타입으로,

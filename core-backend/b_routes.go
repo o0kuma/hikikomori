@@ -163,7 +163,7 @@ func registerBRoutes(r *gin.Engine, db *gorm.DB) {
 			return
 		}
 		if req.Title == "" {
-			req.Title = "분신 테스트"
+			req.Title = "와카뷰 테스트"
 		}
 		if req.Body == "" {
 			req.Body = "push test"
@@ -189,7 +189,7 @@ const adminDashboardHTML = `<!doctype html>
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>분신 · admin metrics</title>
+  <title>와카뷰 · admin metrics</title>
   <style>
     :root { font-family: ui-sans-serif, system-ui, sans-serif; color: #14231e; background: #f3f7f5; }
     body { margin: 0; padding: 24px; }
@@ -204,7 +204,7 @@ const adminDashboardHTML = `<!doctype html>
   </style>
 </head>
 <body>
-  <h1>분신 운영 지표</h1>
+  <h1>와카뷰 운영 지표</h1>
   <p>Bearer ADMIN_API_TOKEN 으로 /admin/metrics 를 불러옵니다. 생성 지연·오류율은 프로세스 메모리 샘플입니다.</p>
   <button onclick="load()">새로고침</button>
   <div class="grid" id="cards"></div>

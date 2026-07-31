@@ -104,7 +104,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			"escalations_by_reason": escalationsByReason,
 			"conversations_total":   conversationsTotal,
 			"conversations_vetoed":  conversationsVetoed,
-			// Approximates vision.md's "분신 거부율" metric at conversation
+			// Approximates vision.md's "와카뷰 거부율" metric at conversation
 			// granularity (vetoed conversations / all conversations) --
 			// vision.md doesn't pin down the exact denominator, so treat
 			// this as a first approximation, not the final definition.
@@ -212,7 +212,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		if req.SenderMode == SenderTwin {
 			if conversation.TwinDisabledByPeer {
 				runtimeMetrics.recordTwinBlocked()
-				c.JSON(http.StatusForbidden, gin.H{"detail": "상대방이 분신을 거부해서 이 대화방에서는 자동 발송이 꺼져 있습니다"})
+				c.JSON(http.StatusForbidden, gin.H{"detail": "상대방이 와카뷰를 거부해서 이 대화방에서는 자동 발송이 꺼져 있습니다"})
 				return
 			}
 
@@ -232,7 +232,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 					MessageSnippet: req.Text,
 				})
 				// Best-effort push (no-op without FCM_SERVER_KEY / real tokens).
-				_, _, _ = notifyUser(db, req.SenderID, "분신 확인 필요", result.Reason, map[string]string{
+				_, _, _ = notifyUser(db, req.SenderID, "와카뷰 확인 필요", result.Reason, map[string]string{
 					"type":            "escalation",
 					"conversation_id": strconv.FormatUint(uint64(convID), 10),
 					"reason":          result.Reason,
@@ -252,7 +252,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			switch level {
 			case AutonomyL0:
 				runtimeMetrics.recordTwinBlocked()
-				c.JSON(http.StatusForbidden, gin.H{"detail": "L0(비서 모드)에서는 분신 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
+				c.JSON(http.StatusForbidden, gin.H{"detail": "L0(비서 모드)에서는 와카뷰 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
 				return
 			case AutonomyL1:
 				if !req.Approved {
