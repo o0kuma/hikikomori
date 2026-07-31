@@ -57,7 +57,9 @@ cd mobile && flutter run --dart-define=CORE_API_BASE=http://10.0.2.2:8080
 
 ## Docker (N2-B / `msn.iykyka.com`)
 
-절차·구성: [`docs/deploy-docker.md`](./docs/deploy-docker.md)
+- 구성: [`docs/deploy-docker.md`](./docs/deploy-docker.md)
+- Portainer·컷오버: [`docs/deploy-portainer.md`](./docs/deploy-portainer.md)
+- 서버 기동: `./scripts/server-up.sh` (호스트에서 `.env` 채운 뒤)
 
 ```bash
 cp .env.example .env   # ADMIN_API_TOKEN, POSTGRES_PASSWORD 필수
@@ -66,4 +68,4 @@ docker compose up -d --build
 curl -sS http://localhost:8088/health
 ```
 
-Postgres·AI는 내부망만. 엣지 프록시는 `web:80`만 공개.
+Postgres·AI는 내부망만. 엣지 프록시는 `web:80`(또는 `WEB_HOST_PORT`)만 공개.

@@ -27,7 +27,8 @@ curl -sS http://localhost:8088/health
 curl -sS http://localhost:8088/demo
 ```
 
-Portainer: 이 저장소의 `docker-compose.yml` + 스택 env로 동일하게 Up.
+Portainer·OpenResty 컷오버 상세: [`deploy-portainer.md`](./deploy-portainer.md).
+서버 원샷: `./scripts/server-up.sh`
 
 ## 시크릿
 
