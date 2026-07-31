@@ -1,46 +1,72 @@
 import 'package:flutter/material.dart';
 
-/// Central design tokens for 와카뷰 (Ykavu) — soft-gradient + glassmorphism
-/// direction. `backgroundGradient` paints behind every screen (wired into
-/// `MaterialApp.builder`); cards/inputs/app bars are semi-transparent
-/// "glass" surfaces that let the gradient read through. `twinAccent` stays a
-/// separate warm accent so a twin-written bubble never reads as something
-/// the human actually typed (PRD §3.1 와카뷰 뱃지).
+/// Central design tokens for 와카뷰 (Ykavu) — "aurora glass" direction.
+/// `backgroundGradient` + the glow orbs in [GradientBackdrop] paint behind
+/// every screen (wired into `MaterialApp.builder`); cards/inputs/app bars
+/// are semi-transparent "glass" surfaces with a soft colored shadow so they
+/// visibly lift off that background. `twinAccent` stays a separate warm
+/// accent so a twin-written bubble never reads as something the human
+/// actually typed (PRD §3.1 와카뷰 뱃지).
 class AppTheme {
   AppTheme._();
 
-  static const _seed = Color(0xFF7C6FF0);
+  static const _seed = Color(0xFF6D5BD0);
+
+  /// Brand gradient used for the wordmark, brand mark and primary CTAs.
+  static const brandGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [Color(0xFF6D5BD0), Color(0xFFA855C9), Color(0xFFE0609A)],
+  );
 
   static Color twinAccent(Brightness brightness) =>
       brightness == Brightness.dark ? Colors.amber.shade300 : Colors.amber.shade800;
 
-  /// Soft diagonal gradient painted behind every screen. Light: pastel
-  /// lavender → sky → pink. Dark: desaturated indigo → navy → plum.
+  /// Diagonal aurora gradient painted behind every screen. Light: violet →
+  /// sky → pink, more saturated than a "safe" pastel so it reads as
+  /// intentional branding rather than a default Material backdrop. Dark:
+  /// deep indigo → navy → plum. Paired with the blurred glow orbs in
+  /// [GradientBackdrop].
   static LinearGradient backgroundGradient(Brightness brightness) {
     if (brightness == Brightness.dark) {
       return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF1B1730), Color(0xFF161C34), Color(0xFF2A1830)],
+        colors: [Color(0xFF201A3D), Color(0xFF16213E), Color(0xFF351C3C)],
       );
     }
     return const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFEDE9FE), Color(0xFFE0F2FE), Color(0xFFFCE7F3)],
+      colors: [Color(0xFFDCCBFF), Color(0xFFC3E4FF), Color(0xFFFFC9E8)],
     );
   }
 
+  /// Soft blurred accent blobs layered over [backgroundGradient] by
+  /// [GradientBackdrop] for depth ("aurora glow").
+  static Color glowPrimary(Brightness brightness) => brightness == Brightness.dark
+      ? const Color(0xFF8B7CF6).withValues(alpha: 0.35)
+      : const Color(0xFFB79CFF).withValues(alpha: 0.55);
+
+  static Color glowSecondary(Brightness brightness) => brightness == Brightness.dark
+      ? const Color(0xFFE879C4).withValues(alpha: 0.25)
+      : const Color(0xFFFFA9DC).withValues(alpha: 0.50);
+
   /// "Glass" fill for cards/panels — semi-transparent so the gradient
-  /// behind still reads through, with a faint light border for the classic
-  /// glassmorphism edge highlight.
+  /// behind still reads through, with a bright border for the classic
+  /// glassmorphism edge highlight and a tinted shadow so the surface
+  /// visibly lifts off the backdrop instead of blending into it.
   static Color glassFill(Brightness brightness) => brightness == Brightness.dark
-      ? Colors.white.withOpacity(0.06)
-      : Colors.white.withOpacity(0.55);
+      ? Colors.white.withValues(alpha: 0.08)
+      : Colors.white.withValues(alpha: 0.72);
 
   static Color glassBorder(Brightness brightness) => brightness == Brightness.dark
-      ? Colors.white.withOpacity(0.10)
-      : Colors.white.withOpacity(0.65);
+      ? Colors.white.withValues(alpha: 0.16)
+      : Colors.white.withValues(alpha: 0.85);
+
+  static Color glassShadow(Brightness brightness) => brightness == Brightness.dark
+      ? Colors.black.withValues(alpha: 0.45)
+      : const Color(0xFF6D5BD0).withValues(alpha: 0.18);
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -49,6 +75,7 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
     final glass = glassFill(brightness);
     final glassEdge = glassBorder(brightness);
+    final glassShadowColor = glassShadow(brightness);
     final glassShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(18),
       side: BorderSide(color: glassEdge, width: 1),
@@ -78,7 +105,8 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: 0,
+        elevation: 8,
+        shadowColor: glassShadowColor,
         color: glass,
         shape: glassShape,
         margin: EdgeInsets.zero,
@@ -113,7 +141,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: scheme.error, width: 1.6),
         ),
-        hintStyle: TextStyle(color: scheme.onSurfaceVariant.withOpacity(0.7)),
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.7)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -158,7 +186,7 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        elevation: 1,
+        elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -172,7 +200,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: brightness == Brightness.dark
             ? const Color(0xFF211D3D)
-            : Colors.white.withOpacity(0.92),
+            : Colors.white.withValues(alpha: 0.95),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
@@ -181,6 +209,7 @@ class AppTheme {
 
   static TextTheme _textTheme() {
     return const TextTheme(
+      displayLarge: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1.2),
       displaySmall: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -0.5),
       headlineSmall: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -0.3),
       titleLarge: TextStyle(fontWeight: FontWeight.w700),

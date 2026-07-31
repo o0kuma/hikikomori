@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
+import '../widgets/primary_gradient_button.dart';
 
 /// Phase 1 onboarding skeleton: capture a few style samples locally.
 /// Fine copy / import UX waits for human PoC (#1) — do not invent §3 defaults here.
@@ -62,11 +64,20 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(16)),
-              child: Icon(Icons.record_voice_over_outlined, size: 28, color: scheme.onPrimaryContainer),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.brandGradient,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF6D5BD0).withValues(alpha: 0.3), blurRadius: 18, offset: const Offset(0, 8)),
+                  ],
+                ),
+                child: const Icon(Icons.record_voice_over_outlined, size: 28, color: Colors.white),
+              ),
             ),
             const SizedBox(height: 16),
             Text('와카뷰가 따라 쓸 말투', style: theme.textTheme.headlineSmall),
@@ -104,9 +115,9 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
               const SizedBox(height: 12),
             ],
             const SizedBox(height: 12),
-            FilledButton(
+            PrimaryGradientButton(
+              label: '이 말투로 시작',
               onPressed: () => _save(markDone: true),
-              child: const Text('이 말투로 시작'),
             ),
           ],
         ),

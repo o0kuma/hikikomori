@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import '../config.dart';
 import '../state/session_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/brand_mark.dart';
+import '../widgets/gradient_text.dart';
+import '../widgets/primary_gradient_button.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -42,20 +45,10 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(flex: 3),
-              Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: scheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(Icons.auto_awesome, size: 34, color: scheme.onPrimaryContainer),
-                ),
-              ),
+              const Spacer(flex: 2),
+              const Center(child: BrandMark(size: 72)),
               const SizedBox(height: 20),
-              Text(
+              GradientText(
                 '와카뷰',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
@@ -66,7 +59,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
               ),
-              const Spacer(flex: 2),
+              const Spacer(flex: 1),
               Text('초대 코드로 클로즈드 베타에 참여합니다', style: theme.textTheme.labelLarge),
               const SizedBox(height: 12),
               _DemoTestPanel(
@@ -109,13 +102,12 @@ class _SignupScreenState extends State<SignupScreen> {
               ],
               const SizedBox(height: 20),
               _PressScale(
-                child: FilledButton(
+                child: PrimaryGradientButton(
+                  label: '시작하기',
+                  loading: session.loading,
                   onPressed: session.loading
                       ? null
                       : () => session.signup(_invite.text.trim(), _name.text.trim()),
-                  child: session.loading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('시작하기'),
                 ),
               ),
               const SizedBox(height: 32),
@@ -140,7 +132,7 @@ class _DemoTestPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
     return Material(
-      color: AppTheme.glassFill(brightness),
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onFill,
@@ -148,8 +140,12 @@ class _DemoTestPanel extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
           decoration: BoxDecoration(
+            color: AppTheme.glassFill(brightness),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppTheme.glassBorder(brightness)),
+            boxShadow: [
+              BoxShadow(color: AppTheme.glassShadow(brightness), blurRadius: 20, offset: const Offset(0, 8)),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

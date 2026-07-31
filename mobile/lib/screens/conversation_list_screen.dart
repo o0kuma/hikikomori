@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
+import '../widgets/gradient_text.dart';
 import 'autonomy_settings_screen.dart';
 import 'chat_screen.dart';
 import 'contacts_screen.dart';
@@ -103,7 +105,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('와카뷰'),
+        title: GradientText('와카뷰', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(
             tooltip: '사후 알림',
@@ -174,11 +176,26 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                     ),
                   if (_rooms.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 32),
+                      padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
                       child: Column(
                         children: [
-                          Icon(Icons.chat_bubble_outline, size: 40, color: theme.colorScheme.outline),
-                          const SizedBox(height: 12),
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: AppTheme.brandGradient,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF6D5BD0).withValues(alpha: 0.3),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.chat_bubble_outline, size: 30, color: Colors.white),
+                          ),
+                          const SizedBox(height: 16),
                           Text(
                             '대화방이 없습니다',
                             style: theme.textTheme.titleMedium,

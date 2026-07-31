@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/brand_mark.dart';
+import '../widgets/gradient_text.dart';
+
 /// Shown while `SessionState.restore()` runs, before the real app (signup /
 /// onboarding / conversation list) is ready to pick. Purely presentational —
 /// no navigation logic lives here, `main.dart` swaps it out once restore()
@@ -17,31 +20,9 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: scheme.primary.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [scheme.primary, scheme.tertiary],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
-                ),
-              ),
-            ),
+            const BrandMark(size: 72),
             const SizedBox(height: 24),
-            Text(
+            GradientText(
               '와카뷰',
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
