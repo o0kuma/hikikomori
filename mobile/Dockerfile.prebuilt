@@ -1,0 +1,10 @@
+# Optional: serve a host-built Flutter web tree (faster CI/agent smoke).
+#   cd mobile && flutter build web --release --dart-define=CORE_API_BASE=https://msn.iykyka.com
+#   docker build -f mobile/Dockerfile.prebuilt -t ykavu-web .
+# Production/Portainer should prefer mobile/Dockerfile (multi-stage flutter build).
+FROM nginx:1.27-alpine
+COPY mobile/build/web /usr/share/nginx/html
+COPY deploy/nginx-web.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
+  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1

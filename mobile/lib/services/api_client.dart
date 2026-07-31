@@ -127,6 +127,21 @@ class ApiClient {
     return Contact.fromJson(json);
   }
 
+  Future<Contact> updateContact({
+    required int userId,
+    required int contactId,
+    required String displayName,
+    int? contactUserId,
+    String relationshipNote = '',
+  }) async {
+    final json = await _json('PATCH', '/users/$userId/contacts/$contactId', body: {
+      'display_name': displayName,
+      if (contactUserId != null) 'contact_user_id': contactUserId,
+      'relationship_note': relationshipNote,
+    });
+    return Contact.fromJson(json);
+  }
+
   Future<void> deleteContact(int userId, int contactId) async {
     await _json('DELETE', '/users/$userId/contacts/$contactId');
   }

@@ -18,17 +18,22 @@
 - 기획: [`docs/PLANNING.md`](./docs/PLANNING.md) · 결정: [`docs/decision-log.md`](./docs/decision-log.md) (Q1~Q7 **확정**)
 - Vision / PRD / 기술설계: [`docs/vision.md`](./docs/vision.md) · [`docs/PRD.md`](./docs/PRD.md) · [`docs/tech-design.md`](./docs/tech-design.md)
 - 로드맵 (작업 체크리스트): [`docs/roadmap.md`](./docs/roadmap.md)
+- **배포·잔여 실행 트랙:** [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) (N1 스모크 → N2 Docker → … → N5 사람 PoC)
 - 베타 직전(C): [`docs/invite-ops.md`](./docs/invite-ops.md) · [`docs/android-release.md`](./docs/android-release.md) · [`docs/prototype.md`](./docs/prototype.md)
 - PoC 계획/준비물: [`docs/poc-plan.md`](./docs/poc-plan.md) · [`docs/poc-materials.md`](./docs/poc-materials.md)
 
 ## AI 에이전트 규칙
 
 - [`AGENTS.md`](./AGENTS.md) · [`CLAUDE.md`](./CLAUDE.md)
+- **브랜치:** 작업·머지는 항상 `main`
+- **리모트:** GitHub `origin` + Gitea `gitea`(iykyka) — `main` 갱신 후 `./scripts/push-both.sh`
 
 ## 현재 단계
 
-- Phase 1 **A~C**까지 반영됨 (서버·Flutter·베타 직전 문서/배포 경로)
-- 다음: **D — 사람 PoC #1/#3·Q3 인터뷰** (`docs/roadmap.md` §3, 맨 마지막)
+- Phase 1 **A~C** + **N2 컷오버 + N3 안정화 완료** — 라이브: [`https://msn.iykyka.com`](https://msn.iykyka.com)
+- 테스터 안내: [`docs/tester-guide.md`](./docs/tester-guide.md) · 데모 코드 **`DEMO-YKAVU`**
+- **다음 (선택):** N4 FCM·Android QA
+- **맨 마지막:** N5 / D — 사람 PoC (`docs/roadmap.md` §3). §3 기본값 추측 금지
 - 프로토타입 공유 URL은 [`docs/prototype.md`](./docs/prototype.md)의 `SHARE_URL`에 Master가 기입
 
 ## 로컬 실행 (요약)
@@ -50,3 +55,18 @@ go run . migrate && go run .
 # 터미널 3 — Flutter (Android)
 cd mobile && flutter run --dart-define=CORE_API_BASE=http://10.0.2.2:8080
 ```
+
+## Docker (N2-B / `msn.iykyka.com`)
+
+- 구성: [`docs/deploy-docker.md`](./docs/deploy-docker.md)
+- Portainer·컷오버: [`docs/deploy-portainer.md`](./docs/deploy-portainer.md)
+- 서버 기동: `./scripts/server-up.sh` (호스트에서 `.env` 채운 뒤)
+
+```bash
+cp .env.example .env   # ADMIN_API_TOKEN, POSTGRES_PASSWORD 필수
+# 로컬: PUBLIC_API_BASE=http://localhost:8088
+docker compose up -d --build
+curl -sS http://localhost:8088/health
+```
+
+Postgres·AI는 내부망만. 엣지 프록시는 `web:80`(또는 `WEB_HOST_PORT`)만 공개.

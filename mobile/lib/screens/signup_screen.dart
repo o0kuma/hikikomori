@@ -181,6 +181,14 @@ class _DemoTestPanel extends StatelessWidget {
                 '탭하면 입력란에 채워집니다 · 여러 명이 같은 코드로 가입 가능',
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
+              const SizedBox(height: 8),
+              Text(
+                '페어링: 두 명이 각자 가입 → 내 사용자 ID를 교환 → 연락처에 상대 숫자 ID로 대화 시작',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
         ),

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../db/app_database.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/push_token_service.dart';
 
 class SessionState extends ChangeNotifier {
   SessionState({ApiClient? api, AppDatabase? db})
@@ -148,22 +148,25 @@ class SessionState extends ChangeNotifier {
     }
   }
 
-  /// Registers a stable install id as the push token until Firebase Messaging
-  /// is wired with a real FCM registration token (roadmap B).
+  /// Registers a real FCM token when Firebase is configured; otherwise a stable
+  /// `install:` placeholder (server skips placeholders for delivery).
   Future<void> _registerDeviceTokenBestEffort() async {
     if (user == null) return;
     try {
       _db ??= await _openDb();
-      var installId = await _db!.getKv(_kDeviceInstallId);
-      if (installId == null || installId.isEmpty) {
-        final rand = Random.secure();
-        installId = List.generate(16, (_) => rand.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-        await _db!.setKv(_kDeviceInstallId, installId);
-      }
+      final resolved = await PushTokenService(
+        readInstallId: () => _db!.getKv(_kDeviceInstallId),
+        storeInstallId: (id) => _db!.setKv(_kDeviceInstallId, id),
+      ).resolve();
       await _api.registerDeviceToken(
         userId: user!.id,
-        token: 'install:$installId',
-        platform: defaultTargetPlatform == TargetPlatform.android ? 'android' : 'other',
+        token: resolved.token,
+        platform: resolved.platform,
+      );
+      debugPrint(
+        resolved.isFcm
+            ? 'device token registered (FCM)'
+            : 'device token registered (install placeholder)',
       );
     } catch (e) {
       debugPrint('device token register skipped: $e');

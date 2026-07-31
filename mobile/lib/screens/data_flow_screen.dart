@@ -96,7 +96,7 @@ class DataFlowScreen extends StatelessWidget {
             body: '초안이 필요할 때: 최근 대화 몇 줄 + 말투 샘플 일부(최소 컨텍스트)\n'
                 '채팅 릴레이: 보낸 메시지 본문\n'
                 '계정: 표시 이름·초대 코드·세션 토큰\n'
-                '푸시(준비 중): 디바이스 토큰만 등록, 실제 전송은 FCM 프로젝트 연결 후',
+                '푸시: Firebase 연결 시 실 FCM 토큰 등록 · 미연결 시 install 플레이스홀더 (docs/fcm-setup.md)',
           ),
           _section(
             context,

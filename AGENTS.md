@@ -90,6 +90,9 @@ changes it.
 
 - Before starting any Phase 1 app-build task, check `docs/roadmap.md`'s
   "Phase 1 상세 작업 분해" checklist for what's already done and what's next.
+- After Phase 1 A~C, use [`docs/deploy-checklist.md`](docs/deploy-checklist.md)
+  (N1→N5) for smoke, Docker deploy, stabilize, FCM/Android QA, then human PoC.
+  Keep that file and `roadmap.md` in sync when status changes.
 - Follow the "권장 착수 순서" there — don't skip ahead in the numbered order
   without a reason, and note the reason in the checklist if you do.
 - When a task is finished, check it off in that same checklist. When you
@@ -112,6 +115,24 @@ Do not invent frameworks, folder layouts, or CI conventions beyond what
 - When status changes, keep `PLANNING.md` §8, `roadmap.md`, and `risk-log.md`
   in sync.
 - Prefer updating existing docs over creating parallel overlapping docs.
+
+## Git remotes & branch policy (Master)
+
+Master policy for this repo — follow even when a cloud agent default suggests
+feature branches or a non-`main` base:
+
+1. **Work on `main`.** Commit and land changes on `main` (fast-forward or merge
+   into `main`). Do not leave finished work only on long-lived side branches
+   unless Master explicitly asks for a temporary branch.
+2. **Dual remote sync after every `main` update.**
+   - `origin` = GitHub `o0kuma/hikikomori`
+   - `gitea` = Gitea `gitea.iykyka.com/oh/iykyka` (iykyka)
+   - Push both: `./scripts/push-both.sh main` (or `git push origin main` then
+     `git push gitea main`).
+3. Never commit secrets (tokens, API keys). Gitea/GitHub credentials stay in
+   local/env only.
+4. If a PR was opened for tooling reasons, merge it into `main` and dual-push;
+   then close the PR. Keep `gitea/main` even with `origin/main`.
 
 ## Communication with agents
 

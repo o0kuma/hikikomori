@@ -95,7 +95,7 @@ func TestRevokeSessionAndPushTestWithoutFCM(t *testing.T) {
 		t.Fatalf("revoke: %d", del.StatusCode)
 	}
 
-	// Push test without FCM_SERVER_KEY should soft-skip.
+	// Push test without FCM credentials should soft-skip.
 	push := postJSONAuth(t, server.URL+"/admin/push-test", "test-admin-token", map[string]interface{}{
 		"user_id": userID,
 		"title":   "t",

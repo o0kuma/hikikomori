@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Push main to GitHub (origin) and Gitea (gitea) remotes.
+# Push a branch to GitHub (origin) and Gitea iykyka (gitea) remotes.
+# Master policy: land work on main, then run: ./scripts/push-both.sh main
+# See AGENTS.md "Git remotes & branch policy".
 set -euo pipefail
 BRANCH="${1:-main}"
 cd "$(dirname "$0")/.."

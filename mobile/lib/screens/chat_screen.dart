@@ -175,6 +175,18 @@ class _ChatScreenState extends State<ChatScreen> {
     if (draft == null || draft.isEscalate || session.user == null) return;
     final text = _draftEdit.text.trim();
     if (text.isEmpty) return;
+
+    // L0: twin send is forbidden server-side — move text to human composer instead.
+    if (session.autonomyLevel == AutonomyLevel.L0) {
+      setState(() {
+        _input.text = text;
+        _pendingDraft = null;
+        _draftEdit.clear();
+        _banner = 'L0(비서 모드)에서는 와카뷰로 보낼 수 없습니다. 아래 입력창에서 직접 보내거나, 자율성 설정을 L1으로 바꾸세요.';
+      });
+      return;
+    }
+
     setState(() => _busy = true);
     try {
       final msg = await session.api.sendMessage(
@@ -278,6 +290,14 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
+    final level = context.watch<SessionState>().autonomyLevel;
+    final isL0 = level == AutonomyLevel.L0;
+    final title = isL0
+        ? '초안 (L0) — 직접 보내기'
+        : level == AutonomyLevel.L1
+            ? 'L1 승인 — 수정 후 보내기'
+            : '초안 (L2) — 승인 후 보내기';
+
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       padding: const EdgeInsets.all(16),
@@ -293,12 +313,21 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Icon(Icons.auto_awesome, size: 18, color: theme.colorScheme.onSecondaryContainer),
               const SizedBox(width: 6),
-              Text(
-                'L1 승인 — 수정 후 보내기',
-                style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                ),
               ),
             ],
           ),
+          if (isL0) ...[
+            const SizedBox(height: 6),
+            Text(
+              'L0에서는 와카뷰 발송이 막혀 있습니다. 초안을 입력창으로 옮긴 뒤 직접 보내거나, 메뉴 → 자율성에서 L1으로 바꾸세요.',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+            ),
+          ],
           const SizedBox(height: 10),
           TextField(
             controller: _draftEdit,
@@ -319,7 +348,7 @@ class _ChatScreenState extends State<ChatScreen> {
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: _busy ? null : _sendTwinApproved,
-                child: const Text('승인하고 보내기'),
+                child: Text(isL0 ? '입력창으로 옮기기' : '승인하고 보내기'),
               ),
             ],
           ),

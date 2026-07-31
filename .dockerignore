@@ -1,0 +1,24 @@
+.git
+**/.git
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.dart_tool
+**/.env
+.env
+**/*.db
+poc/tone-corpus/data
+**/node_modules
+mobile/android/.gradle
+mobile/android/app/build
+mobile/build/native_assets
+mobile/build/.last_build_id
+**/.idea
+**/.vscode
+mobile/devtools_options.yaml
+mobile/test/goldens
+
+# Allow mobile/build/web for Dockerfile.prebuilt
+!mobile/build/
+!mobile/build/web/
+!mobile/build/web/**
