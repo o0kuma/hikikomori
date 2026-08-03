@@ -107,7 +107,8 @@ PoC 의존 하위 질문(자율성 기본값 등)과 **Q8/Q9(계정·설정 IA /
 3. [`tech-design.md`](./tech-design.md) — 온디바이스/서버 경계, 데이터 흐름, 에스컬레이션 로직
 4. [`risk-log.md`](./risk-log.md) — 회의 자료 §2-6, §oslayer §4의 리스크를 완화 상태와 함께 추적
 5. [`roadmap.md`](./roadmap.md) — L0~L4 단계, 자체 앱→OS 레이어 확장 시점 반영
-6. [`decision-log.md`](./decision-log.md) — Q1~Q7 결정과 근거, 계속 누적 기록
+6. [`decision-log.md`](./decision-log.md) — Q1~Q7 확정 + Q8/Q9 제안, 계속 누적 기록
+6a. [`account-settings-ia.md`](./account-settings-ia.md) — 초대 가입·로그아웃·설정 IA·L2 갭 명세
 7. [`poc-plan.md`](./poc-plan.md) — PoC #1(말투 학습)·#3(사칭/신뢰 수용성) 실행 계획과 Go/No-Go 기준
 8. [`poc-materials.md`](./poc-materials.md) — 모집 문구, 동의 안내, 역할극 스크립트, 인터뷰 질문지 초안
 9. [`user-interview-guide.md`](./user-interview-guide.md) — Q3 자율성 수용성 인터뷰 (와카뷰 사용자 관점)

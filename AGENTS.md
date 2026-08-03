@@ -21,7 +21,9 @@ Notes:
 
 - Q1~Q7 in `decision-log.md` are **확정** (Phase 1 C, 2026-07-30). PoC-dependent
   sub-questions (default autonomy level, whitelist defaults, final branding)
-  stay open — do not invent those. To reverse a Q, update `decision-log.md` and
+  stay open — do not invent those. Q8/Q9 (logout/settings IA, L2 semantics) are
+  **제안** — implement only after Master marks them 확정; see
+  `docs/account-settings-ia.md`. To reverse a Q, update `decision-log.md` and
   derived docs in the same change.
 - Prefer `decision-log.md` (and the synced summary in `PLANNING.md` §2) for
   current working answers.
