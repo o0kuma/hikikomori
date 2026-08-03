@@ -6,7 +6,14 @@ import sys
 import types
 from unittest.mock import MagicMock
 
-from app.generation import build_user_prompt, draft_reply, last_incoming_text
+from app.generation import (
+    RELATIONSHIP_TIER_INSTRUCTIONS,
+    SYSTEM_PROMPT,
+    build_user_prompt,
+    draft_reply,
+    last_incoming_text,
+    system_prompt_for_tier,
+)
 
 
 def test_last_incoming_text_strips_speaker_prefix():
@@ -73,3 +80,48 @@ def test_draft_reply_ok_calls_gemini_with_expected_args(monkeypatch):
     _, kwargs = fake_client.models.generate_content.call_args
     assert kwargs["model"] == "gemini-2.5-flash"
     assert "오늘 저녁 뭐 먹을래" in kwargs["contents"]
+
+
+def test_system_prompt_for_tier_none_returns_base():
+    assert system_prompt_for_tier(None) == SYSTEM_PROMPT
+
+
+def test_system_prompt_for_tier_close_adds_instruction():
+    prompt = system_prompt_for_tier("close")
+    assert prompt.startswith(SYSTEM_PROMPT)
+    assert RELATIONSHIP_TIER_INSTRUCTIONS["close"] in prompt
+
+
+def test_system_prompt_for_tier_formal_adds_instruction():
+    prompt = system_prompt_for_tier("formal")
+    assert prompt.startswith(SYSTEM_PROMPT)
+    assert RELATIONSHIP_TIER_INSTRUCTIONS["formal"] in prompt
+
+
+def test_draft_reply_passes_relationship_tier_into_system_instruction(monkeypatch):
+    fake_response = MagicMock()
+    fake_response.text = "네 알겠습니다"
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = fake_response
+
+    fake_genai = types.ModuleType("google.genai")
+    fake_genai.Client = MagicMock(return_value=fake_client)
+    fake_types = types.ModuleType("google.genai.types")
+    fake_types.GenerateContentConfig = MagicMock(side_effect=lambda **kw: kw)
+    fake_google = types.ModuleType("google")
+    fake_google.genai = fake_genai
+
+    monkeypatch.setitem(sys.modules, "google", fake_google)
+    monkeypatch.setitem(sys.modules, "google.genai", fake_genai)
+    monkeypatch.setitem(sys.modules, "google.genai.types", fake_types)
+
+    status, text = draft_reply(
+        ["알겠습니다"],
+        ["상대: 내일 회의 시간 괜찮으세요?"],
+        api_key="fake-key",
+        relationship_tier="formal",
+    )
+
+    assert status == "ok"
+    _, kwargs = fake_client.models.generate_content.call_args
+    assert RELATIONSHIP_TIER_INSTRUCTIONS["formal"] in kwargs["config"]["system_instruction"]

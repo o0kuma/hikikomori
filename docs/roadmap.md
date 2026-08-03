@@ -152,12 +152,20 @@
   버그가 생김(실제 Playwright로 스크린샷 찍어보다가 발견). 실시간 소켓 메시지는 화면이 열려
   있는 동안은 계속 읽음으로 따라가도 됨
 
-**2.7-B 관계별 페르소나** (`PRD.md` §2.1-②·§3.1, 최소 2종: 가까운 사이/공식적인 사이 — 현재
-`TwinSettings`엔 `AutonomyLevel`만 있고 페르소나 필드 없음)
-- [ ] `relationship_tier` 필드 추가(가까운 사이/공식적인 사이, 전역 기본값) — `core-backend/models.go`
-- [ ] 온보딩에 관계 티어 선택 스텝 추가 — `onboarding_tone_screen.dart` (현재는 말투 샘플 4개뿐)
-- [ ] 연락처별 관계 티어 오버라이드 — `contacts_screen.dart`, 자율성 레벨의 상대별 예외와 동일 패턴
-- [ ] 초안 생성 시 상대 티어별 톤 프롬프트 분기 — `ai-service/app/generation.py` 시스템 프롬프트에 주입
+**2.7-B 관계별 페르소나** (`PRD.md` §2.1-②·§3.1, 최소 2종 — **완료** 2026-08-03)
+- [x] `relationship_tier` 필드 추가(가까운 사이/공식적인 사이, 전역 기본값) — `TwinSettings`에
+  추가, 신규 유저 기본값은 안전 우선으로 `formal`. `Contact`에도 상대별 오버라이드 필드 추가
+- [x] 온보딩에 관계 티어 선택 스텝 추가 — `onboarding_tone_screen.dart`, 말투 샘플 다음에 전역
+  기본값 선택(`SegmentedButton`)
+- [x] 연락처별 관계 티어 오버라이드 — `contacts_screen.dart` 연락처 추가/수정 다이얼로그에
+  `_RelationshipTierPicker`(기본값 사용/가까운 사이/공식적인 사이 3-way 칩), 자율성 화면에도
+  전역 기본값 변경 UI 추가
+- [x] 초안 생성 시 상대 티어별 톤 프롬프트 분기 — `ai-service/app/generation.py`
+  `RELATIONSHIP_TIER_INSTRUCTIONS` + `system_prompt_for_tier()`. `core-backend`가
+  `POST /conversations/:id/draft` 호출마다 `resolveRelationshipTier()`로 해석(연락처 오버라이드
+  → 전역 기본값 → `formal`) 해서 `ai-service`로 전달. 그룹 대화는 상대가 여럿이라 항상 전역
+  기본값만 사용. 이 엔드포인트가 원래 인증을 요구하지 않던 걸 깨지 않도록 `currentUser(..., false)`로
+  선택적 인증 처리 — 토큰 없는 기존 호출도 그대로 동작(티어 해석만 스킵)
 
 **2.7-C 스팸/도배 감지 최소 버전** (`PRD.md` §4 엣지케이스: "안전 관련이라 v1 최소 버전 필요"로
 명시 — 현재 코드 전체에 관련 로직 0건)

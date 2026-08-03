@@ -48,47 +48,57 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final noteCtrl = TextEditingController();
     final session = context.read<SessionState>();
     final myId = session.user?.id;
+    RelationshipTier? tierOverride;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('연락처 추가'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (myId != null) ...[
-                MyUserIdChip(userId: myId),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('연락처 추가'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (myId != null) ...[
+                  MyUserIdChip(userId: myId),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: '표시 이름',
+                    helperText: '목록에 보일 이름 (예: 친구 닉네임)',
+                  ),
+                ),
                 const SizedBox(height: 12),
+                TextField(
+                  controller: peerCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: '상대 사용자 ID (숫자, 필수)',
+                    helperText: '대화하려면 상대의 숫자 ID가 필요합니다. 이름만으로는 안 됩니다.',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteCtrl,
+                  decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
+                ),
+                const SizedBox(height: 12),
+                Text('이 상대와의 관계 (roadmap.md §2.7-B)', style: Theme.of(ctx).textTheme.bodySmall),
+                const SizedBox(height: 6),
+                _RelationshipTierPicker(
+                  value: tierOverride,
+                  onChanged: (t) => setDialogState(() => tierOverride = t),
+                ),
               ],
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: '표시 이름',
-                  helperText: '목록에 보일 이름 (예: 친구 닉네임)',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: peerCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '상대 사용자 ID (숫자, 필수)',
-                  helperText: '대화하려면 상대의 숫자 ID가 필요합니다. 이름만으로는 안 됩니다.',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteCtrl,
-                decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
-              ),
-            ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('추가')),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('추가')),
-        ],
       ),
     );
     if (ok != true || !mounted) return;
@@ -109,6 +119,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         displayName: name,
         contactUserId: peer,
         relationshipNote: noteCtrl.text.trim(),
+        relationshipTier: tierOverride,
       );
       setState(() {
         _contacts = [..._contacts, created];
@@ -149,48 +160,60 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
     final noteCtrl = TextEditingController(text: contact.relationshipNote);
     final session = context.read<SessionState>();
+    // PATCH는 전체 교체라 매번 이 값을 그대로 다시 보낸다 — 안 보내면(=이전
+    // 코드처럼 필드 자체를 안 넣으면) 서버가 기존 오버라이드를 null로 되돌림.
+    RelationshipTier? tierOverride = contact.relationshipTier;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(contact.contactUserId == null ? '사용자 ID 입력' : '연락처 수정'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                contact.contactUserId == null
-                    ? '대화하려면 상대의 숫자 사용자 ID가 필요합니다. 삭제하지 말고 여기서 채워 주세요.'
-                    : '표시 이름·상대 ID·메모를 고칠 수 있습니다.',
-                style: Theme.of(ctx).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: '표시 이름'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: peerCtrl,
-                keyboardType: TextInputType.number,
-                autofocus: contact.contactUserId == null,
-                decoration: const InputDecoration(
-                  labelText: '상대 사용자 ID (숫자, 필수)',
-                  helperText: '상대 대화 목록에 보이는 숫자 ID',
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(contact.contactUserId == null ? '사용자 ID 입력' : '연락처 수정'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  contact.contactUserId == null
+                      ? '대화하려면 상대의 숫자 사용자 ID가 필요합니다. 삭제하지 말고 여기서 채워 주세요.'
+                      : '표시 이름·상대 ID·메모를 고칠 수 있습니다.',
+                  style: Theme.of(ctx).textTheme.bodySmall,
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteCtrl,
-                decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: '표시 이름'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: peerCtrl,
+                  keyboardType: TextInputType.number,
+                  autofocus: contact.contactUserId == null,
+                  decoration: const InputDecoration(
+                    labelText: '상대 사용자 ID (숫자, 필수)',
+                    helperText: '상대 대화 목록에 보이는 숫자 ID',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteCtrl,
+                  decoration: const InputDecoration(labelText: '관계 메모 (선택)'),
+                ),
+                const SizedBox(height: 12),
+                Text('이 상대와의 관계 (roadmap.md §2.7-B)', style: Theme.of(ctx).textTheme.bodySmall),
+                const SizedBox(height: 6),
+                _RelationshipTierPicker(
+                  value: tierOverride,
+                  onChanged: (t) => setDialogState(() => tierOverride = t),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('저장')),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('저장')),
-        ],
       ),
     );
     if (ok != true || !mounted || session.user == null) return;
@@ -212,6 +235,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         displayName: name,
         contactUserId: peer,
         relationshipNote: noteCtrl.text.trim(),
+        relationshipTier: tierOverride,
       );
       setState(() {
         _contacts = _contacts.map((c) => c.id == updated.id ? updated : c).toList();
@@ -333,6 +357,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             ? '사용자 ID 없음 — 대화 불가 (다시 추가 필요)'
                             : [
                                 '사용자 #${c.contactUserId}',
+                                if (c.relationshipTier != null) c.relationshipTier!.label,
                                 if (c.relationshipNote.isNotEmpty) c.relationshipNote,
                               ].join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -378,6 +403,35 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 ],
               ),
       ),
+    );
+  }
+}
+
+/// Per-contact override of the global relationship tier (roadmap.md
+/// §2.7-B). `value: null` means "use the global default set in onboarding".
+class _RelationshipTierPicker extends StatelessWidget {
+  const _RelationshipTierPicker({required this.value, required this.onChanged});
+
+  final RelationshipTier? value;
+  final ValueChanged<RelationshipTier?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      children: [
+        ChoiceChip(
+          label: const Text('기본값 사용'),
+          selected: value == null,
+          onSelected: (_) => onChanged(null),
+        ),
+        for (final tier in RelationshipTier.values)
+          ChoiceChip(
+            label: Text(tier.label),
+            selected: value == tier,
+            onSelected: (_) => onChanged(tier),
+          ),
+      ],
     );
   }
 }

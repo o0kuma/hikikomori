@@ -4,6 +4,19 @@ enum SenderMode { human, twin }
 // ignore: constant_identifier_names
 enum AutonomyLevel { L0, L1, L2 }
 
+/// 관계별 페르소나 (roadmap.md §2.7-B, PRD.md §2.1-②/§3.1) — minimum 2 tiers.
+enum RelationshipTier {
+  close,
+  formal;
+
+  static RelationshipTier fromJson(String? raw) => RelationshipTier.values.firstWhere(
+        (e) => e.name == raw,
+        orElse: () => RelationshipTier.formal,
+      );
+
+  String get label => this == RelationshipTier.close ? '가까운 사이' : '공식적인 사이';
+}
+
 class User {
   User({required this.id, required this.displayName, required this.inviteCode});
 
@@ -19,9 +32,10 @@ class User {
 }
 
 class TwinSettings {
-  TwinSettings({required this.autonomyLevel});
+  TwinSettings({required this.autonomyLevel, required this.relationshipTier});
 
   final AutonomyLevel autonomyLevel;
+  final RelationshipTier relationshipTier;
 
   factory TwinSettings.fromJson(Map<String, dynamic> json) {
     final raw = (json['autonomy_level'] as String? ?? 'L0').toUpperCase();
@@ -30,6 +44,7 @@ class TwinSettings {
         (e) => e.name == raw,
         orElse: () => AutonomyLevel.L0,
       ),
+      relationshipTier: RelationshipTier.fromJson(json['relationship_tier'] as String?),
     );
   }
 }
@@ -78,18 +93,25 @@ class Contact {
     required this.displayName,
     this.contactUserId,
     this.relationshipNote = '',
+    this.relationshipTier,
   });
 
   final int id;
   final String displayName;
   final int? contactUserId;
   final String relationshipNote;
+  /// Per-contact override of the global relationship tier (roadmap.md
+  /// §2.7-B). Null means "use the global default".
+  final RelationshipTier? relationshipTier;
 
   factory Contact.fromJson(Map<String, dynamic> json) => Contact(
         id: json['id'] as int,
         displayName: json['display_name'] as String? ?? '',
         contactUserId: json['contact_user_id'] as int?,
         relationshipNote: json['relationship_note'] as String? ?? '',
+        relationshipTier: json['relationship_tier'] == null
+            ? null
+            : RelationshipTier.fromJson(json['relationship_tier'] as String?),
       );
 }
 

@@ -35,6 +35,9 @@ type sendMessageRequest struct {
 
 type updateTwinSettingsRequest struct {
 	AutonomyLevel AutonomyLevel `json:"autonomy_level" binding:"required"`
+	// RelationshipTier is optional so existing autonomy-only PATCH calls
+	// keep working unchanged (roadmap.md §2.7-B). Nil = leave it as-is.
+	RelationshipTier *RelationshipTier `json:"relationship_tier"`
 }
 
 type createWhitelistRuleRequest struct {
@@ -202,7 +205,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 			return
 		}
-		db.Create(&TwinSettings{UserID: user.ID, AutonomyLevel: AutonomyL0})
+		db.Create(&TwinSettings{UserID: user.ID, AutonomyLevel: AutonomyL0, RelationshipTier: RelationshipFormal})
 
 		if !demo {
 			now := time.Now()
@@ -413,12 +416,22 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			return
 		}
 
+		// 관계별 페르소나(roadmap.md §2.7-B): optional auth -- this endpoint
+		// has never required a session, so callers without one (existing
+		// tests, or a future anonymous path) still work exactly as before,
+		// just without tier resolution (falls back to "formal").
+		tier := RelationshipFormal
+		if actor, ok := currentUser(c, db, false); ok {
+			tier = resolveRelationshipTier(db, actor.ID, convID)
+		}
+
 		started := time.Now()
 		result, err := ai.requestDraft(draftRequest{
-			ContextLines:  req.ContextLines,
-			StyleExamples: req.StyleExamples,
-			History:       req.History,
-			K:             req.K,
+			ContextLines:     req.ContextLines,
+			RelationshipTier: string(tier),
+			StyleExamples:    req.StyleExamples,
+			History:          req.History,
+			K:                req.K,
 		})
 		runtimeMetrics.recordDraft(time.Since(started), err)
 		if err != nil {
@@ -472,6 +485,10 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			c.JSON(http.StatusBadRequest, gin.H{"detail": "autonomy_level must be one of L0, L1, L2"})
 			return
 		}
+		if req.RelationshipTier != nil && !validRelationshipTier(*req.RelationshipTier) {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "relationship_tier must be one of close, formal"})
+			return
+		}
 
 		var settings TwinSettings
 		if err := db.Where("user_id = ?", userID).First(&settings).Error; err != nil {
@@ -479,12 +496,19 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			return
 		}
 		settings.AutonomyLevel = req.AutonomyLevel
+		if req.RelationshipTier != nil {
+			settings.RelationshipTier = *req.RelationshipTier
+		}
 		if err := db.Save(&settings).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"user_id": userID, "autonomy_level": settings.AutonomyLevel})
+		c.JSON(http.StatusOK, gin.H{
+			"user_id":           userID,
+			"autonomy_level":    settings.AutonomyLevel,
+			"relationship_tier": settings.RelationshipTier,
+		})
 	})
 
 	r.POST("/users/:id/whitelist-rules", func(c *gin.Context) {

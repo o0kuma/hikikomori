@@ -30,6 +30,7 @@ class DraftRequest(BaseModel):
     history: Optional[List[str]] = None
     k: int = 6
     model: str = "gemini-2.5-flash"
+    relationship_tier: Optional[str] = None
 
     @model_validator(mode="after")
     def check_exactly_one_style_source(self):
@@ -71,7 +72,9 @@ def draft(req: DraftRequest):
             req.history, last_incoming_text(req.context_lines), k=req.k
         )
 
-    status, text = draft_reply(style_examples, req.context_lines, model=req.model)
+    status, text = draft_reply(
+        style_examples, req.context_lines, model=req.model, relationship_tier=req.relationship_tier
+    )
     return DraftResponse(status=status, text=text)
 
 

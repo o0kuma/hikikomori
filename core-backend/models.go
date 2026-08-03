@@ -17,6 +17,23 @@ const (
 	AutonomyL2 AutonomyLevel = "L2"
 )
 
+// RelationshipTier is the minimum-2-tier persona split roadmap.md §2.7-B /
+// PRD.md §2.1-②/§3.1 requires: draft tone should read differently for a
+// close friend than for someone you'd stay formal with. Defaults to the
+// more conservative "formal" tier for anyone who hasn't set this explicitly
+// (same fail-safe-leaning default philosophy as AutonomyLevel defaulting
+// to L0 when missing).
+type RelationshipTier string
+
+const (
+	RelationshipClose  RelationshipTier = "close"
+	RelationshipFormal RelationshipTier = "formal"
+)
+
+func validRelationshipTier(t RelationshipTier) bool {
+	return t == RelationshipClose || t == RelationshipFormal
+}
+
 type User struct {
 	ID          uint   `gorm:"primaryKey"`
 	InviteCode  string `gorm:"uniqueIndex;not null"`
@@ -55,6 +72,10 @@ type Contact struct {
 	ContactUserID    *uint
 	DisplayName      string `gorm:"not null"`
 	RelationshipNote string
+	// RelationshipTier overrides the owner's global TwinSettings.RelationshipTier
+	// for drafts sent to this specific contact (roadmap.md §2.7-B). Nil means
+	// "use the global default".
+	RelationshipTier *RelationshipTier
 	CreatedAt        time.Time
 }
 
@@ -95,11 +116,12 @@ type Message struct {
 }
 
 type TwinSettings struct {
-	ID            uint          `gorm:"primaryKey"`
-	UserID        uint          `gorm:"uniqueIndex;not null"`
-	AutonomyLevel AutonomyLevel `gorm:"not null;default:L0"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID               uint             `gorm:"primaryKey"`
+	UserID           uint             `gorm:"uniqueIndex;not null"`
+	AutonomyLevel    AutonomyLevel    `gorm:"not null;default:L0"`
+	RelationshipTier RelationshipTier `gorm:"not null;default:formal"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // WhitelistRule is the L2 auto-send whitelist -- a (contact, topic) pair the

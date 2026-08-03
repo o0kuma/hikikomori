@@ -2,6 +2,7 @@
 /escalate/check into pytest -- roadmap.md Phase 1 §2.5."""
 from fastapi.testclient import TestClient
 
+import app.main as main_module
 from app.main import app
 
 client = TestClient(app)
@@ -105,3 +106,39 @@ def test_summarize_no_key(monkeypatch):
     body = resp.json()
     assert body["status"] == "no_key"
     assert "토요일 모임 3시로 하자" in body["summary"]
+
+
+def test_draft_passes_relationship_tier_through_to_draft_reply(monkeypatch):
+    captured = {}
+
+    def fake_draft_reply(style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None):
+        captured["relationship_tier"] = relationship_tier
+        return "ok", "네 알겠습니다"
+
+    monkeypatch.setattr(main_module, "draft_reply", fake_draft_reply)
+    resp = client.post(
+        "/draft",
+        json={
+            "context_lines": ["상대: 내일 회의 시간 괜찮으세요?"],
+            "style_examples": ["알겠습니다"],
+            "relationship_tier": "formal",
+        },
+    )
+    assert resp.status_code == 200
+    assert captured["relationship_tier"] == "formal"
+
+
+def test_draft_relationship_tier_defaults_to_none(monkeypatch):
+    captured = {}
+
+    def fake_draft_reply(style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None):
+        captured["relationship_tier"] = relationship_tier
+        return "ok", "ㅇㅋ"
+
+    monkeypatch.setattr(main_module, "draft_reply", fake_draft_reply)
+    resp = client.post(
+        "/draft",
+        json={"context_lines": ["상대: 오늘 뭐해?"], "style_examples": ["ㅇㅋ"]},
+    )
+    assert resp.status_code == 200
+    assert captured["relationship_tier"] is None

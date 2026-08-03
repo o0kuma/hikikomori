@@ -31,7 +31,13 @@ func mockAIService(t *testing.T) *httptest.Server {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(draftResponse{Status: "ok", Text: "mock draft for: " + strings.Join(req.ContextLines, " | ")})
+			// Echo relationship_tier into the response text (roadmap.md
+			// §2.7-B) so tests can assert what core-backend resolved and
+			// forwarded, without needing a real ai-service.
+			json.NewEncoder(w).Encode(draftResponse{
+				Status: "ok",
+				Text:   "mock draft [tier=" + req.RelationshipTier + "] for: " + strings.Join(req.ContextLines, " | "),
+			})
 		case "/escalate/check":
 			// Mirrors escalation_filter.py's rule set closely enough to
 			// exercise core-backend's gating logic; the rules themselves

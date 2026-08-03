@@ -129,6 +129,21 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
             ),
           ),
           const SizedBox(height: 28),
+          Text('기본 관계 설정', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 6),
+          Text(
+            '연락처별로 다르게 설정하지 않은 상대에게는 이 기본값이 적용됩니다.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<RelationshipTier>(
+            segments: RelationshipTier.values
+                .map((t) => ButtonSegment(value: t, label: Text(t.label)))
+                .toList(),
+            selected: {session.relationshipTier},
+            onSelectionChanged: (s) => session.setRelationshipTier(s.first),
+          ),
+          const SizedBox(height: 28),
           Text('L2 화이트리스트 주제', style: theme.textTheme.titleMedium),
           const SizedBox(height: 12),
           Row(

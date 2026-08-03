@@ -18,6 +18,7 @@ class SessionState extends ChangeNotifier {
 
   User? user;
   AutonomyLevel autonomyLevel = AutonomyLevel.L0;
+  RelationshipTier relationshipTier = RelationshipTier.formal;
   String? error;
   bool loading = false;
   bool toneOnboardingDone = false;
@@ -139,11 +140,30 @@ class SessionState extends ChangeNotifier {
   Future<void> setAutonomy(AutonomyLevel level) async {
     if (user == null) return;
     try {
-      final settings = await _api.patchTwinSettings(user!.id, level);
+      final settings = await _api.patchTwinSettings(userId: user!.id, autonomyLevel: level);
       autonomyLevel = settings.autonomyLevel;
+      relationshipTier = settings.relationshipTier;
       notifyListeners();
     } on ApiException catch (e) {
       error = '자율성 변경 실패 (${e.statusCode})';
+      notifyListeners();
+    }
+  }
+
+  /// 관계별 페르소나 전역 기본값 변경 (roadmap.md §2.7-B).
+  Future<void> setRelationshipTier(RelationshipTier tier) async {
+    if (user == null) return;
+    try {
+      final settings = await _api.patchTwinSettings(
+        userId: user!.id,
+        autonomyLevel: autonomyLevel,
+        relationshipTier: tier,
+      );
+      autonomyLevel = settings.autonomyLevel;
+      relationshipTier = settings.relationshipTier;
+      notifyListeners();
+    } on ApiException catch (e) {
+      error = '관계 설정 변경 실패 (${e.statusCode})';
       notifyListeners();
     }
   }

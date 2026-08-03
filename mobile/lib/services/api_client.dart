@@ -118,11 +118,13 @@ class ApiClient {
     required String displayName,
     int? contactUserId,
     String relationshipNote = '',
+    RelationshipTier? relationshipTier,
   }) async {
     final json = await _json('POST', '/users/$userId/contacts', body: {
       'display_name': displayName,
       if (contactUserId != null) 'contact_user_id': contactUserId,
       'relationship_note': relationshipNote,
+      if (relationshipTier != null) 'relationship_tier': relationshipTier.name,
     });
     return Contact.fromJson(json);
   }
@@ -133,11 +135,13 @@ class ApiClient {
     required String displayName,
     int? contactUserId,
     String relationshipNote = '',
+    RelationshipTier? relationshipTier,
   }) async {
     final json = await _json('PATCH', '/users/$userId/contacts/$contactId', body: {
       'display_name': displayName,
       if (contactUserId != null) 'contact_user_id': contactUserId,
       'relationship_note': relationshipNote,
+      if (relationshipTier != null) 'relationship_tier': relationshipTier.name,
     });
     return Contact.fromJson(json);
   }
@@ -201,9 +205,14 @@ class ApiClient {
     await _json('POST', '/messages/$messageId/retract');
   }
 
-  Future<TwinSettings> patchTwinSettings(int userId, AutonomyLevel level) async {
+  Future<TwinSettings> patchTwinSettings({
+    required int userId,
+    required AutonomyLevel autonomyLevel,
+    RelationshipTier? relationshipTier,
+  }) async {
     final json = await _json('PATCH', '/users/$userId/twin-settings', body: {
-      'autonomy_level': level.name,
+      'autonomy_level': autonomyLevel.name,
+      if (relationshipTier != null) 'relationship_tier': relationshipTier.name,
     });
     return TwinSettings.fromJson(json);
   }

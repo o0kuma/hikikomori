@@ -19,10 +19,14 @@ func newAIServiceClient() *AIServiceClient {
 }
 
 type draftRequest struct {
-	ContextLines  []string `json:"context_lines"`
-	StyleExamples []string `json:"style_examples,omitempty"`
-	History       []string `json:"history,omitempty"`
-	K             int      `json:"k,omitempty"`
+	ContextLines []string `json:"context_lines"`
+	// RelationshipTier (roadmap.md §2.7-B): "close" | "formal". Empty is
+	// treated by ai-service as "no tier info" and falls back to its own
+	// default tone, same as before this field existed.
+	RelationshipTier string   `json:"relationship_tier,omitempty"`
+	StyleExamples    []string `json:"style_examples,omitempty"`
+	History          []string `json:"history,omitempty"`
+	K                int      `json:"k,omitempty"`
 }
 
 type draftResponse struct {

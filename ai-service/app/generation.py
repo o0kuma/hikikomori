@@ -47,6 +47,21 @@ SYSTEM_PROMPT = """너는 어떤 사람의 '와카뷰'다. 아래 예시 발화�
 내용은 여기까지 오지 않는다. 이 지침이 남아있는 이유는 규칙이 놓친 케이스를 위한 것이다.)"""
 
 
+# 관계별 페르소나 (roadmap.md §2.7-B, PRD.md §2.1-②/§3.1) -- 최소 2종. 말투
+# "예시"가 이미 있는 격식 수준을 담고 있으므로, 이 지침은 그 예시를 뒤집지
+# 않는 선에서 미묘하게 톤을 조정하는 보조 신호일 뿐이다.
+RELATIONSHIP_TIER_INSTRUCTIONS = {
+    "close": "\n\n[관계] 상대는 나와 가까운 사이다. 말투 예시가 허용하는 범위에서 편하고 친근하게 써라.",
+    "formal": "\n\n[관계] 상대는 나와 공식적인 사이다. 말투 예시의 격식 수준을 지키면서, "
+    "이모티콘/줄임말은 예시에 없다면 새로 만들지 말고 평소보다 한 톤 더 예의를 갖춰라.",
+}
+
+
+def system_prompt_for_tier(relationship_tier=None):
+    extra = RELATIONSHIP_TIER_INSTRUCTIONS.get(relationship_tier, "")
+    return SYSTEM_PROMPT + extra
+
+
 def build_user_prompt(style_examples, context_lines):
     examples = "\n".join(f"- {s}" for s in style_examples)
     context = "\n".join(context_lines)
@@ -61,12 +76,15 @@ def last_incoming_text(context_lines):
     return last.split(": ", 1)[1] if ": " in last else last
 
 
-def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key=None):
+def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key=None, relationship_tier=None):
     """Returns (status, text). status is one of "escalate" | "no_key" | "ok".
 
     "escalate": text is the escalation reason (금전/약속 확정/감정적으로 무거운 주제).
     "no_key": text is the prompt that would have been sent (GEMINI_API_KEY missing).
     "ok": text is the generated draft.
+
+    relationship_tier: "close" | "formal" | None (roadmap.md §2.7-B). Only
+    nudges tone -- escalation/identity gating above is unaffected by it.
     """
     incoming = last_incoming_text(context_lines)
     gate = check_escalation(incoming)
@@ -89,6 +107,8 @@ def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key
     resp = client.models.generate_content(
         model=model,
         contents=build_user_prompt(style_examples, context_lines),
-        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, max_output_tokens=300),
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt_for_tier(relationship_tier), max_output_tokens=300
+        ),
     )
     return "ok", resp.text.strip()

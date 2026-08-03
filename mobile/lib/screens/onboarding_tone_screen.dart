@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/models.dart';
 import '../state/session_state.dart';
 import '../widgets/primary_gradient_button.dart';
 
@@ -16,16 +17,19 @@ class OnboardingToneScreen extends StatefulWidget {
 class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
   final _samples = List.generate(4, (_) => TextEditingController());
   var _seeded = false;
+  RelationshipTier _tier = RelationshipTier.formal;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_seeded) return;
     _seeded = true;
-    final existing = context.read<SessionState>().styleExamples;
+    final session = context.read<SessionState>();
+    final existing = session.styleExamples;
     for (var i = 0; i < existing.length && i < _samples.length; i++) {
       _samples[i].text = existing[i];
     }
+    _tier = session.relationshipTier;
   }
 
   @override
@@ -42,6 +46,7 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
       _samples.map((c) => c.text).toList(),
       markDone: markDone,
     );
+    await session.setRelationshipTier(_tier);
   }
 
   @override
@@ -84,7 +89,22 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
               ),
               const SizedBox(height: 12),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+            Text('기본 관계 설정', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 6),
+            Text(
+              '와카뷰가 초안을 쓸 때 기본으로 쓸 말투 격식이에요. 상대별로 나중에 연락처에서 따로 바꿀 수 있어요.',
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
+            ),
+            const SizedBox(height: 10),
+            SegmentedButton<RelationshipTier>(
+              segments: RelationshipTier.values
+                  .map((t) => ButtonSegment(value: t, label: Text(t.label)))
+                  .toList(),
+              selected: {_tier},
+              onSelectionChanged: (s) => setState(() => _tier = s.first),
+            ),
+            const SizedBox(height: 24),
             PrimaryGradientButton(
               label: '이 말투로 시작',
               onPressed: () => _save(markDone: true),

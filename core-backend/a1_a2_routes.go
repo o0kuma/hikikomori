@@ -18,12 +18,16 @@ type createContactRequest struct {
 	DisplayName      string `json:"display_name" binding:"required"`
 	ContactUserID    *uint  `json:"contact_user_id"`
 	RelationshipNote string `json:"relationship_note"`
+	// RelationshipTier overrides the owner's global default for this
+	// contact (roadmap.md §2.7-B). Nil = use the global default.
+	RelationshipTier *RelationshipTier `json:"relationship_tier"`
 }
 
 type updateContactRequest struct {
-	DisplayName      string `json:"display_name" binding:"required"`
-	ContactUserID    *uint  `json:"contact_user_id"`
-	RelationshipNote string `json:"relationship_note"`
+	DisplayName      string            `json:"display_name" binding:"required"`
+	ContactUserID    *uint             `json:"contact_user_id"`
+	RelationshipNote string            `json:"relationship_note"`
+	RelationshipTier *RelationshipTier `json:"relationship_tier"`
 }
 
 func contactJSON(ct Contact) gin.H {
@@ -32,6 +36,7 @@ func contactJSON(ct Contact) gin.H {
 		"display_name":      ct.DisplayName,
 		"contact_user_id":   ct.ContactUserID,
 		"relationship_note": ct.RelationshipNote,
+		"relationship_tier": ct.RelationshipTier,
 	}
 }
 
@@ -260,11 +265,16 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 			return
 		}
+		if req.RelationshipTier != nil && !validRelationshipTier(*req.RelationshipTier) {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "relationship_tier must be one of close, formal"})
+			return
+		}
 		contact := Contact{
 			OwnerUserID:      userID,
 			ContactUserID:    req.ContactUserID,
 			DisplayName:      req.DisplayName,
 			RelationshipNote: req.RelationshipNote,
+			RelationshipTier: req.RelationshipTier,
 		}
 		if err := db.Create(&contact).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
@@ -307,6 +317,10 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 			return
 		}
+		if req.RelationshipTier != nil && !validRelationshipTier(*req.RelationshipTier) {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "relationship_tier must be one of close, formal"})
+			return
+		}
 		var contact Contact
 		if err := db.Where("id = ? AND owner_user_id = ?", contactID, userID).First(&contact).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"detail": "contact not found"})
@@ -319,6 +333,7 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 		contact.DisplayName = req.DisplayName
 		contact.ContactUserID = req.ContactUserID
 		contact.RelationshipNote = req.RelationshipNote
+		contact.RelationshipTier = req.RelationshipTier
 		if err := db.Save(&contact).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 			return
