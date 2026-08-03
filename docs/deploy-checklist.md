@@ -38,6 +38,8 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
 - 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
+- **발견(2026-07-31): Track C 콘텐츠 갭** — `PRD.md` P0 대비 단톡 따라잡기·관계별 페르소나·
+  스팸 감지 미구현. Master 액션(FCM 시크릿, 실기기 탭)과 별개로 지금 바로 코드 착수 가능
 - 실 FCM 전송·Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
@@ -167,6 +169,26 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-B3** | 가입 화면 페어링 안내 | done | Signup 데모 패널에 한 줄 팁 |
 | **N4-B4** | 프로덕션 core+web 재배포 | done | `/demo` pairing_steps OK (`c7029ab`) |
 
+### Track C — 콘텐츠 갭 (PRD P0 대비 미구현, 2026-07-31 발견)
+
+`roadmap.md` §2.7과 동일 항목. `PRD.md` §3.1 P0 표 대조 결과 발견. **우선순위: C1(단톡 따라잡기)
+→ C2(관계별 페르소나) → C3(스팸 감지)** — 단톡 따라잡기는 v1 MVP 시나리오 2개 중 하나인데 현재
+0% 구현이라 완성도 공백이 가장 큼.
+
+| ID | 작업 | Status | 완료 조건 |
+|----|------|--------|-----------|
+| **N4-C1a** | 그룹 대화 생성 UI(복수 상대) | todo | "새 대화" 다이얼로그가 상대 여러 명 입력 받아 `is_group:true`로 생성 |
+| **N4-C1b** | `GET /conversations/:id/summary` | todo | 마지막 읽음 이후 메시지 모아 AI 서비스로 전달하는 core-backend 라우트 |
+| **N4-C1c** | 단톡 요약 생성(멘션/결정사항 3~5줄) | todo | `ai-service/app/` 신규 모듈, `generate_draft.py` 패턴 재사용 |
+| **N4-C1d** | 요약→초안 버튼 연결 (L0 고정) | todo | `chat_screen.dart`. 자동발송 없음 — 안전 불변식 유지 |
+| **N4-C1e** | "안 본 동안" 배지 | todo | 대화 목록에 마지막 읽음 이후 새 메시지 수 표시, read-marker 필요 |
+| **N4-C2a** | `relationship_tier` 필드(가까운/공식적) | todo | `core-backend/models.go` `TwinSettings` 확장 |
+| **N4-C2b** | 온보딩 관계 티어 선택 스텝 | todo | `onboarding_tone_screen.dart` |
+| **N4-C2c** | 연락처별 관계 티어 오버라이드 | todo | `contacts_screen.dart`, 자율성 레벨 상대별 예외와 동일 패턴 |
+| **N4-C2d** | 초안 생성 시 티어별 톤 프롬프트 분기 | todo | `ai-service/app/generation.py` |
+| **N4-C3a** | 짧은 시간 내 동일 상대 도배 감지 → 응대 일시중단 | todo | 에스컬레이션 하드게이트와 동일 위치(우회 불가) |
+| **N4-C3b** | 도배 중단 시 사후 알림 | todo | 기존 `EscalationLog`/`InboxScreen` 재사용 |
+
 ### FCM — [`fcm-setup.md`](./fcm-setup.md)
 
 | ID | 작업 | Status | 완료 조건 |
@@ -224,7 +246,8 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
 3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
 4. ~~N2-B8~B12 컷오버~~ **done** (`msn.iykyka.com` 라이브)  
-5. ~~N3 안정화 + Track A/B~~ **done** — 다음: **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10)
+5. ~~N3 안정화 + Track A/B~~ **done** — 다음: **Track C 콘텐츠 갭(N4-C1→C2→C3, 지금 착수 가능)**
+   병행하며 **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.
