@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/snooze_service.dart';
 import '../services/ws_client.dart';
 import '../state/session_state.dart';
 import '../theme/app_theme.dart';
@@ -44,6 +45,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loadingHistory = true;
   late bool _floodBlocked;
   late final ApiClient _api;
+  // 답장 마감 알림(roadmap.md §2.7-F) — 이 대화방에 걸린 "이따 답장" 스누즈 시각.
+  // 서버에는 존재하지 않는 순수 온디바이스 상태라 화면에 들어올 때 로컬 DB에서 로드한다.
+  DateTime? _snoozedUntil;
 
   @override
   void initState() {
@@ -56,6 +60,85 @@ class _ChatScreenState extends State<ChatScreen> {
     _socket = ConversationSocket(widget.conversationId)..connect();
     _sub = _socket!.events.listen(_onEvent);
     _loadHistory();
+    _loadSnooze();
+  }
+
+  Future<void> _loadSnooze() async {
+    final controller = context.read<SessionState>().snoozeController;
+    if (controller == null) return;
+    final until = await controller.loadSnoozedUntil(widget.conversationId);
+    if (!mounted) return;
+    setState(() => _snoozedUntil = until);
+  }
+
+  bool get _snoozePastDue => isSnoozePastDue(DateTime.now(), _snoozedUntil);
+
+  String _formatSnoozeUntil(DateTime dt) =>
+      '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  /// "이따 답장" 빠른 선택 메뉴 (roadmap.md §2.7-F). 스누즈가 걸려 있으면 해제
+  /// 옵션도 함께 보여준다.
+  Future<void> _openSnoozeMenu() async {
+    final now = DateTime.now();
+    final choice = await showDialog<Object>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('이따 답장'),
+        children: [
+          for (final pick in SnoozeQuickPick.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, pick),
+              child: Text(pick.label),
+            ),
+          if (_snoozedUntil != null)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, 'clear'),
+              child: Text('스누즈 해제', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+            ),
+        ],
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (choice == 'clear') {
+      await _clearSnooze();
+      return;
+    }
+    if (choice is SnoozeQuickPick) {
+      await _applySnooze(resolveSnoozeQuickPick(choice, now));
+    }
+  }
+
+  Future<void> _applySnooze(DateTime until) async {
+    final controller = context.read<SessionState>().snoozeController;
+    if (controller != null) {
+      await controller.applySnooze(
+        conversationId: widget.conversationId,
+        until: until,
+        title: '답장 마감',
+        body: '${widget.title ?? "대화방 #${widget.conversationId}"}에 답장할 시간이에요',
+      );
+    }
+    if (!mounted) return;
+    setState(() {
+      _snoozedUntil = until;
+      _banner = '이따 답장: ${_formatSnoozeUntil(until)}에 리마인드합니다 (본인에게만 표시).';
+    });
+  }
+
+  /// 사용자가 직접 "스누즈 해제"를 눌렀을 때 — 배너로 알려 준다.
+  Future<void> _clearSnooze() async {
+    await _clearSnoozeQuiet();
+    if (!mounted) return;
+    setState(() => _banner = '스누즈를 해제했습니다.');
+  }
+
+  /// 답장을 실제로 보내서 스누즈가 자동으로 풀릴 때 — 조용히 처리(배너로 덮어쓰지 않음).
+  Future<void> _clearSnoozeQuiet() async {
+    if (_snoozedUntil == null) return;
+    final controller = context.read<SessionState>().snoozeController;
+    if (controller != null) await controller.clearSnooze(widget.conversationId);
+    if (!mounted) return;
+    setState(() => _snoozedUntil = null);
   }
 
   Future<void> _loadHistory() async {
@@ -164,6 +247,8 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() => _messages.add(msg));
       }
       _scrollToEnd();
+      // roadmap.md §2.7-F: 답장을 실제로 보냈으니 걸려 있던 스누즈는 자동 해제.
+      _clearSnoozeQuiet();
     } on ApiException catch (e) {
       setState(() => _banner = '전송 실패 (${e.statusCode})');
     } finally {
@@ -245,6 +330,8 @@ class _ChatScreenState extends State<ChatScreen> {
         if (!_messages.any((m) => m.id == msg.id)) _messages.add(msg);
       });
       _scrollToEnd();
+      // roadmap.md §2.7-F: 와카뷰가 대신 답장을 보냈어도 답장은 답장이므로 스누즈 해제.
+      _clearSnoozeQuiet();
     } on ApiException catch (e) {
       setState(() {
         _banner = '와카뷰 발송 차단 (${e.statusCode}): ${e.body}';
@@ -492,6 +579,13 @@ class _ChatScreenState extends State<ChatScreen> {
               icon: const Icon(Icons.summarize_outlined),
             ),
           IconButton(
+            // 답장 마감 알림(roadmap.md §2.7-F) — "이따 답장" 스누즈. 본인에게만
+            // 보이는 순수 온디바이스 상태라 상대방 화면에는 전혀 나타나지 않는다.
+            tooltip: _snoozedUntil != null ? '이따 답장 (${_formatSnoozeUntil(_snoozedUntil!)})' : '이따 답장',
+            onPressed: _busy ? null : _openSnoozeMenu,
+            icon: Icon(_snoozedUntil != null ? Icons.alarm_on : Icons.alarm_add_outlined),
+          ),
+          IconButton(
             tooltip: '거부권 (와카뷰 자동응대 중단)',
             onPressed: _busy ? null : _veto,
             icon: const Icon(Icons.block),
@@ -510,6 +604,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (_floodBlocked)
                   TextButton(onPressed: _busy ? null : _resumeFlood, child: const Text('자동응대 재개')),
                 TextButton(onPressed: () => setState(() => _banner = null), child: const Text('닫기')),
+              ],
+            ),
+          if (_snoozePastDue)
+            MaterialBanner(
+              leading: Icon(Icons.alarm, color: theme.colorScheme.tertiary),
+              content: Text('답장 마감 시간이 지났습니다 (${_formatSnoozeUntil(_snoozedUntil!)}).'),
+              actions: [
+                TextButton(onPressed: _busy ? null : _clearSnooze, child: const Text('스누즈 해제')),
               ],
             ),
           Expanded(

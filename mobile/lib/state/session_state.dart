@@ -7,14 +7,23 @@ import '../db/app_database.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/push_token_service.dart';
+import '../services/snooze_controller.dart';
+import '../services/snooze_notification_service.dart';
 
 class SessionState extends ChangeNotifier {
-  SessionState({ApiClient? api, AppDatabase? db})
+  SessionState({ApiClient? api, AppDatabase? db, SnoozeNotificationScheduler? snoozeScheduler})
       : _api = api ?? ApiClient(),
-        _db = db;
+        _db = db,
+        _snoozeScheduler = snoozeScheduler ?? LocalSnoozeNotificationScheduler();
 
   final ApiClient _api;
   AppDatabase? _db;
+  final SnoozeNotificationScheduler _snoozeScheduler;
+
+  /// 답장 마감 알림(roadmap.md §2.7-F) 오케스트레이션 — DB(스누즈 시각)와 로컬 알림
+  /// 스케줄러를 함께 다룬다. DB가 아직 열리지 않았으면(부팅 초기) null.
+  SnoozeController? get snoozeController =>
+      _db == null ? null : SnoozeController(db: _db!, scheduler: _snoozeScheduler);
 
   User? user;
   AutonomyLevel autonomyLevel = AutonomyLevel.L0;

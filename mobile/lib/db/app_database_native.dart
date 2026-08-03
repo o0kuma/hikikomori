@@ -13,9 +13,9 @@ import 'package:sqlite3/open.dart';
 
 import 'tables.dart';
 
-part 'app_database.g.dart';
+part 'app_database_native.g.dart';
 
-@DriftDatabase(tables: [ToneSamples, LocalKv])
+@DriftDatabase(tables: [ToneSamples, LocalKv, ConversationSnoozes])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e, {this.encrypted = false});
 
@@ -23,7 +23,18 @@ class AppDatabase extends _$AppDatabase {
   final bool encrypted;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          // v1 -> v2: roadmap.md §2.7-F 답장 마감 알림 스누즈 테이블 추가.
+          if (from < 2) {
+            await m.createTable(conversationSnoozes);
+          }
+        },
+      );
 
   /// In-memory DB for unit tests (no SQLCipher / filesystem).
   factory AppDatabase.memory() => AppDatabase(NativeDatabase.memory(), encrypted: false);
@@ -75,6 +86,42 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> setBoolKv(String key, bool value) async {
     await setKv(key, value ? '1' : '0');
+  }
+
+  /// 답장 마감 알림(roadmap.md §2.7-F) — "이따 답장"으로 대화방 [conversationId]에
+  /// 스누즈를 건다. 서버에는 전혀 전달되지 않는 순수 온디바이스 상태.
+  Future<void> setSnoozedUntil(int conversationId, DateTime until) async {
+    await into(conversationSnoozes).insertOnConflictUpdate(
+      ConversationSnoozesCompanion.insert(
+        conversationId: conversationId.toString(),
+        snoozedUntilMs: until.millisecondsSinceEpoch,
+      ),
+    );
+  }
+
+  Future<DateTime?> getSnoozedUntil(int conversationId) async {
+    final row = await (select(conversationSnoozes)
+          ..where((t) => t.conversationId.equals(conversationId.toString())))
+        .getSingleOrNull();
+    if (row == null) return null;
+    // isUtc: true — millisecondsSinceEpoch는 어차피 절대 시각이라 타임존 표현과
+    // 무관하지만, UTC로 고정해야 DateTime.== 비교(테스트 포함)가 저장 전과 일관된다.
+    return DateTime.fromMillisecondsSinceEpoch(row.snoozedUntilMs, isUtc: true);
+  }
+
+  Future<void> clearSnooze(int conversationId) async {
+    await (delete(conversationSnoozes)
+          ..where((t) => t.conversationId.equals(conversationId.toString())))
+        .go();
+  }
+
+  /// 대화 목록 화면(`conversation_list_screen.dart`)에서 배지를 그리기 위한 일괄 로드.
+  Future<Map<int, DateTime>> loadAllSnoozes() async {
+    final rows = await select(conversationSnoozes).get();
+    return {
+      for (final r in rows)
+        int.parse(r.conversationId): DateTime.fromMillisecondsSinceEpoch(r.snoozedUntilMs, isUtc: true),
+    };
   }
 }
 

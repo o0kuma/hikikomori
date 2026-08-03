@@ -62,9 +62,18 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
   `persona.go` `resolveRelationshipNote()`(그룹은 항상 빈 문자열 — 전역 기본 메모 개념 자체가
   없어 티어/자율성과 다름), `ai-service/app/generation.py`가 메모를 `[관계 메모]` 프롬프트
   문단으로 주입. 이 김에 세 resolver가 복붙하던 "1:1 상대 Contact 찾기" 루프를
-  `findCounterpartContact()` 공용 헬퍼로 추출. C6(답장 마감 알림)은 아직 todo.
-  Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
-- 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
+  `findCounterpartContact()` 공용 헬퍼로 추출. C6(답장 마감 알림)도 **완료(부분 검증)**
+  (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션 미배포, 모바일 온디바이스 전용이라
+  `core-backend`/`ai-service` 변경 없음) — 순수 온디바이스 스누즈 저장(`ConversationSnoozes`
+  drift 테이블, 서버 전송 없음) + `chat_screen.dart`/`conversation_list_screen.dart` UI는
+  완전히 검증됨(단위 테스트). 로컬 알림은 `flutter_local_notifications`/`timezone`을 실제로
+  붙였지만(`flutter pub get` 성공, `zonedSchedule`/`cancel` 연동) **이 샌드박스에 실기기·
+  에뮬레이터가 없어 알림이 실제로 울리는지까지는 검증하지 못함** — 검증한 건 스케줄러 호출
+  인자가 맞는지(목 기반 단위 테스트)뿐이라 실기기 확인 전까지는 대화 목록/채팅방의 인앱
+  배지·배너가 실질적인 리마인드 경로. **이로써 2026-08-03 2차 갭 분석 배치(C4/C5/C6)는 모두
+  구현 완료 — 다만 C6의 "실제 OS 알림 발사" 부분은 Android 실기기 탭(N4-5~10)에서 처음
+  검증되는 항목으로 남는다.** Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
+- 실 FCM 기기 수신 · Android 실기기 탭(답장 마감 알림 실제 발사 확인 포함) · 사람 PoC 실행은 남음
 
 ### NEXT 순서
 
@@ -221,9 +230,9 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-C5a** | `draftRequest`에 `RelationshipNote` 필드 추가 | **done** (2026-08-03) | `core-backend/aiservice.go`, `relationship_tier` 옆 `omitempty`, 빈 문자열 = 무영향 |
 | **N4-C5b** | draft 핸들러가 연락처 메모 조회해 전달 | **done** (2026-08-03) | `main.go` `POST /conversations/:id/draft` + `core-backend/persona.go` `resolveRelationshipNote()`. 그룹은 항상 빈 문자열(전역 기본 메모 개념 자체가 없음, 티어/자율성과 다른 지점). `resolveRelationshipTier`/`resolveAutonomyLevel`과 공유하는 `findCounterpartContact()` 헬퍼로 3중 복붙 제거 |
 | **N4-C5c** | 메모를 톤 프롬프트에 주입 | **done** (2026-08-03) | `ai-service/app/generation.py` `system_prompt_for_tier(relationship_tier, relationship_note)`가 `"[관계 메모] {note} -- ..."` 문단 추가(빈 값/`None`이면 무영향, 관계 티어 지침과 별도 문단이라 안 섞임). 에스컬레이션/정체성 게이팅에는 영향 없음 |
-| **N4-C6a** | "이따 답장" 스누즈 저장 | todo | 온디바이스 우선 원칙에 맞는 저장 위치 결정 |
-| **N4-C6b** | 리마인드 로컬 알림(본인에게만) | todo | 다른 사람에게 노출되지 않음 |
-| **N4-C6c** | 스누즈 표시/취소 UI | todo | `chat_screen.dart`/`conversation_list_screen.dart` |
+| **N4-C6a** | "이따 답장" 스누즈 저장 | **done** (2026-08-03) | 순수 온디바이스 — `mobile/lib/db/tables.dart` `ConversationSnoozes` drift 테이블(서버 전송 없음), `chat_screen.dart` 앱바 "이따 답장" → 빠른 선택(1시간 후/저녁에/내일) + 해제, 실제 답장 전송 시 자동 해제 |
+| **N4-C6b** | 리마인드 로컬 알림(본인에게만) | **done (부분 검증)** (2026-08-03) | `flutter_local_notifications`+`timezone` 실제 연동(`mobile/lib/services/snooze_notification_service_native.dart` `zonedSchedule`/`cancel`) — **단, 이 샌드박스에는 실기기/에뮬레이터가 없어 알림이 실제로 울리는지/탭 동작은 검증 불가**. 검증한 건 스케줄러를 목(mock)으로 바꿔 id·시각·페이로드가 올바른지뿐(`test/snooze_controller_test.dart`). 웹 빌드는 플러그인이 웹 미지원이라 `snooze_notification_service_web.dart` no-op 스텁. 실기기 검증 전까지는 대화 목록/채팅방의 인앱 배지·배너(C6c)가 실질적인 리마인드 경로 |
+| **N4-C6c** | 스누즈 표시/취소 UI | **done** (2026-08-03) | `chat_screen.dart`(앱바 아이콘 상태 + 마감 지난 스누즈 배너 + 해제 버튼), `conversation_list_screen.dart`(서브타이틀 아래 "답장 마감" 배지, 탭하여 바로 해제). 마감 판정은 순수 함수 `isSnoozePastDue()`로 분리해 고정 시각 단위 테스트(`test/snooze_service_test.dart`) |
 
 ### FCM — [`fcm-setup.md`](./fcm-setup.md)
 
@@ -286,9 +295,13 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
    ~~Track C2 관계별 페르소나~~ **done** (2026-08-03), ~~Track C3 스팸/도배 감지~~ **done**
    (2026-08-03) — **Track C 콘텐츠 갭 A/B/C 전체 완료.** 2026-08-03 2차 재분석으로 D/E/F 추가
    발견, ~~Track C4 자율성 상대별 예외~~ **done** (2026-08-03), ~~Track C5 관계 메모 반영~~
-   **done** (2026-08-03). 남은 것: Track C6(답장 마감 알림), **Master FCM 시크릿(N4-1/3)** →
-   N4-4 스모크 → Android UI QA (N4-5~10), Track C 프로덕션 재배포(C2/C3/C4/C5는 아직 GitHub
-   `main`에만 있음)
+   **done** (2026-08-03), ~~Track C6 답장 마감 알림~~ **done(부분 검증)** (2026-08-03) —
+   **2026-08-03 2차 갭 분석 배치(C4/C5/C6) 전체 구현 완료.** C6은 온디바이스 스누즈
+   저장·UI는 완전히 검증(단위 테스트)됐지만, 실제 OS 로컬 알림이 실기기에서 울리는지는
+   이 샌드박스(실기기/에뮬레이터 없음)에서 검증 불가 — Android UI QA(N4-5~10)에서 처음
+   확인 필요, 그때까지는 인앱 배지·배너가 실질적 대체 경로. 남은 것: **Master FCM
+   시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10, 답장 마감 알림 실기기 확인
+   포함), Track C 프로덕션 재배포(C2~C6는 아직 GitHub `main`에만 있음)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

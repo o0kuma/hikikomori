@@ -233,11 +233,31 @@
   이 둘에는 전혀 영향 없음(순수 톤/금기어 힌트, 안전 게이트 우회 아님)
 
 **2.7-F 답장 마감 알림** (`PRD.md` §3.2 P1: "내가 '이따 답장' 누르면 나에게만 리마인드" — 코드
-전무, 아이디어 회의 문서에만 존재, 2026-08-03 발견)
-- [ ] 메시지/대화에 "이따 답장" 스누즈 액션 + 리마인드 시각 저장(서버 또는 온디바이스 — 개인
-  전용 알림이라 온디바이스 우선 원칙에 맞는 쪽으로 설계)
-- [ ] 리마인드 도달 시 로컬 알림(다른 사람에게는 보이지 않음, 본인에게만)
-- [ ] `chat_screen.dart`/`conversation_list_screen.dart`에 스누즈 표시·취소 UI
+전무, 아이디어 회의 문서에만 존재, 2026-08-03 발견 — **완료(부분 검증)** 2026-08-03, 아래 참고)
+- [x] 메시지/대화에 "이따 답장" 스누즈 액션 + 리마인드 시각 저장 — 순수 온디바이스
+  (`mobile/lib/db/tables.dart`의 `ConversationSnoozes` drift 테이블, 서버에는 전혀
+  전달되지 않음). `chat_screen.dart` 앱바에 "이따 답장" 아이콘 → `SimpleDialog`로
+  빠른 선택(`1시간 후`/`저녁에`/`내일`, `mobile/lib/services/snooze_service.dart`
+  `SnoozeQuickPick`) + 스누즈 해제. 기본값은 빠른 선택 없이도 쓸 수 있게 상수
+  `kDefaultSnoozeDuration`(2시간)로 노출은 해 두었지만 UI 자체는 빠른 선택 3개만
+  제공(추가 커스텀 시각 입력은 P1 범위상 생략). 사람이 실제로 답장을 보내면(휴먼
+  전송이든 트윈 승인 전송이든) 자동으로 스누즈 해제(`_clearSnoozeQuiet()`)
+- [x] 리마인드 도달 시 로컬 알림 — **`flutter_local_notifications`(+`timezone`) 실제
+  연동, 단 실기기/에뮬레이터로 발사·탭 동작까지 검증하지는 못함.** 이 샌드박스는
+  Flutter 웹 빌드와 Playwright 브라우저 자동화만 가능하고 실제 Android/iOS
+  기기·에뮬레이터가 없어 `zonedSchedule()`이 만든 예약이 실제로 울리는지는 확인할
+  수 없다 — 검증한 것은 `mobile/lib/services/snooze_controller.dart`가 스케줄러
+  인터페이스(`SnoozeNotificationScheduler`)를 목(mock)으로 바꿔 넣었을 때 올바른
+  id·시각·페이로드로 호출되는가뿐(`test/snooze_controller_test.dart`). 대신 진짜로
+  검증 가능한 **인앱 대체 노출**을 항상 함께 켜 둔다 — 앱을 열 때(대화 목록 로드,
+  채팅방 진입) 마감이 지난 스누즈는 배지/배너로 반드시 보인다(아래 항목). 웹 빌드는
+  플러그인 자체가 웹을 지원하지 않아 `snooze_notification_service_web.dart`가
+  no-op 스텁으로 대체(웹은 프리뷰 서피스일 뿐 릴리스 타깃이 아님)
+- [x] `chat_screen.dart`/`conversation_list_screen.dart`에 스누즈 표시·취소 UI —
+  채팅방은 앱바 아이콘 상태(`Icons.alarm_on`) + 마감 지난 스누즈 배너("스누즈
+  해제" 버튼), 대화 목록은 서브타이틀 아래 "답장 마감 (탭하여 해제)" 배지(탭하면
+  채팅방을 열지 않고도 바로 해제). 마감 판정은 순수 함수 `isSnoozePastDue(now,
+  snoozedUntil)`로 분리해 고정 시각으로 단위 테스트(`test/snooze_service_test.dart`)
 
 **스코프 밖 (제안 아님, 참고용)**: 이미지/파일 전송·읽음표시·타이핑 인디케이터 등 "일반 메신저"
 테이블스테이크 기능은 `PRD.md`에 명시되지 않음 — 콘텐츠 공백의 또 다른 후보일 수 있으나 이건

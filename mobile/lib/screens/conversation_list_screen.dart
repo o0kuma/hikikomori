@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/snooze_service.dart';
 import '../state/session_state.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/my_user_id_chip.dart';
@@ -22,6 +23,9 @@ class ConversationListScreen extends StatefulWidget {
 class _ConversationListScreenState extends State<ConversationListScreen> {
   List<ConversationSummary> _rooms = [];
   Map<int, String> _peerNames = {};
+  // 답장 마감 알림(roadmap.md §2.7-F) — 대화방 id별 "이따 답장" 스누즈 마감 시각.
+  // 서버 응답(ConversationSummary)에는 없는 순수 온디바이스 상태라 로컬 DB에서 별도 로드.
+  Map<int, DateTime> _snoozes = {};
   bool _loading = true;
   String? _error;
 
@@ -53,15 +57,26 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           // Names are optional enrichment.
         }
       }
+      final snoozes = await session.snoozeController?.loadAllSnoozes() ?? <int, DateTime>{};
       setState(() {
         _rooms = list;
         _peerNames = names;
+        _snoozes = snoozes;
       });
     } on ApiException catch (e) {
       setState(() => _error = '대화 목록 실패 (${e.statusCode}): ${e.body}');
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  /// 대화 목록에서 바로 스누즈를 해제한다(roadmap.md §2.7-F — 채팅방을 열지 않고도
+  /// "마감 지남" 배지를 지울 수 있게).
+  Future<void> _clearSnoozeFromList(int conversationId) async {
+    final controller = context.read<SessionState>().snoozeController;
+    if (controller != null) await controller.clearSnooze(conversationId);
+    if (!mounted) return;
+    setState(() => _snoozes.remove(conversationId));
   }
 
   String _titleFor(ConversationSummary room, int? me) {
@@ -335,98 +350,163 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                       ),
                     ),
                   for (final room in _rooms)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatScreen(
-                                conversationId: room.id,
-                                title: _titleFor(room, me),
-                                isGroup: room.isGroup,
-                                twinDisabledByFlood: room.twinDisabledByFlood,
-                              ),
-                            ),
-                          );
-                          await _load();
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 22,
-                                backgroundColor: _avatarColor(context, room.id),
-                                child: Icon(
-                                  room.isGroup ? Icons.groups_outlined : Icons.person_outline,
-                                  size: 20,
-                                  color: _onAvatarColor(context, room.id),
+                    Builder(
+                      builder: (context) {
+                        final snoozedUntil = _snoozes[room.id];
+                        final snoozePastDue = isSnoozePastDue(DateTime.now(), snoozedUntil);
+                        return _ConversationRow(
+                          room: room,
+                          me: me,
+                          title: _titleFor(room, me),
+                          subtitle: _subtitleFor(room, me),
+                          avatarColor: _avatarColor(context, room.id),
+                          onAvatarColor: _onAvatarColor(context, room.id),
+                          snoozePastDue: snoozePastDue,
+                          onClearSnooze: () => _clearSnoozeFromList(room.id),
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ChatScreen(
+                                  conversationId: room.id,
+                                  title: _titleFor(room, me),
+                                  isGroup: room.isGroup,
+                                  twinDisabledByFlood: room.twinDisabledByFlood,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _titleFor(room, me),
-                                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      children: [
-                                        if (room.twinDisabledByPeer || room.twinDisabledByFlood) ...[
-                                          Icon(
-                                            room.twinDisabledByFlood ? Icons.pause_circle_outline : Icons.block,
-                                            size: 13,
-                                            color: theme.colorScheme.error,
-                                          ),
-                                          const SizedBox(width: 4),
-                                        ],
-                                        Expanded(
-                                          child: Text(
-                                            _subtitleFor(room, me),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: room.twinDisabledByPeer || room.twinDisabledByFlood
-                                                  ? theme.colorScheme.error
-                                                  : theme.colorScheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (room.unreadCount > 0) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    room.unreadCount > 99 ? '99+' : '${room.unreadCount}',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onPrimary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.onSurfaceVariant),
-                            ],
-                          ),
-                        ),
-                      ),
+                            );
+                            await _load();
+                          },
+                        );
+                      },
                     ),
                   const SizedBox(height: 72),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _ConversationRow extends StatelessWidget {
+  const _ConversationRow({
+    required this.room,
+    required this.me,
+    required this.title,
+    required this.subtitle,
+    required this.avatarColor,
+    required this.onAvatarColor,
+    required this.snoozePastDue,
+    required this.onClearSnooze,
+    required this.onTap,
+  });
+
+  final ConversationSummary room;
+  final int? me;
+  final String title;
+  final String subtitle;
+  final Color avatarColor;
+  final Color onAvatarColor;
+  final bool snoozePastDue;
+  final VoidCallback onClearSnooze;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final blockedColor = room.twinDisabledByPeer || room.twinDisabledByFlood;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: avatarColor,
+                child: Icon(
+                  room.isGroup ? Icons.groups_outlined : Icons.person_outline,
+                  size: 20,
+                  color: onAvatarColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        if (blockedColor) ...[
+                          Icon(
+                            room.twinDisabledByFlood ? Icons.pause_circle_outline : Icons.block,
+                            size: 13,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: blockedColor ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // 답장 마감 알림(roadmap.md §2.7-F) — 마감이 지난 스누즈만 배지로
+                    // 노출. 탭하면 채팅방을 열지 않고도 바로 해제할 수 있다.
+                    if (snoozePastDue) ...[
+                      const SizedBox(height: 4),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(4),
+                        onTap: onClearSnooze,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.alarm, size: 13, color: theme.colorScheme.tertiary),
+                            const SizedBox(width: 4),
+                            Text(
+                              '답장 마감 (탭하여 해제)',
+                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.tertiary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (room.unreadCount > 0) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    room.unreadCount > 99 ? '99+' : '${room.unreadCount}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

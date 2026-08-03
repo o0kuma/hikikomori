@@ -47,6 +47,8 @@ dependencies:
   google_fonts: ^6.3.2
   firebase_core: ^4.12.1
   firebase_messaging: ^16.4.3
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

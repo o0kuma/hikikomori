@@ -532,16 +532,256 @@ class LocalKvCompanion extends UpdateCompanion<LocalKvData> {
   }
 }
 
+class $ConversationSnoozesTable extends ConversationSnoozes
+    with TableInfo<$ConversationSnoozesTable, ConversationSnooze> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConversationSnoozesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _snoozedUntilMsMeta = const VerificationMeta(
+    'snoozedUntilMs',
+  );
+  @override
+  late final GeneratedColumn<int> snoozedUntilMs = GeneratedColumn<int>(
+    'snoozed_until_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [conversationId, snoozedUntilMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'conversation_snoozes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConversationSnooze> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('snoozed_until_ms')) {
+      context.handle(
+        _snoozedUntilMsMeta,
+        snoozedUntilMs.isAcceptableOrUnknown(
+          data['snoozed_until_ms']!,
+          _snoozedUntilMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_snoozedUntilMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {conversationId};
+  @override
+  ConversationSnooze map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConversationSnooze(
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      snoozedUntilMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}snoozed_until_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ConversationSnoozesTable createAlias(String alias) {
+    return $ConversationSnoozesTable(attachedDatabase, alias);
+  }
+}
+
+class ConversationSnooze extends DataClass
+    implements Insertable<ConversationSnooze> {
+  /// `Conversation.id`를 문자열로 저장 (drift 기본 타입 일관성을 위해 다른 테이블과
+  /// 마찬가지로 text 기본키를 사용).
+  final String conversationId;
+  final int snoozedUntilMs;
+  const ConversationSnooze({
+    required this.conversationId,
+    required this.snoozedUntilMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['snoozed_until_ms'] = Variable<int>(snoozedUntilMs);
+    return map;
+  }
+
+  ConversationSnoozesCompanion toCompanion(bool nullToAbsent) {
+    return ConversationSnoozesCompanion(
+      conversationId: Value(conversationId),
+      snoozedUntilMs: Value(snoozedUntilMs),
+    );
+  }
+
+  factory ConversationSnooze.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConversationSnooze(
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      snoozedUntilMs: serializer.fromJson<int>(json['snoozedUntilMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'conversationId': serializer.toJson<String>(conversationId),
+      'snoozedUntilMs': serializer.toJson<int>(snoozedUntilMs),
+    };
+  }
+
+  ConversationSnooze copyWith({String? conversationId, int? snoozedUntilMs}) =>
+      ConversationSnooze(
+        conversationId: conversationId ?? this.conversationId,
+        snoozedUntilMs: snoozedUntilMs ?? this.snoozedUntilMs,
+      );
+  ConversationSnooze copyWithCompanion(ConversationSnoozesCompanion data) {
+    return ConversationSnooze(
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      snoozedUntilMs: data.snoozedUntilMs.present
+          ? data.snoozedUntilMs.value
+          : this.snoozedUntilMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationSnooze(')
+          ..write('conversationId: $conversationId, ')
+          ..write('snoozedUntilMs: $snoozedUntilMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(conversationId, snoozedUntilMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConversationSnooze &&
+          other.conversationId == this.conversationId &&
+          other.snoozedUntilMs == this.snoozedUntilMs);
+}
+
+class ConversationSnoozesCompanion extends UpdateCompanion<ConversationSnooze> {
+  final Value<String> conversationId;
+  final Value<int> snoozedUntilMs;
+  final Value<int> rowid;
+  const ConversationSnoozesCompanion({
+    this.conversationId = const Value.absent(),
+    this.snoozedUntilMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConversationSnoozesCompanion.insert({
+    required String conversationId,
+    required int snoozedUntilMs,
+    this.rowid = const Value.absent(),
+  }) : conversationId = Value(conversationId),
+       snoozedUntilMs = Value(snoozedUntilMs);
+  static Insertable<ConversationSnooze> custom({
+    Expression<String>? conversationId,
+    Expression<int>? snoozedUntilMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (snoozedUntilMs != null) 'snoozed_until_ms': snoozedUntilMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConversationSnoozesCompanion copyWith({
+    Value<String>? conversationId,
+    Value<int>? snoozedUntilMs,
+    Value<int>? rowid,
+  }) {
+    return ConversationSnoozesCompanion(
+      conversationId: conversationId ?? this.conversationId,
+      snoozedUntilMs: snoozedUntilMs ?? this.snoozedUntilMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (snoozedUntilMs.present) {
+      map['snoozed_until_ms'] = Variable<int>(snoozedUntilMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationSnoozesCompanion(')
+          ..write('conversationId: $conversationId, ')
+          ..write('snoozedUntilMs: $snoozedUntilMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ToneSamplesTable toneSamples = $ToneSamplesTable(this);
   late final $LocalKvTable localKv = $LocalKvTable(this);
+  late final $ConversationSnoozesTable conversationSnoozes =
+      $ConversationSnoozesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [toneSamples, localKv];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    toneSamples,
+    localKv,
+    conversationSnoozes,
+  ];
 }
 
 typedef $$ToneSamplesTableCreateCompanionBuilder =
@@ -862,6 +1102,169 @@ typedef $$LocalKvTableProcessedTableManager =
       LocalKvData,
       PrefetchHooks Function()
     >;
+typedef $$ConversationSnoozesTableCreateCompanionBuilder =
+    ConversationSnoozesCompanion Function({
+      required String conversationId,
+      required int snoozedUntilMs,
+      Value<int> rowid,
+    });
+typedef $$ConversationSnoozesTableUpdateCompanionBuilder =
+    ConversationSnoozesCompanion Function({
+      Value<String> conversationId,
+      Value<int> snoozedUntilMs,
+      Value<int> rowid,
+    });
+
+class $$ConversationSnoozesTableFilterComposer
+    extends Composer<_$AppDatabase, $ConversationSnoozesTable> {
+  $$ConversationSnoozesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get snoozedUntilMs => $composableBuilder(
+    column: $table.snoozedUntilMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConversationSnoozesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConversationSnoozesTable> {
+  $$ConversationSnoozesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get snoozedUntilMs => $composableBuilder(
+    column: $table.snoozedUntilMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConversationSnoozesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConversationSnoozesTable> {
+  $$ConversationSnoozesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get snoozedUntilMs => $composableBuilder(
+    column: $table.snoozedUntilMs,
+    builder: (column) => column,
+  );
+}
+
+class $$ConversationSnoozesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ConversationSnoozesTable,
+          ConversationSnooze,
+          $$ConversationSnoozesTableFilterComposer,
+          $$ConversationSnoozesTableOrderingComposer,
+          $$ConversationSnoozesTableAnnotationComposer,
+          $$ConversationSnoozesTableCreateCompanionBuilder,
+          $$ConversationSnoozesTableUpdateCompanionBuilder,
+          (
+            ConversationSnooze,
+            BaseReferences<
+              _$AppDatabase,
+              $ConversationSnoozesTable,
+              ConversationSnooze
+            >,
+          ),
+          ConversationSnooze,
+          PrefetchHooks Function()
+        > {
+  $$ConversationSnoozesTableTableManager(
+    _$AppDatabase db,
+    $ConversationSnoozesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConversationSnoozesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ConversationSnoozesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ConversationSnoozesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> conversationId = const Value.absent(),
+                Value<int> snoozedUntilMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationSnoozesCompanion(
+                conversationId: conversationId,
+                snoozedUntilMs: snoozedUntilMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String conversationId,
+                required int snoozedUntilMs,
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationSnoozesCompanion.insert(
+                conversationId: conversationId,
+                snoozedUntilMs: snoozedUntilMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConversationSnoozesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ConversationSnoozesTable,
+      ConversationSnooze,
+      $$ConversationSnoozesTableFilterComposer,
+      $$ConversationSnoozesTableOrderingComposer,
+      $$ConversationSnoozesTableAnnotationComposer,
+      $$ConversationSnoozesTableCreateCompanionBuilder,
+      $$ConversationSnoozesTableUpdateCompanionBuilder,
+      (
+        ConversationSnooze,
+        BaseReferences<
+          _$AppDatabase,
+          $ConversationSnoozesTable,
+          ConversationSnooze
+        >,
+      ),
+      ConversationSnooze,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -870,4 +1273,6 @@ class $AppDatabaseManager {
       $$ToneSamplesTableTableManager(_db, _db.toneSamples);
   $$LocalKvTableTableManager get localKv =>
       $$LocalKvTableTableManager(_db, _db.localKv);
+  $$ConversationSnoozesTableTableManager get conversationSnoozes =>
+      $$ConversationSnoozesTableTableManager(_db, _db.conversationSnoozes);
 }
