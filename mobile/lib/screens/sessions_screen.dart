@@ -57,13 +57,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true || !mounted) return;
+    if (isCurrent) {
+      // Q8c — clear local token and return to entry via AuthGate.
+      await session.logout();
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
     try {
       await session.api.revokeSession(session.user!.id, id.toInt());
-      if (isCurrent && mounted) {
-        // Soft signal — full logout clearing is a follow-up; reload list for now.
-        setState(() => _error = '현재 세션이 종료되었습니다. 앱을 다시 시작해 주세요.');
-      }
       await _load();
     } on ApiException catch (e) {
       setState(() => _error = '세션 종료 실패 (${e.statusCode})');

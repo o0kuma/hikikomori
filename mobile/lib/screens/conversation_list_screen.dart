@@ -7,11 +7,10 @@ import '../services/snooze_service.dart';
 import '../state/session_state.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/my_user_id_chip.dart';
-import 'autonomy_settings_screen.dart';
 import 'chat_screen.dart';
 import 'contacts_screen.dart';
 import 'inbox_screen.dart';
-import 'onboarding_tone_screen.dart';
+import 'settings_screen.dart';
 
 class ConversationListScreen extends StatefulWidget {
   const ConversationListScreen({super.key});
@@ -262,30 +261,14 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
             },
             icon: const Icon(Icons.contacts_outlined),
           ),
-          PopupMenuButton<VoidCallback>(
-            tooltip: '더보기',
-            icon: const Icon(Icons.more_vert),
-            onSelected: (action) => action(),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: () => Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => const OnboardingToneScreen())),
-                child: const ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.record_voice_over_outlined),
-                  title: Text('말투 샘플'),
-                ),
-              ),
-              PopupMenuItem(
-                value: () => Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => const AutonomySettingsScreen())),
-                child: const ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.tune),
-                  title: Text('자율성 설정'),
-                ),
-              ),
-            ],
+          IconButton(
+            tooltip: '설정',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
           ),
           const SizedBox(width: 4),
         ],

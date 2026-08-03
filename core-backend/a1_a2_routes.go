@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -46,29 +47,49 @@ func contactJSON(ct Contact) gin.H {
 }
 
 type loginRequest struct {
-	InviteCode string `json:"invite_code" binding:"required"`
+	InviteCode  string `json:"invite_code" binding:"required"`
+	DisplayName string `json:"display_name"`
 }
 
 func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
+	// Q8b: re-enter closed beta with invite code (+ display_name for shared DEMO).
 	r.POST("/auth/login", func(c *gin.Context) {
 		var req loginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 			return
 		}
-		var invite InviteCode
-		if err := db.Where("code = ?", req.InviteCode).First(&invite).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"detail": "invalid invite code"})
-			return
-		}
-		if invite.UsedAt == nil || invite.UsedByUserID == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"detail": "invite code not yet used for signup"})
-			return
-		}
 		var user User
-		if err := db.First(&user, *invite.UsedByUserID).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"detail": "user not found"})
-			return
+		if demoInviteEnabled() && isDemoInviteCode(req.InviteCode) {
+			name := strings.TrimSpace(req.DisplayName)
+			if name == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"detail": "display_name is required for DEMO invite login"})
+				return
+			}
+			// Demo signups store a unique per-user invite_code, not DEMO-YKAVU.
+			// Match the most recent user with this display_name (testers reuse names rarely).
+			if err := db.Where("display_name = ?", name).Order("id desc").First(&user).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"detail": "no user with that display_name under DEMO signup"})
+				return
+			}
+		} else {
+			var invite InviteCode
+			if err := db.Where("code = ?", req.InviteCode).First(&invite).Error; err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"detail": "invalid invite code"})
+				return
+			}
+			if invite.UsedAt == nil || invite.UsedByUserID == nil {
+				c.JSON(http.StatusBadRequest, gin.H{"detail": "invite code not yet used for signup"})
+				return
+			}
+			if err := db.First(&user, *invite.UsedByUserID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"detail": "user not found"})
+				return
+			}
+			if name := strings.TrimSpace(req.DisplayName); name != "" && user.DisplayName != name {
+				c.JSON(http.StatusForbidden, gin.H{"detail": "display_name does not match this invite"})
+				return
+			}
 		}
 		session, err := createSession(db, user.ID)
 		if err != nil {

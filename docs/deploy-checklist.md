@@ -40,9 +40,9 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
 - **Track C 콘텐츠 갭 A~F**: 프로덕션 반영 완료 (`95422bb`대)
-- **문서 갭 (2026-08-03):** 로그아웃·설정 IA·L2 의미 —
-  [`decision-log.md`](./decision-log.md) Q8/Q9 **제안**,
-  [`account-settings-ia.md`](./account-settings-ia.md). **Master 확정 전 구현 착수하지 않음**
+- **Q8 계정·설정 IA (2026-08-03 확정·구현):** 로그인 탭 · 설정 허브 · 로그아웃
+- **문서 갭 잔여:** L2 의미 [`decision-log.md`](./decision-log.md) Q9 **제안** —
+  [`account-settings-ia.md`](./account-settings-ia.md) §3. Master 확정 전 Q9 구현 금지
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서

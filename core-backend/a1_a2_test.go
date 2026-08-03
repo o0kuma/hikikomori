@@ -63,7 +63,7 @@ func TestLoginReturnsSessionToken(t *testing.T) {
 		t.Fatalf("signup: %d", signup.StatusCode)
 	}
 
-	login := postJSON(t, server.URL+"/auth/login", loginRequest{InviteCode: code})
+	login := postJSON(t, server.URL+"/auth/login", loginRequest{InviteCode: code, DisplayName: "로그인"})
 	if login.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 login, got %d", login.StatusCode)
 	}
@@ -71,6 +71,23 @@ func TestLoginReturnsSessionToken(t *testing.T) {
 	json.NewDecoder(login.Body).Decode(&out)
 	if out["token"] == nil || out["token"] == "" {
 		t.Fatalf("login missing token: %v", out)
+	}
+}
+
+func TestDemoLoginRequiresDisplayName(t *testing.T) {
+	t.Setenv("ALLOW_DEMO_INVITE", "1")
+	server, _ := setupTestServer(t)
+	signup := postJSON(t, server.URL+"/auth/signup", signupRequest{InviteCode: demoInviteCode, DisplayName: "데모유저"})
+	if signup.StatusCode != http.StatusOK {
+		t.Fatalf("demo signup: %d", signup.StatusCode)
+	}
+	missing := postJSON(t, server.URL+"/auth/login", loginRequest{InviteCode: demoInviteCode})
+	if missing.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 without display_name, got %d", missing.StatusCode)
+	}
+	ok := postJSON(t, server.URL+"/auth/login", loginRequest{InviteCode: demoInviteCode, DisplayName: "데모유저"})
+	if ok.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 demo login, got %d", ok.StatusCode)
 	}
 }
 

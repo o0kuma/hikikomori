@@ -109,15 +109,7 @@ class SessionState extends ChangeNotifier {
     notifyListeners();
     try {
       final result = await _api.signup(inviteCode: inviteCode, displayName: displayName);
-      user = result.user;
-      toneOnboardingDone = false;
-      _db ??= await _openDb();
-      await _db!.setBoolKv(_kToneDone, false);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_kUserId, result.user.id);
-      await prefs.setString(_kDisplayName, result.user.displayName);
-      await prefs.setString(_kInvite, result.user.inviteCode);
-      await prefs.setString(_kToken, result.token);
+      await _persistAuth(result.user, result.token, resetToneOnboarding: true);
       await _registerDeviceTokenBestEffort();
     } on ApiException catch (e) {
       error = '가입 실패 (${e.statusCode}): ${e.body}';
@@ -127,6 +119,71 @@ class SessionState extends ChangeNotifier {
       loading = false;
       notifyListeners();
     }
+  }
+
+  /// Q8b — already registered: invite code + display name → new session.
+  Future<void> login(String inviteCode, String displayName) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      final result = await _api.login(inviteCode: inviteCode, displayName: displayName);
+      await _persistAuth(result.user, result.token, resetToneOnboarding: false);
+      await _registerDeviceTokenBestEffort();
+    } on ApiException catch (e) {
+      error = '로그인 실패 (${e.statusCode}): ${e.body}';
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _persistAuth(User u, String token, {required bool resetToneOnboarding}) async {
+    user = u;
+    _api.authToken = token;
+    _db ??= await _openDb();
+    if (resetToneOnboarding) {
+      toneOnboardingDone = false;
+      await _db!.setBoolKv(_kToneDone, false);
+    } else {
+      toneOnboardingDone = await _db!.getBoolKv(_kToneDone);
+      styleExamples = await _db!.loadToneSamples();
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kUserId, u.id);
+    await prefs.setString(_kDisplayName, u.displayName);
+    await prefs.setString(_kInvite, u.inviteCode);
+    await prefs.setString(_kToken, token);
+  }
+
+  /// Q8c — revoke current server session when possible, then clear local auth.
+  Future<void> logout() async {
+    final u = user;
+    final token = _api.authToken;
+    if (u != null && token != null && token.isNotEmpty) {
+      try {
+        final sessions = await _api.listSessions(u.id);
+        for (final s in sessions) {
+          if (s['is_current'] == true && s['id'] is num) {
+            await _api.revokeSession(u.id, (s['id'] as num).toInt());
+            break;
+          }
+        }
+      } catch (e) {
+        debugPrint('logout revoke skipped: $e');
+      }
+    }
+    user = null;
+    error = null;
+    _api.authToken = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kUserId);
+    await prefs.remove(_kDisplayName);
+    await prefs.remove(_kInvite);
+    await prefs.remove(_kToken);
+    notifyListeners();
   }
 
   Future<void> saveToneSamples(List<String> samples, {bool markDone = true}) async {

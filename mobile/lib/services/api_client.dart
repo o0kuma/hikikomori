@@ -76,6 +76,27 @@ class ApiClient {
     );
   }
 
+  /// Q8b — re-issue a session for an existing invite-based account.
+  Future<({User user, String token})> login({
+    required String inviteCode,
+    required String displayName,
+  }) async {
+    final json = await _json('POST', '/auth/login', body: {
+      'invite_code': inviteCode,
+      'display_name': displayName,
+    });
+    final token = json['token'] as String? ?? '';
+    authToken = token;
+    return (
+      user: User(
+        id: json['id'] as int,
+        displayName: json['display_name'] as String? ?? displayName,
+        inviteCode: inviteCode,
+      ),
+      token: token,
+    );
+  }
+
   Future<List<ConversationSummary>> listConversations() async {
     final obj = await _getObject('/conversations');
     final list = (obj['conversations'] as List<dynamic>? ?? const []);

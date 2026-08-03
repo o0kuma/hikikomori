@@ -62,9 +62,9 @@ v1에서는 커스텀 모델을 새로 학습하지 않는다. 대신 **검색 �
 | 경로 | 역할 |
 |------|------|
 | `POST /auth/signup` | 미사용 초대 코드 + `display_name` → User + Session(Bearer) |
-| `POST /auth/login` | 이미 사용된 초대 코드 → 새 Session (앱 UI 갭) |
+| `POST /auth/login` | 사용된 초대 코드(+ 선택적 display_name) → 새 Session. DEMO는 display_name 필수 |
 | `GET/DELETE /users/:id/sessions...` | 멀티 디바이스 목록·종료 |
-| 클라이언트 | `shared_preferences`에 토큰 저장; **로그아웃 시 revoke + 로컬 삭제** (갭) |
+| 클라이언트 | `shared_preferences`에 토큰 저장; 로그아웃 시 revoke + 로컬 삭제 → 입장 화면 |
 
 - Phase 1은 **비밀번호·OAuth 없음.** 초대 코드가 비밀에 해당한다.
 - 로그아웃은 서버 세션 무효화만으로는 부족하고, 클라이언트가 토큰을 지워야 입장 화면으로 돌아간다.

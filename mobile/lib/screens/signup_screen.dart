@@ -9,6 +9,7 @@ import '../widgets/brand_mark.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/primary_gradient_button.dart';
 
+/// Closed-beta entry: signup (new invite) or login (already registered).
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -16,12 +17,26 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends State<SignupScreen>
+    with SingleTickerProviderStateMixin {
   final _invite = TextEditingController();
   final _name = TextEditingController();
+  late final TabController _tabs;
+
+  bool get _isLogin => _tabs.index == 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(() {
+      if (!_tabs.indexIsChanging) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
+    _tabs.dispose();
     _invite.dispose();
     _name.dispose();
     super.dispose();
@@ -33,6 +48,16 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() {});
   }
 
+  Future<void> _submit(SessionState session) async {
+    final invite = _invite.text.trim();
+    final name = _name.text.trim();
+    if (_isLogin) {
+      await session.login(invite, name);
+    } else {
+      await session.signup(invite, name);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionState>();
@@ -40,79 +65,100 @@ class _SignupScreenState extends State<SignupScreen> {
     final scheme = theme.colorScheme;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(flex: 2),
-              const Center(child: BrandMark(size: 72)),
-              const SizedBox(height: 20),
-              GradientText(
-                '와카뷰',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '나를 대신해 답하는, 나만의 와카뷰',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-              const Spacer(flex: 1),
-              Text('초대 코드로 클로즈드 베타에 참여합니다', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 12),
-              _DemoTestPanel(
-                onFill: _fillDemoCredentials,
-                onCopy: () async {
-                  await Clipboard.setData(const ClipboardData(text: AppConfig.demoInviteCode));
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('테스트 초대 코드를 복사했습니다')),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _invite,
-                decoration: const InputDecoration(
-                  labelText: '초대 코드',
-                  prefixIcon: Icon(Icons.vpn_key),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Spacer(flex: 2),
+                      const Center(child: BrandMark(size: 72)),
+                      const SizedBox(height: 20),
+                      GradientText(
+                        '와카뷰',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '나를 대신해 답하는, 나만의 와카뷰',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                      const Spacer(flex: 1),
+                      TabBar(
+                        controller: _tabs,
+                        tabs: const [
+                          Tab(text: '새로 가입'),
+                          Tab(text: '이미 가입'),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _isLogin
+                            ? '초대 코드와 표시 이름으로 다시 로그인합니다'
+                            : '초대 코드로 클로즈드 베타에 참여합니다',
+                        style: theme.textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      _DemoTestPanel(
+                        onFill: _fillDemoCredentials,
+                        onCopy: () async {
+                          await Clipboard.setData(
+                            const ClipboardData(text: AppConfig.demoInviteCode),
+                          );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('테스트 초대 코드를 복사했습니다')),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _invite,
+                        decoration: const InputDecoration(
+                          labelText: '초대 코드',
+                          prefixIcon: Icon(Icons.vpn_key),
+                        ),
+                        textInputAction: TextInputAction.next,
+                        textCapitalization: TextCapitalization.characters,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _name,
+                        decoration: InputDecoration(
+                          labelText: '표시 이름',
+                          hintText: _isLogin ? '가입 때 쓴 이름 (DEMO는 필수)' : null,
+                          prefixIcon: const Icon(Icons.person_outline),
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) {
+                          if (!session.loading) _submit(session);
+                        },
+                      ),
+                      if (session.error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(session.error!, style: TextStyle(color: scheme.error)),
+                      ],
+                      const SizedBox(height: 20),
+                      _PressScale(
+                        child: PrimaryGradientButton(
+                          label: _isLogin ? '로그인' : '시작하기',
+                          loading: session.loading,
+                          onPressed: session.loading ? null : () => _submit(session),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
-                textInputAction: TextInputAction.next,
-                textCapitalization: TextCapitalization.characters,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _name,
-                decoration: const InputDecoration(
-                  labelText: '표시 이름',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) {
-                  if (!session.loading) {
-                    session.signup(_invite.text.trim(), _name.text.trim());
-                  }
-                },
-              ),
-              if (session.error != null) ...[
-                const SizedBox(height: 12),
-                Text(session.error!, style: TextStyle(color: scheme.error)),
-              ],
-              const SizedBox(height: 20),
-              _PressScale(
-                child: PrimaryGradientButton(
-                  label: '시작하기',
-                  loading: session.loading,
-                  onPressed: session.loading
-                      ? null
-                      : () => session.signup(_invite.text.trim(), _name.text.trim()),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

@@ -333,11 +333,11 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 - [x] 로그인 세션/토큰 (`Session`, signup/login 시 Bearer 발급)
 - [x] `/invites`, `/admin/metrics` 접근 제어 (`ADMIN_API_TOKEN`)
 - [x] 프로덕션 DB 마이그레이션 명령 (`go run . migrate`)
-- [ ] **계정·설정 IA 갭** (`decision-log` Q8 제안, [`account-settings-ia.md`](./account-settings-ia.md))
-  — Master 확정 후 착수. 이메일/비번 도입 금지(Phase 1)
-  - [ ] 입장 화면: 새로 가입 / 이미 가입(`POST /auth/login`) 구분
-  - [ ] 로그아웃: 세션 revoke + 로컬 토큰 클리어 + 입장 화면 복귀
-  - [ ] 설정 진입점에 로그아웃·세션·자율성·말투·데이터흐름 묶기
+- [x] **계정·설정 IA** (`decision-log` Q8 확정, [`account-settings-ia.md`](./account-settings-ia.md))
+  — 이메일/비번 도입 금지(Phase 1)
+  - [x] 입장 화면: 새로 가입 / 이미 가입(`POST /auth/login`, DEMO는 display_name 필수)
+  - [x] 로그아웃: 세션 revoke + 로컬 토큰 클리어 + 입장 화면 복귀
+  - [x] 설정 진입점에 로그아웃·세션·자율성·말투·데이터흐름 묶기
 
 **A3. Flutter — 메신저답게 다듬기** (A1/A2 이후)
 - [x] 대화 목록/연락처 UI를 서버 API에 연결

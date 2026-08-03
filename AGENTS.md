@@ -10,8 +10,8 @@ copying content into prompts or new files.
 
 When documents disagree, follow this order:
 
-1. [`docs/decision-log.md`](docs/decision-log.md) — working assumptions for Q1~Q7 (확정)
-   and Q8/Q9 (계정·설정 IA / L2 의미 — 제안 until Master confirms)
+1. [`docs/decision-log.md`](docs/decision-log.md) — working assumptions for Q1~Q8 (확정)
+   and Q9 (L2 의미 — 제안 until Master confirms)
 2. [`docs/vision.md`](docs/vision.md) / [`docs/PRD.md`](docs/PRD.md) / [`docs/tech-design.md`](docs/tech-design.md)
 3. [`docs/roadmap.md`](docs/roadmap.md) / [`docs/risk-log.md`](docs/risk-log.md)
 4. [`docs/PLANNING.md`](docs/PLANNING.md) — process guide
@@ -19,12 +19,12 @@ When documents disagree, follow this order:
 
 Notes:
 
-- Q1~Q7 in `decision-log.md` are **확정** (Phase 1 C, 2026-07-30). PoC-dependent
-  sub-questions (default autonomy level, whitelist defaults, final branding)
-  stay open — do not invent those. Q8/Q9 (logout/settings IA, L2 semantics) are
-  **제안** — implement only after Master marks them 확정; see
-  `docs/account-settings-ia.md`. To reverse a Q, update `decision-log.md` and
-  derived docs in the same change.
+- Q1~Q8 in `decision-log.md` are **확정** (Q1~Q7: Phase 1 C, 2026-07-30;
+  Q8 account/settings IA: 2026-08-03). PoC-dependent sub-questions (default
+  autonomy level, whitelist defaults, final branding) stay open — do not invent
+  those. Q9 (L2 receive-triggered auto-reply) remains **제안** — implement only
+  after Master marks it 확정; see `docs/account-settings-ia.md`. To reverse a Q,
+  update `decision-log.md` and derived docs in the same change.
 - Prefer `decision-log.md` (and the synced summary in `PLANNING.md` §2) for
   current working answers.
 - Working delivery order is **자체 앱 클로즈드 베타 first → OS 레이어 later**
