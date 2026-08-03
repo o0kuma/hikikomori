@@ -492,30 +492,43 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           _buildL1Panel(context),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              decoration: BoxDecoration(
+                color: AppTheme.glassFill(theme.brightness),
+                border: Border(
+                  top: BorderSide(color: AppTheme.glassBorder(theme.brightness).withValues(alpha: 0.7)),
+                ),
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  IconButton(
+                    tooltip: '초안 요청',
+                    onPressed: _busy ? null : _requestDraft,
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _input,
                       minLines: 1,
                       maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) {
+                        if (!_busy) _sendHuman();
+                      },
                       decoration: const InputDecoration(hintText: '메시지'),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filledTonal(
-                    tooltip: '초안 요청',
-                    onPressed: _busy ? null : _requestDraft,
-                    icon: const Icon(Icons.auto_awesome),
-                  ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   IconButton.filled(
                     tooltip: '보내기',
                     onPressed: _busy ? null : _sendHuman,
-                    icon: const Icon(Icons.send),
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                    ),
+                    icon: const Icon(Icons.arrow_upward_rounded),
                   ),
                 ],
               ),

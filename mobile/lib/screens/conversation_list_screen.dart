@@ -205,16 +205,16 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   Color _avatarColor(BuildContext context, int seed) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark
-        ? const [Color(0xFF1C1C1C), Color(0xFF22262E), Color(0xFF242018)]
-        : const [Color(0xFFF4F4F5), Color(0xFFE8EEF4), Color(0xFFF3F0EA)];
+        ? const [Color(0xFF2C2C34), Color(0xFF243447), Color(0xFF3A3224)]
+        : const [Color(0xFFE9E9EB), Color(0xFFD6E8FF), Color(0xFFFFF1D6)];
     return palette[seed % palette.length];
   }
 
   Color _onAvatarColor(BuildContext context, int seed) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark
-        ? const [Color(0xFFA3A3A3), Color(0xFF8BB4D9), Color(0xFFC4A574)]
-        : const [Color(0xFF525252), Color(0xFF3B6D9B), Color(0xFF9A7B4F)];
+        ? const [Color(0xFFF2F2F7), Color(0xFF0A84FF), Color(0xFFD4B06A)]
+        : const [Color(0xFF1C1C1E), Color(0xFF007AFF), Color(0xFFB08A4A)];
     return palette[seed % palette.length];
   }
 

@@ -36,8 +36,8 @@ class SplashScreen extends StatelessWidget {
               width: 22,
               height: 22,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: scheme.onSurfaceVariant,
+                strokeWidth: 2.2,
+                color: scheme.primary,
               ),
             ),
           ],

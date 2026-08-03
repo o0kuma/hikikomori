@@ -38,12 +38,11 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
 - 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
-- UI: **Soft Neutral + surface hierarchy** 프로덕션 반영 (`e05a0f0`, 2026-08-03) —
-  GitHub+Gitea `main` 듀얼 푸시 · `msn.iykyka.com` web 재빌드 완료
-- **Track C 콘텐츠 갭**: C1(단톡 따라잡기) **완료** (2026-08-03, 아직 GitHub `main`에만 있고
-  프로덕션 미배포) — 그룹 생성 UI, 안 본 동안 요약(`GET /conversations/:id/summary`), 읽음
-  마커, 안 본 배지, 그룹 트윈 발송 서버측 차단까지. 다음은 C2(관계별 페르소나) → C3(스팸 감지).
-  Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
+- UI: **iMessage-inspired light default** + soft charcoal dark —
+  기본 `ThemeMode.light`, 내 버블 `#007AFF`, 다크 캔버스 `#141418` (배포 진행)
+- **Track C 콘텐츠 갭**: C1(단톡 따라잡기) **완료** (2026-08-03) — 그룹 생성 UI,
+  안 본 동안 요약(`GET /conversations/:id/summary`), 읽음 마커, 안 본 배지,
+  그룹 트윈 발송 서버측 차단까지. 다음은 C2(관계별 페르소나) → C3(스팸 감지).
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서

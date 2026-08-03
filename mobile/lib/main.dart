@@ -89,7 +89,8 @@ class _BootstrapState extends State<_Bootstrap> {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
+        // Default to light messenger UI; OS dark still maps to soft charcoal.
+        themeMode: ThemeMode.light,
         builder: (context, child) => GradientBackdrop(child: child),
         home: const SplashScreen(),
       );
@@ -112,7 +113,8 @@ class YkavuApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
+        // Default to light messenger UI; OS dark still maps to soft charcoal.
+        themeMode: ThemeMode.light,
         builder: (context, child) => GradientBackdrop(child: child),
         home: Consumer<SessionState>(
           builder: (context, s, _) {

@@ -150,7 +150,7 @@ class _DemoTestPanel extends StatelessWidget {
               Text(
                 '테스트용 (누구나)',
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: theme.colorScheme.primary,
                   letterSpacing: 0.15,
                   fontWeight: FontWeight.w600,
                 ),
