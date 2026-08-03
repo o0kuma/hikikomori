@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/my_user_id_chip.dart';
 import 'autonomy_settings_screen.dart';
@@ -155,14 +154,18 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   }
 
   Color _avatarColor(BuildContext context, int seed) {
-    final scheme = Theme.of(context).colorScheme;
-    final palette = [scheme.primaryContainer, scheme.tertiaryContainer, scheme.secondaryContainer];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = isDark
+        ? const [Color(0xFF1C1C1C), Color(0xFF22262E), Color(0xFF242018)]
+        : const [Color(0xFFF4F4F5), Color(0xFFE8EEF4), Color(0xFFF3F0EA)];
     return palette[seed % palette.length];
   }
 
   Color _onAvatarColor(BuildContext context, int seed) {
-    final scheme = Theme.of(context).colorScheme;
-    final palette = [scheme.onPrimaryContainer, scheme.onTertiaryContainer, scheme.onSecondaryContainer];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = isDark
+        ? const [Color(0xFFA3A3A3), Color(0xFF8BB4D9), Color(0xFFC4A574)]
+        : const [Color(0xFF525252), Color(0xFF3B6D9B), Color(0xFF9A7B4F)];
     return palette[seed % palette.length];
   }
 
@@ -220,10 +223,10 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _createConversation,
-        icon: const Icon(Icons.chat),
-        label: const Text('새 대화'),
+        tooltip: '새 대화',
+        child: const Icon(Icons.chat_outlined),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -254,23 +257,6 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                       padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
                       child: Column(
                         children: [
-                          Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppTheme.brandGradient,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF6D5BD0).withValues(alpha: 0.3),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.chat_bubble_outline, size: 30, color: Colors.white),
-                          ),
-                          const SizedBox(height: 16),
                           Text('대화방이 없습니다', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),
                           Text(
@@ -280,57 +266,26 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.45,
+                              height: 1.5,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          FilledButton.tonalIcon(
+                          const SizedBox(height: 18),
+                          OutlinedButton(
                             onPressed: () async {
                               await Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const ContactsScreen()),
                               );
                               await _load();
                             },
-                            icon: const Icon(Icons.contacts_outlined),
-                            label: const Text('연락처 열기'),
+                            child: const Text('연락처 열기'),
                           ),
                         ],
                       ),
                     ),
                   for (final room in _rooms)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: _avatarColor(context, room.id),
-                          child: Icon(
-                            room.isGroup ? Icons.groups_outlined : Icons.person_outline,
-                            color: _onAvatarColor(context, room.id),
-                          ),
-                        ),
-                        title: Text(
-                          _titleFor(room, me),
-                          style: theme.textTheme.titleSmall,
-                        ),
-                        subtitle: Row(
-                          children: [
-                            if (room.twinDisabledByPeer) ...[
-                              Icon(Icons.block, size: 13, color: theme.colorScheme.error),
-                              const SizedBox(width: 4),
-                            ],
-                            Expanded(
-                              child: Text(
-                                _subtitleFor(room, me),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: room.twinDisabledByPeer
-                                      ? theme.colorScheme.error
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
@@ -342,6 +297,56 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                           );
                           await _load();
                         },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: _avatarColor(context, room.id),
+                                child: Icon(
+                                  room.isGroup ? Icons.groups_outlined : Icons.person_outline,
+                                  size: 20,
+                                  color: _onAvatarColor(context, room.id),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _titleFor(room, me),
+                                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        if (room.twinDisabledByPeer) ...[
+                                          Icon(Icons.block, size: 13, color: theme.colorScheme.error),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Expanded(
+                                          child: Text(
+                                            _subtitleFor(room, me),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: room.twinDisabledByPeer
+                                                  ? theme.colorScheme.error
+                                                  : theme.colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   const SizedBox(height: 72),

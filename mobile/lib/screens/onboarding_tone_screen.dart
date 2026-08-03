@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/primary_gradient_button.dart';
 
 /// Phase 1 onboarding skeleton: capture a few style samples locally.
@@ -62,30 +61,16 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: AppTheme.brandGradient,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(color: const Color(0xFF6D5BD0).withValues(alpha: 0.3), blurRadius: 18, offset: const Offset(0, 8)),
-                  ],
-                ),
-                child: const Icon(Icons.record_voice_over_outlined, size: 28, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 16),
             Text('와카뷰가 따라 쓸 말투', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              '자주 쓰는 짧은 문장을 3~4개 적어 주세요. 기기에만 저장되며, 초안 요청 시 참고로 씁니다. '
-              '최종 문구·수집 방식은 사람 PoC 이후에 다듬습니다.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+              '자주 쓰는 짧은 문장을 3~4개 적어 주세요. 기기에만 저장되며, 초안 요청 시 참고로 씁니다.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                height: 1.45,
+              ),
             ),
             const SizedBox(height: 28),
             for (var i = 0; i < _samples.length; i++) ...[
@@ -95,29 +80,20 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
                 decoration: InputDecoration(
                   labelText: '샘플 ${i + 1}',
                   hintText: i == 0 ? '예: ㅇㅇ 알겠음' : null,
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 4, right: 4, top: 4),
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: scheme.secondaryContainer,
-                      child: Text(
-                        '${i + 1}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onSecondaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             PrimaryGradientButton(
               label: '이 말투로 시작',
               onPressed: () => _save(markDone: true),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '말투는 나중에 메뉴에서 다시 수정할 수 있습니다.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),

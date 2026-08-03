@@ -256,10 +256,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (draft.isEscalate) {
       return Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer.withOpacity(0.85),
-          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(AppTheme.rPanel),
           border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
         ),
         child: Column(
@@ -300,32 +300,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(16),
+        color: AppTheme.glassFill(theme.brightness),
+        borderRadius: BorderRadius.circular(AppTheme.rPanel),
         border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome, size: 18, color: theme.colorScheme.onSecondaryContainer),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
-                ),
-              ),
-            ],
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (isL0) ...[
             const SizedBox(height: 6),
             Text(
               'L0에서는 와카뷰 발송이 막혀 있습니다. 초안을 입력창으로 옮긴 뒤 직접 보내거나, 메뉴 → 자율성에서 L1으로 바꾸세요.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
           const SizedBox(height: 10),

@@ -38,9 +38,12 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
 - 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
+- UI: **Soft Neutral + surface hierarchy** (`553cb62`) — GitHub `main` 머지 완료.
+  프로덕션 web 재빌드는 이 세션에 SSH/`.env`가 없어 보류 → 서버에서
+  `cd ~/project/ykavu && git pull && docker compose build web && docker compose up -d web`
 - **발견(2026-07-31): Track C 콘텐츠 갭** — `PRD.md` P0 대비 단톡 따라잡기·관계별 페르소나·
-  스팸 감지 미구현. Master 액션(FCM 시크릿, 실기기 탭)과 별개로 지금 바로 코드 착수 가능
-- 실 FCM 전송·Android 실기기 탭 · 사람 PoC 실행은 남음
+  스팸 감지 미구현. Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 지금 바로 코드 착수 가능
+- 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
 
