@@ -201,6 +201,12 @@ const adminDashboardHTML = `<!doctype html>
     .v { font-size: 1.4rem; font-weight: 700; margin-top: 4px; }
     pre { background: #fff; border: 1px solid #d5e2db; border-radius: 10px; padding: 14px; overflow: auto; }
     button { margin: 12px 0; padding: 8px 14px; border-radius: 8px; border: 0; background: #1f6f5b; color: #fff; cursor: pointer; }
+    .breakdowns { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 20px; }
+    .breakdown table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d5e2db; border-radius: 10px; overflow: hidden; }
+    .breakdown th, .breakdown td { text-align: left; padding: 8px 12px; font-size: .85rem; }
+    .breakdown th { background: #eaf1ed; color: #40554c; }
+    .breakdown tr + tr td { border-top: 1px solid #e4ede8; }
+    .breakdown td.n { text-align: right; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -208,9 +214,25 @@ const adminDashboardHTML = `<!doctype html>
   <p>Bearer ADMIN_API_TOKEN 으로 /admin/metrics 를 불러옵니다. 생성 지연·오류율은 프로세스 메모리 샘플입니다.</p>
   <button onclick="load()">새로고침</button>
   <div class="grid" id="cards"></div>
+  <div class="breakdowns">
+    <div class="breakdown">
+      <h2 style="margin:0 0 8px;font-size:1rem">에스컬레이션 사유별</h2>
+      <table><thead><tr><th>reason</th><th style="text-align:right">count</th></tr></thead><tbody id="escByReason"></tbody></table>
+    </div>
+    <div class="breakdown">
+      <h2 style="margin:0 0 8px;font-size:1rem">와카뷰 발송 차단 사유별</h2>
+      <table><thead><tr><th>reason</th><th style="text-align:right">count</th></tr></thead><tbody id="blockedByReason"></tbody></table>
+    </div>
+  </div>
   <h2 style="margin-top:28px;font-size:1rem">raw JSON</h2>
   <pre id="raw">loading…</pre>
   <script>
+    function renderBreakdown(elId, obj) {
+      const rows = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+      document.getElementById(elId).innerHTML = rows.length
+        ? rows.map(([k, v]) => '<tr><td>'+k+'</td><td class="n">'+v+'</td></tr>').join('')
+        : '<tr><td colspan="2">없음</td></tr>';
+    }
     async function load() {
       const params = new URLSearchParams(location.search);
       let token = params.get('token') || localStorage.ADMIN_API_TOKEN || '';
@@ -237,6 +259,8 @@ const adminDashboardHTML = `<!doctype html>
       ];
       document.getElementById('cards').innerHTML = cards.map(([k,v]) =>
         '<div class="card"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
+      renderBreakdown('escByReason', data.escalations_by_reason);
+      renderBreakdown('blockedByReason', data.twin_sends_blocked_by_reason);
     }
     load();
   </script>

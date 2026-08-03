@@ -658,6 +658,11 @@ func TestVetoMissingConversation(t *testing.T) {
 }
 
 func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
+	// runtimeMetrics is a package-level in-process counter shared across the
+	// whole test binary (not reset per-test like the per-test sqlite db), so
+	// tests that assert on its exact totals must reset it first to avoid
+	// picking up counts left behind by earlier tests in this file.
+	runtimeMetrics = &RuntimeMetrics{}
 	server, db := setupTestServer(t)
 
 	senderID, token := mustSignup(t, server.URL, "메트릭")
@@ -710,6 +715,67 @@ func TestAdminMetricsCountsMessagesEscalationsAndVeto(t *testing.T) {
 	}
 	if out["invites_minted"].(float64) < 1 || out["invites_used"].(float64) < 1 {
 		t.Fatalf("expected at least 1 minted/used invite, got %v", out)
+	}
+	// The "계좌번호 알려줄게" twin send above was blocked by the escalation
+	// gate, not by veto/flood/autonomy -- confirm it landed under the right
+	// by-reason key (roadmap.md monitoring gap: distinguish *why* a
+	// twin-authored send was blocked, not just a raw total).
+	blockedByReason := out["twin_sends_blocked_by_reason"].(map[string]interface{})
+	if blockedByReason["escalated"].(float64) != 1 {
+		t.Fatalf("expected 1 escalated block, got %v", blockedByReason)
+	}
+	if out["twin_sends_blocked"].(float64) != 1 {
+		t.Fatalf("expected top-line twin_sends_blocked to match the sum of by-reason counts, got %v", out["twin_sends_blocked"])
+	}
+}
+
+// TestAdminMetricsBlockedByReasonAttributesDistinctCauses exercises two
+// different twin-send block paths (peer veto, autonomy L0) through the real
+// HTTP handler and checks /admin/metrics attributes each to its own reason
+// key instead of collapsing them into one undifferentiated total.
+func TestAdminMetricsBlockedByReasonAttributesDistinctCauses(t *testing.T) {
+	runtimeMetrics = &RuntimeMetrics{} // see comment in TestAdminMetricsCountsMessagesEscalationsAndVeto
+	server, db := setupTestServer(t)
+
+	senderID, _ := mustSignup(t, server.URL, "차단사유") // defaults to AutonomyL0
+
+	vetoedConv := Conversation{IsGroup: false}
+	if err := db.Create(&vetoedConv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	vetoedBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(vetoedConv.ID), 10)
+	postJSON(t, vetoedBase+"/veto", nil)
+	if resp := postJSON(t, vetoedBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "안녕", SenderMode: SenderTwin}); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected peer-veto block, got %d", resp.StatusCode)
+	}
+
+	l0Conv := Conversation{IsGroup: false}
+	if err := db.Create(&l0Conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	l0Base := server.URL + "/conversations/" + strconv.FormatUint(uint64(l0Conv.ID), 10)
+	if resp := postJSON(t, l0Base+"/messages", sendMessageRequest{SenderID: senderID, Text: "안녕", SenderMode: SenderTwin}); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected L0 autonomy block, got %d", resp.StatusCode)
+	}
+
+	mreq, _ := http.NewRequest(http.MethodGet, server.URL+"/admin/metrics", nil)
+	mreq.Header.Set("Authorization", "Bearer test-admin-token")
+	resp, err := http.DefaultClient.Do(mreq)
+	if err != nil {
+		t.Fatalf("get metrics: %v", err)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+
+	blockedByReason := out["twin_sends_blocked_by_reason"].(map[string]interface{})
+	if blockedByReason["peer_veto"].(float64) != 1 {
+		t.Fatalf(`expected twin_sends_blocked_by_reason["peer_veto"] == 1, got %v`, blockedByReason)
+	}
+	if blockedByReason["autonomy_l0"].(float64) != 1 {
+		t.Fatalf(`expected twin_sends_blocked_by_reason["autonomy_l0"] == 1, got %v`, blockedByReason)
+	}
+	if out["twin_sends_blocked"].(float64) != 2 {
+		t.Fatalf("expected top-line twin_sends_blocked == 2, got %v", out["twin_sends_blocked"])
 	}
 }
 

@@ -93,10 +93,11 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		if !requireAdmin(c) {
 			return
 		}
-		// v1-minimal (roadmap.md §2.6): only counts honestly derivable from
-		// the current schema. Draft-generation latency and AI-service error
-		// rate need a request-timing/logging layer that doesn't exist yet --
-		// not fabricated here, left for that future work.
+		// v1-minimal (roadmap.md §2.6): counts honestly derivable from the
+		// current schema, plus process-local draft/escalation timings kept
+		// in runtimeMetrics (see metrics.go) -- the latter reset on restart
+		// and are not a substitute for a real time-series DB, but are real
+		// numbers, not placeholders.
 		var usersTotal, humanMessages, twinMessages, escalationsTotal int64
 		var conversationsTotal, conversationsVetoed, invitesMinted, invitesUsed int64
 		db.Model(&User{}).Count(&usersTotal)
@@ -139,21 +140,22 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			// this as a first approximation, not the final definition.
 			"peer_veto_rate": peerVetoRate,
 			// Process-local draft/AI timings (roadmap B). Reset on restart.
-			"draft_requests":         rt.DraftRequests,
-			"draft_errors":           rt.DraftErrors,
-			"draft_error_rate":       rt.DraftErrorRate,
-			"draft_latency_avg_ms":   rt.DraftLatencyAvgMs,
-			"draft_latency_max_ms":   rt.DraftLatencyMaxMs,
-			"draft_latency_samples":  rt.DraftLatencySamples,
-			"escalate_checks":        rt.EscalateChecks,
-			"escalate_errors":        rt.EscalateErrors,
-			"escalate_error_rate":    rt.EscalateErrorRate,
-			"twin_sends_blocked":     rt.TwinSendsBlocked,
-			"push_attempts":          rt.PushAttempts,
-			"push_skipped":           rt.PushSkipped,
-			"push_delivered":         rt.PushDelivered,
-			"invites_minted":         invitesMinted,
-			"invites_used":   invitesUsed,
+			"draft_requests":               rt.DraftRequests,
+			"draft_errors":                 rt.DraftErrors,
+			"draft_error_rate":             rt.DraftErrorRate,
+			"draft_latency_avg_ms":         rt.DraftLatencyAvgMs,
+			"draft_latency_max_ms":         rt.DraftLatencyMaxMs,
+			"draft_latency_samples":        rt.DraftLatencySamples,
+			"escalate_checks":              rt.EscalateChecks,
+			"escalate_errors":              rt.EscalateErrors,
+			"escalate_error_rate":          rt.EscalateErrorRate,
+			"twin_sends_blocked":           rt.TwinSendsBlocked,
+			"twin_sends_blocked_by_reason": rt.TwinSendsBlockedByReason,
+			"push_attempts":                rt.PushAttempts,
+			"push_skipped":                 rt.PushSkipped,
+			"push_delivered":               rt.PushDelivered,
+			"invites_minted":               invitesMinted,
+			"invites_used":                 invitesUsed,
 		})
 	})
 
@@ -262,7 +264,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// later checks can override an earlier block.
 		if req.SenderMode == SenderTwin {
 			if conversation.TwinDisabledByPeer {
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("peer_veto")
 				c.JSON(http.StatusForbidden, gin.H{"detail": "상대방이 와카뷰를 거부해서 이 대화방에서는 자동 발송이 꺼져 있습니다"})
 				return
 			}
@@ -272,7 +274,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			// 무관하게 그룹 대화에서는 와카뷰 발송 자체를 막는다. 초안은
 			// 항상 사람이 검토해서 직접 보낸다.
 			if conversation.IsGroup {
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("group_conversation")
 				c.JSON(http.StatusForbidden, gin.H{"detail": "그룹 대화에서는 와카뷰 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
 				return
 			}
@@ -285,14 +287,14 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			// 불가 지점에 있어, 어떤 자율성 레벨/화이트리스트로도 건너뛸 수
 			// 없다.
 			if conversation.TwinDisabledByFlood {
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("flood_blocked")
 				c.JSON(http.StatusForbidden, gin.H{"detail": "도배 감지로 이 대화방의 와카뷰 자동 발송이 일시중단되어 있습니다 -- 사후 알림에서 확인 후 재개할 수 있습니다"})
 				return
 			}
 			if exceeded, count := floodDetected(db, convID, req.SenderID); exceeded {
 				conversation.TwinDisabledByFlood = true
 				db.Save(&conversation)
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("flood_detected")
 				reason := floodReason(count)
 				db.Create(&EscalationLog{
 					UserID:         req.SenderID,
@@ -315,12 +317,12 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			result, err := ai.checkEscalation(req.Text)
 			runtimeMetrics.recordEscalate(err)
 			if err != nil {
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("escalate_check_error")
 				c.JSON(http.StatusBadGateway, gin.H{"detail": "escalation gate unavailable, twin send blocked: " + err.Error()})
 				return
 			}
 			if result.Escalate {
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("escalated")
 				db.Create(&EscalationLog{
 					UserID:         req.SenderID,
 					ConversationID: convID,
@@ -347,23 +349,23 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 
 			switch level {
 			case AutonomyL0:
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("autonomy_l0")
 				c.JSON(http.StatusForbidden, gin.H{"detail": "L0(비서 모드)에서는 와카뷰 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
 				return
 			case AutonomyL1:
 				if !req.Approved {
-					runtimeMetrics.recordTwinBlocked()
+					runtimeMetrics.recordTwinBlocked("autonomy_l1_unapproved")
 					c.JSON(http.StatusForbidden, gin.H{"detail": "L1은 발송 전 사용자 승인이 필요합니다"})
 					return
 				}
 			case AutonomyL2:
 				if !req.Approved && !whitelistMatches(db, req.SenderID, convID, req.Text) {
-					runtimeMetrics.recordTwinBlocked()
+					runtimeMetrics.recordTwinBlocked("autonomy_l2_no_whitelist_match")
 					c.JSON(http.StatusForbidden, gin.H{"detail": "화이트리스트에 없는 주제는 L1과 동일하게 사용자 승인이 필요합니다"})
 					return
 				}
 			default:
-				runtimeMetrics.recordTwinBlocked()
+				runtimeMetrics.recordTwinBlocked("autonomy_unknown_level")
 				c.JSON(http.StatusForbidden, gin.H{"detail": "알 수 없는 자율성 레벨이라 발송을 차단합니다"})
 				return
 			}

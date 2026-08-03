@@ -17,9 +17,16 @@ type RuntimeMetrics struct {
 	EscalateChecks   int64
 	EscalateErrors   int64
 	TwinSendsBlocked int64
-	PushAttempts     int64
-	PushSkipped      int64
-	PushDelivered    int64
+	// TwinSendsBlockedByReason breaks the total above down by *why* a
+	// twin-authored send was blocked (peer_veto, flood_blocked,
+	// autonomy_l0, ...) -- see the call sites in main.go's
+	// POST /conversations/:id/messages handler for the full set of keys.
+	// This lets an operator tell a healthy signal (escalations catching
+	// sensitive content) apart from a bad one (lots of peer_veto/flood).
+	TwinSendsBlockedByReason map[string]int64
+	PushAttempts             int64
+	PushSkipped              int64
+	PushDelivered            int64
 }
 
 const maxLatencySamples = 200
@@ -48,10 +55,14 @@ func (m *RuntimeMetrics) recordEscalate(err error) {
 	}
 }
 
-func (m *RuntimeMetrics) recordTwinBlocked() {
+func (m *RuntimeMetrics) recordTwinBlocked(reason string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.TwinSendsBlocked++
+	if m.TwinSendsBlockedByReason == nil {
+		m.TwinSendsBlockedByReason = map[string]int64{}
+	}
+	m.TwinSendsBlockedByReason[reason]++
 }
 
 func (m *RuntimeMetrics) recordPush(delivered int, skipped bool) {
@@ -88,35 +99,41 @@ func (m *RuntimeMetrics) snapshot() ginHMetrics {
 	if m.EscalateChecks > 0 {
 		escErrRate = float64(m.EscalateErrors) / float64(m.EscalateChecks)
 	}
+	byReason := make(map[string]int64, len(m.TwinSendsBlockedByReason))
+	for k, v := range m.TwinSendsBlockedByReason {
+		byReason[k] = v
+	}
 	return ginHMetrics{
-		DraftRequests:       m.DraftRequests,
-		DraftErrors:         m.DraftErrors,
-		DraftErrorRate:      errRate,
-		DraftLatencyAvgMs:   avgMs,
-		DraftLatencyMaxMs:   float64(max.Milliseconds()),
-		DraftLatencySamples: len(m.DraftLatencies),
-		EscalateChecks:      m.EscalateChecks,
-		EscalateErrors:      m.EscalateErrors,
-		EscalateErrorRate:   escErrRate,
-		TwinSendsBlocked:    m.TwinSendsBlocked,
-		PushAttempts:        m.PushAttempts,
-		PushSkipped:         m.PushSkipped,
-		PushDelivered:       m.PushDelivered,
+		DraftRequests:            m.DraftRequests,
+		DraftErrors:              m.DraftErrors,
+		DraftErrorRate:           errRate,
+		DraftLatencyAvgMs:        avgMs,
+		DraftLatencyMaxMs:        float64(max.Milliseconds()),
+		DraftLatencySamples:      len(m.DraftLatencies),
+		EscalateChecks:           m.EscalateChecks,
+		EscalateErrors:           m.EscalateErrors,
+		EscalateErrorRate:        escErrRate,
+		TwinSendsBlocked:         m.TwinSendsBlocked,
+		TwinSendsBlockedByReason: byReason,
+		PushAttempts:             m.PushAttempts,
+		PushSkipped:              m.PushSkipped,
+		PushDelivered:            m.PushDelivered,
 	}
 }
 
 type ginHMetrics struct {
-	DraftRequests       int64
-	DraftErrors         int64
-	DraftErrorRate      float64
-	DraftLatencyAvgMs   float64
-	DraftLatencyMaxMs   float64
-	DraftLatencySamples int
-	EscalateChecks      int64
-	EscalateErrors      int64
-	EscalateErrorRate   float64
-	TwinSendsBlocked    int64
-	PushAttempts        int64
-	PushSkipped         int64
-	PushDelivered       int64
+	DraftRequests            int64
+	DraftErrors              int64
+	DraftErrorRate           float64
+	DraftLatencyAvgMs        float64
+	DraftLatencyMaxMs        float64
+	DraftLatencySamples      int
+	EscalateChecks           int64
+	EscalateErrors           int64
+	EscalateErrorRate        float64
+	TwinSendsBlocked         int64
+	TwinSendsBlockedByReason map[string]int64
+	PushAttempts             int64
+	PushSkipped              int64
+	PushDelivered            int64
 }

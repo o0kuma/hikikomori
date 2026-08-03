@@ -121,11 +121,21 @@
   `/admin/metrics`의 `peer_veto_rate`로 1차 근사 가능해짐(대화방 단위, 확정 정의 아님). 자연스러움
   피드백 수집 UI는 Flutter 클라이언트 책임이라 보류. 안전선 위반 0건은 런타임에 "수집"하는 지표라기
   보다 지금까지의 하드게이트 테스트들이 이미 보증하는 것 — 별도 계측 불필요
-- [~] 모니터링 대시보드 (에스컬레이션 트리거율, 생성 지연시간, 오류율) — `GET /admin/metrics`로
-  카운트 기반 데이터(메시지 수, 에스컬레이션 사유별 집계, 거부권 발동률, 초대 코드 발급/사용 수)는
-  노출함. **대시보드 UI 자체와 생성 지연시간·오류율**은 아직 없음 — UI는 Flutter/관리자 웹 쪽이고,
-  지연시간·오류율은 요청 타이밍/로깅 계측 계층이 따로 필요해서 이번엔 만들지 않음(허위로 채우지
-  않고 명시적으로 비워둠)
+- [x] 모니터링 대시보드 (에스컬레이션 트리거율, 생성 지연시간, 오류율) — **2026-08-03 재확인**:
+  이 항목의 `[~]` 상태와 "대시보드 UI 자체와 생성 지연시간·오류율은 아직 없음" 설명은 실제로는
+  낡은 기록이었음(§B의 "생성 지연시간·오류율 계측"/"모니터링 대시보드(최소)" `[x]` 항목과 서로
+  모순되고 있었던 걸 오늘 발견). 실제로는 이전 Phase 1 B 커밋에서 이미 `GET /admin/dashboard`
+  (HTML, `core-backend/b_routes.go`의 `adminDashboardHTML`)와 그 위에서 읽는
+  `GET /admin/metrics`(`core-backend/main.go`, 카드: 사용자·메시지·에스컬레이션·거부권 발동률·
+  생성 지연시간 평균/최대·에스컬레이션 오류율 등)가 구현되어 있었음. 오늘 실제로 추가한 것은
+  두 가지뿐: (1) 트윈 발송 차단을 사유별로 분해하는 `twin_sends_blocked_by_reason`
+  (peer_veto/group_conversation/flood_blocked/flood_detected/escalate_check_error/escalated/
+  autonomy_l0/autonomy_l1_unapproved/autonomy_l2_no_whitelist_match/autonomy_unknown_level —
+  이전엔 전부 `twin_sends_blocked` 한 총합으로만 뭉쳐 있었음), (2) 이미 JSON에는 있었지만
+  대시보드 화면에는 안 보이던 `escalations_by_reason`과 새 `twin_sends_blocked_by_reason`을
+  대시보드에 사유별 표로 렌더링. 정직하게 남겨둘 한계: 이 계측은 여전히 프로세스 메모리
+  전용(`RuntimeMetrics`)이라 재시작하면 리셋되는 근사치이고, 진짜 타임시리즈 DB가 아님 —
+  트렌드 분석이 필요해지면 별도 작업으로 남음
 
 **2.7 콘텐츠 갭 — PRD 3.1 P0 대비 미구현 기능** (2026-07-31 발견, 2026-08-03 2차 재분석으로
 2.7-D~F 추가)
