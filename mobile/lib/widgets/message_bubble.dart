@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
-/// Twin messages get a warm thin border + label (PRD §3.1 와카뷰 뱃지).
+/// iMessage-like bubble. Twin messages keep a warm label + soft tint (PRD §3.1).
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -34,23 +34,20 @@ class MessageBubble extends StatelessWidget {
 
     final Color bg;
     final Color fg;
-    Border? border;
     if (retracted) {
       bg = scheme.surfaceContainerHigh;
       fg = scheme.onSurfaceVariant;
     } else if (twin) {
       bg = brightness == Brightness.dark
-          ? const Color(0xFF221C14)
-          : const Color(0xFFFAF6F0);
+          ? const Color(0xFF2A2418)
+          : const Color(0xFFFFF6E8);
       fg = scheme.onSurface;
-      border = Border.all(color: accent.withValues(alpha: 0.4), width: 1);
     } else if (isMine) {
       bg = AppTheme.mineBubble(brightness);
       fg = AppTheme.mineBubbleFg(brightness);
     } else {
       bg = AppTheme.peerBubble(brightness);
       fg = scheme.onSurface;
-      border = Border.all(color: scheme.outlineVariant.withValues(alpha: 0.9));
     }
 
     final radius = BorderRadius.only(
@@ -61,12 +58,12 @@ class MessageBubble extends StatelessWidget {
     );
 
     final bubble = Container(
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.76),
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.74),
+      padding: const EdgeInsets.fromLTRB(14, 9, 14, 7),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: radius,
-        border: border,
+        border: twin ? Border.all(color: accent.withValues(alpha: 0.35)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,13 +71,13 @@ class MessageBubble extends StatelessWidget {
         children: [
           if (twin)
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 '와카뷰',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: accent,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
+                  letterSpacing: 0.15,
                 ),
               ),
             ),
@@ -99,12 +96,15 @@ class MessageBubble extends StatelessWidget {
           else
             Text(
               message.text,
-              style: theme.textTheme.bodyMedium?.copyWith(color: fg, height: 1.4),
+              style: theme.textTheme.bodyMedium?.copyWith(color: fg, height: 1.3),
             ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             _time(message.createdAt),
-            style: theme.textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.55), fontSize: 10),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: fg.withValues(alpha: isMine && !twin && !retracted ? 0.7 : 0.5),
+              fontSize: 10,
+            ),
           ),
         ],
       ),
@@ -135,7 +135,7 @@ class MessageBubble extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 10),
       child: Align(
         alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
         child: content,

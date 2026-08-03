@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Primary CTA — Soft Neutral ink fill (API name kept for call sites).
+/// Primary CTA — messenger blue fill (API name kept for call sites).
 class PrimaryGradientButton extends StatelessWidget {
   const PrimaryGradientButton({
     super.key,
@@ -17,12 +17,12 @@ class PrimaryGradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppTheme.inkDark : AppTheme.inkLight;
-    final fg = isDark ? AppTheme.canvasDark : Colors.white;
+    final scheme = Theme.of(context).colorScheme;
+    final bg = scheme.primary;
+    final fg = scheme.onPrimary;
     final disabled = onPressed == null || loading;
     return SizedBox(
-      height: 48,
+      height: 50,
       width: double.infinity,
       child: FilledButton(
         onPressed: disabled && !loading ? null : onPressed,
@@ -44,7 +44,7 @@ class PrimaryGradientButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 15),
+                style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 16),
               ),
       ),
     );
