@@ -39,13 +39,11 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
 - 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
-  (`ee8a41d`, 2026-08-03) — 기본 `ThemeMode.light`, 내 버블 `#007AFF`,
-  다크 캔버스 `#141418` · web/core/ai 재배포 완료
-- **Track C 콘텐츠 갭 A~F**: **GitHub+Gitea `main` 동기화 · 프로덕션 재배포 완료**
-  (`95422bb`, 2026-08-03) — web/core/ai 재빌드. C1 단톡 따라잡기 · C2 관계별 페르소나 ·
-  C3 스팸/도배 · C4 자율성 상대별 예외 · C5 관계 메모 프롬프트 · C6 답장 마감(인앱
-  배지·배너 포함; OS 로컬 알림 실기기 발사는 N4 Android QA에서 확인).
-- 실 FCM 기기 수신 · Android 실기기 탭(답장 마감 알림 실제 발사 확인 포함) · 사람 PoC 실행은 남음
+- **Track C 콘텐츠 갭 A~F**: 프로덕션 반영 완료 (`95422bb`대)
+- **문서 갭 (2026-08-03):** 로그아웃·설정 IA·L2 의미 —
+  [`decision-log.md`](./decision-log.md) Q8/Q9 **제안**,
+  [`account-settings-ia.md`](./account-settings-ia.md). **Master 확정 전 구현 착수하지 않음**
+- 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
 

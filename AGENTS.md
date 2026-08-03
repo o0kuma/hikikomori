@@ -10,7 +10,8 @@ copying content into prompts or new files.
 
 When documents disagree, follow this order:
 
-1. [`docs/decision-log.md`](docs/decision-log.md) — working assumptions for Q1~Q7
+1. [`docs/decision-log.md`](docs/decision-log.md) — working assumptions for Q1~Q7 (확정)
+   and Q8/Q9 (계정·설정 IA / L2 의미 — 제안 until Master confirms)
 2. [`docs/vision.md`](docs/vision.md) / [`docs/PRD.md`](docs/PRD.md) / [`docs/tech-design.md`](docs/tech-design.md)
 3. [`docs/roadmap.md`](docs/roadmap.md) / [`docs/risk-log.md`](docs/risk-log.md)
 4. [`docs/PLANNING.md`](docs/PLANNING.md) — process guide
