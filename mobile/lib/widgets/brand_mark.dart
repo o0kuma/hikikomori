@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
-
 /// Compact messenger brand mark — blue tile, no glow.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 64});
