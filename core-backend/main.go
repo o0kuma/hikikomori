@@ -338,12 +338,12 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			}
 
 			// Autonomy gate (PRD.md §2.1/§2.2, tech-design.md §3): missing
-			// settings fail closed to L0, the documented default.
-			level := AutonomyL0
-			var settings TwinSettings
-			if err := db.Where("user_id = ?", req.SenderID).First(&settings).Error; err == nil {
-				level = settings.AutonomyLevel
-			}
+			// settings fail closed to L0, the documented default. roadmap.md
+			// §2.7-D: the level itself can be overridden per-contact (1:1
+			// only -- group conversations already returned above and never
+			// reach this point), so resolve it the same way relationship
+			// tier is resolved instead of reading only the global default.
+			level := resolveAutonomyLevel(db, req.SenderID, convID)
 
 			switch level {
 			case AutonomyL0:
@@ -543,7 +543,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 			return
 		}
-		if req.AutonomyLevel != AutonomyL0 && req.AutonomyLevel != AutonomyL1 && req.AutonomyLevel != AutonomyL2 {
+		if !validAutonomyLevel(req.AutonomyLevel) {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": "autonomy_level must be one of L0, L1, L2"})
 			return
 		}

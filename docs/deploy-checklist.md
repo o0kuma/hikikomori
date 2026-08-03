@@ -51,7 +51,13 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
   안전 최소값 placeholder), `POST /conversations/:id/messages` 하드게이트에 peer-veto·
   그룹차단 다음 순서로 추가, `TwinDisabledByFlood` 대화방 플래그 + `POST
   /conversations/:id/flood-reset` one-tap undo, 기존 `EscalationLog`/`InboxScreen`
-  재사용 + 대화 목록/채팅방 배너에 상태·재개 버튼 노출. **Track C 콘텐츠 갭 전체(A/B/C) 완료.**
+  재사용 + 대화 목록/채팅방 배너에 상태·재개 버튼 노출. **Track C 콘텐츠 갭 A/B/C 전체 완료.**
+  2026-08-03 2차 재분석으로 D(자율성 상대별 예외)/E(관계 메모 반영)/F(답장 마감 알림) 추가
+  발견 — C4(자율성 상대별 예외)도 **완료** (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션
+  미배포) — `Contact.AutonomyLevel` 오버라이드 필드 + `resolveAutonomyLevel()`(연락처
+  오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`와 동일 구조)로 `POST
+  /conversations/:id/messages`의 자율성 게이트 교체, `contacts_screen.dart`에
+  `_AutonomyLevelPicker` 추가. C5(관계 메모 반영)·C6(답장 마감 알림)은 아직 todo.
   Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
@@ -204,9 +210,9 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-C2d** | 초안 생성 시 티어별 톤 프롬프트 분기 | **done** (2026-08-03) | `ai-service/app/generation.py` `RELATIONSHIP_TIER_INSTRUCTIONS` + `core-backend/persona.go` `resolveRelationshipTier()`(연락처 오버라이드 → 전역 기본값 → `formal`) |
 | **N4-C3a** | 짧은 시간 내 동일 상대 도배 감지 → 응대 일시중단 | **done** (2026-08-03) | `core-backend/flood_detect.go`(`floodMessageThreshold=5`건/`floodWindow=2분`, 안전 최소값 placeholder) + `main.go` `POST /conversations/:id/messages`의 peer-veto·그룹차단 다음, 에스컬레이션 이전 지점(우회 불가). `Conversation.TwinDisabledByFlood`로 대화방 단위 차단, `POST /conversations/:id/flood-reset`로 재개(거부권과 달리 되돌리기 가능) |
 | **N4-C3b** | 도배 중단 시 사후 알림 | **done** (2026-08-03) | 기존 `EscalationLog`/`InboxScreen` 그대로 재사용(신규 알림 경로 없음). 대화 목록·채팅방 배너에 상태 표시 + "자동응대 재개" one-tap undo 버튼 추가 |
-| **N4-C4a** | `Contact.AutonomyLevel` 오버라이드 필드 | todo | `core-backend/models.go`, `RelationshipTier`와 동일 패턴(nil = 전역 기본값) |
-| **N4-C4b** | 자율성 레벨 해석 함수 + 발송 게이트 교체 | todo | `resolveRelationshipTier`와 동일 구조, `main.go`의 전역값만 읽던 부분 교체 |
-| **N4-C4c** | 연락처별 자율성 오버라이드 UI | todo | `contacts_screen.dart`, `_RelationshipTierPicker` 옆에 자율성 피커 추가 |
+| **N4-C4a** | `Contact.AutonomyLevel` 오버라이드 필드 | **done** (2026-08-03) | `core-backend/models.go`, `RelationshipTier`와 동일 패턴(nil = 전역 기본값) |
+| **N4-C4b** | 자율성 레벨 해석 함수 + 발송 게이트 교체 | **done** (2026-08-03) | `core-backend/autonomy_resolve.go` `resolveAutonomyLevel()`(연락처 오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`와 동일 구조). `main.go` `POST /conversations/:id/messages`가 전역값만 읽던 부분을 이 함수 호출로 교체 — peer-veto·그룹차단·도배 감지·에스컬레이션 순서는 그대로, "level" 계산만 교체. 그룹 대화는 이 함수 자체도 전역 기본값만 쓰고, 그 전에 걸리는 무조건 차단과 이중으로 안전 |
+| **N4-C4c** | 연락처별 자율성 오버라이드 UI | **done** (2026-08-03) | `contacts_screen.dart` `_AutonomyLevelPicker`(`_RelationshipTierPicker` 옆, 기본값 사용/L0/L1/L2 4-way 칩), 연락처 목록 서브타이틀에도 표시 |
 | **N4-C5a** | `draftRequest`에 `RelationshipNote` 필드 추가 | todo | `core-backend/aiservice.go` |
 | **N4-C5b** | draft 핸들러가 연락처 메모 조회해 전달 | todo | `main.go` `POST /conversations/:id/draft`, 그룹은 스킵 |
 | **N4-C5c** | 메모를 톤 프롬프트에 주입 | todo | `ai-service/app/generation.py`, 빈 값이면 무영향 |
@@ -273,9 +279,10 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 4. ~~N2-B8~B12 컷오버~~ **done** (`msn.iykyka.com` 라이브)  
 5. ~~N3 안정화 + Track A/B~~ **done**, ~~Track C1 단톡 따라잡기~~ **done** (2026-08-03),
    ~~Track C2 관계별 페르소나~~ **done** (2026-08-03), ~~Track C3 스팸/도배 감지~~ **done**
-   (2026-08-03) — **Track C 콘텐츠 갭 전체 완료.** 남은 것: **Master FCM 시크릿(N4-1/3)**
-   → N4-4 스모크 → Android UI QA (N4-5~10), Track C 프로덕션 재배포(C2/C3는 아직 GitHub
-   `main`에만 있음)
+   (2026-08-03) — **Track C 콘텐츠 갭 A/B/C 전체 완료.** 2026-08-03 2차 재분석으로 D/E/F 추가
+   발견, ~~Track C4 자율성 상대별 예외~~ **done** (2026-08-03). 남은 것: Track C5(관계 메모
+   반영)·C6(답장 마감 알림), **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA
+   (N4-5~10), Track C 프로덕션 재배포(C2/C3/C4는 아직 GitHub `main`에만 있음)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

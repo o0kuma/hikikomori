@@ -21,6 +21,9 @@ type createContactRequest struct {
 	// RelationshipTier overrides the owner's global default for this
 	// contact (roadmap.md §2.7-B). Nil = use the global default.
 	RelationshipTier *RelationshipTier `json:"relationship_tier"`
+	// AutonomyLevel overrides the owner's global default autonomy level for
+	// this contact (roadmap.md §2.7-D). Nil = use the global default.
+	AutonomyLevel *AutonomyLevel `json:"autonomy_level"`
 }
 
 type updateContactRequest struct {
@@ -28,6 +31,7 @@ type updateContactRequest struct {
 	ContactUserID    *uint             `json:"contact_user_id"`
 	RelationshipNote string            `json:"relationship_note"`
 	RelationshipTier *RelationshipTier `json:"relationship_tier"`
+	AutonomyLevel    *AutonomyLevel    `json:"autonomy_level"`
 }
 
 func contactJSON(ct Contact) gin.H {
@@ -37,6 +41,7 @@ func contactJSON(ct Contact) gin.H {
 		"contact_user_id":   ct.ContactUserID,
 		"relationship_note": ct.RelationshipNote,
 		"relationship_tier": ct.RelationshipTier,
+		"autonomy_level":    ct.AutonomyLevel,
 	}
 }
 
@@ -270,12 +275,17 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": "relationship_tier must be one of close, formal"})
 			return
 		}
+		if req.AutonomyLevel != nil && !validAutonomyLevel(*req.AutonomyLevel) {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "autonomy_level must be one of L0, L1, L2"})
+			return
+		}
 		contact := Contact{
 			OwnerUserID:      userID,
 			ContactUserID:    req.ContactUserID,
 			DisplayName:      req.DisplayName,
 			RelationshipNote: req.RelationshipNote,
 			RelationshipTier: req.RelationshipTier,
+			AutonomyLevel:    req.AutonomyLevel,
 		}
 		if err := db.Create(&contact).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
@@ -322,6 +332,10 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": "relationship_tier must be one of close, formal"})
 			return
 		}
+		if req.AutonomyLevel != nil && !validAutonomyLevel(*req.AutonomyLevel) {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "autonomy_level must be one of L0, L1, L2"})
+			return
+		}
 		var contact Contact
 		if err := db.Where("id = ? AND owner_user_id = ?", contactID, userID).First(&contact).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"detail": "contact not found"})
@@ -335,6 +349,7 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 		contact.ContactUserID = req.ContactUserID
 		contact.RelationshipNote = req.RelationshipNote
 		contact.RelationshipTier = req.RelationshipTier
+		contact.AutonomyLevel = req.AutonomyLevel
 		if err := db.Save(&contact).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 			return

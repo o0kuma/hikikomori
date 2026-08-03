@@ -119,12 +119,14 @@ class ApiClient {
     int? contactUserId,
     String relationshipNote = '',
     RelationshipTier? relationshipTier,
+    AutonomyLevel? autonomyLevel,
   }) async {
     final json = await _json('POST', '/users/$userId/contacts', body: {
       'display_name': displayName,
       if (contactUserId != null) 'contact_user_id': contactUserId,
       'relationship_note': relationshipNote,
       if (relationshipTier != null) 'relationship_tier': relationshipTier.name,
+      if (autonomyLevel != null) 'autonomy_level': autonomyLevel.name,
     });
     return Contact.fromJson(json);
   }
@@ -136,12 +138,14 @@ class ApiClient {
     int? contactUserId,
     String relationshipNote = '',
     RelationshipTier? relationshipTier,
+    AutonomyLevel? autonomyLevel,
   }) async {
     final json = await _json('PATCH', '/users/$userId/contacts/$contactId', body: {
       'display_name': displayName,
       if (contactUserId != null) 'contact_user_id': contactUserId,
       'relationship_note': relationshipNote,
       if (relationshipTier != null) 'relationship_tier': relationshipTier.name,
+      if (autonomyLevel != null) 'autonomy_level': autonomyLevel.name,
     });
     return Contact.fromJson(json);
   }

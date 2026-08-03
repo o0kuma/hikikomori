@@ -17,6 +17,10 @@ const (
 	AutonomyL2 AutonomyLevel = "L2"
 )
 
+func validAutonomyLevel(l AutonomyLevel) bool {
+	return l == AutonomyL0 || l == AutonomyL1 || l == AutonomyL2
+}
+
 // RelationshipTier is the minimum-2-tier persona split roadmap.md §2.7-B /
 // PRD.md §2.1-②/§3.1 requires: draft tone should read differently for a
 // close friend than for someone you'd stay formal with. Defaults to the
@@ -76,7 +80,13 @@ type Contact struct {
 	// for drafts sent to this specific contact (roadmap.md §2.7-B). Nil means
 	// "use the global default".
 	RelationshipTier *RelationshipTier
-	CreatedAt        time.Time
+	// AutonomyLevel overrides the owner's global TwinSettings.AutonomyLevel
+	// for auto-send gating in 1:1 conversations with this specific contact
+	// (roadmap.md §2.7-D, PRD.md §3.1 "전역 기본값 + 상대별 예외 설정"). Nil
+	// means "use the global default". Same nullable-override shape as
+	// RelationshipTier above.
+	AutonomyLevel *AutonomyLevel
+	CreatedAt     time.Time
 }
 
 // TwinDisabledByPeer is the veto flag (tech-design.md §4: "대화방 단위

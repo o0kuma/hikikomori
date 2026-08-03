@@ -4,6 +4,13 @@ enum SenderMode { human, twin }
 // ignore: constant_identifier_names
 enum AutonomyLevel { L0, L1, L2 }
 
+extension AutonomyLevelLabel on AutonomyLevel {
+  /// Short label reused verbatim from autonomy_settings_screen.dart's
+  /// segmented-button labels ("L0"/"L1"/"L2") so per-contact chips
+  /// (roadmap.md §2.7-D) don't invent new copy.
+  String get label => name;
+}
+
 /// 관계별 페르소나 (roadmap.md §2.7-B, PRD.md §2.1-②/§3.1) — minimum 2 tiers.
 enum RelationshipTier {
   close,
@@ -99,6 +106,7 @@ class Contact {
     this.contactUserId,
     this.relationshipNote = '',
     this.relationshipTier,
+    this.autonomyLevel,
   });
 
   final int id;
@@ -108,6 +116,10 @@ class Contact {
   /// Per-contact override of the global relationship tier (roadmap.md
   /// §2.7-B). Null means "use the global default".
   final RelationshipTier? relationshipTier;
+  /// Per-contact override of the global autonomy level (roadmap.md §2.7-D,
+  /// PRD.md §3.1 "전역 기본값 + 상대별 예외 설정"). Null means "use the
+  /// global default".
+  final AutonomyLevel? autonomyLevel;
 
   factory Contact.fromJson(Map<String, dynamic> json) => Contact(
         id: json['id'] as int,
@@ -117,6 +129,12 @@ class Contact {
         relationshipTier: json['relationship_tier'] == null
             ? null
             : RelationshipTier.fromJson(json['relationship_tier'] as String?),
+        autonomyLevel: json['autonomy_level'] == null
+            ? null
+            : AutonomyLevel.values.firstWhere(
+                (e) => e.name == json['autonomy_level'] as String?,
+                orElse: () => AutonomyLevel.L0,
+              ),
       );
 }
 

@@ -49,6 +49,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final session = context.read<SessionState>();
     final myId = session.user?.id;
     RelationshipTier? tierOverride;
+    AutonomyLevel? autonomyOverride;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -91,6 +92,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   value: tierOverride,
                   onChanged: (t) => setDialogState(() => tierOverride = t),
                 ),
+                const SizedBox(height: 12),
+                Text('이 상대에 대한 자율성 (roadmap.md §2.7-D)', style: Theme.of(ctx).textTheme.bodySmall),
+                const SizedBox(height: 6),
+                _AutonomyLevelPicker(
+                  value: autonomyOverride,
+                  onChanged: (l) => setDialogState(() => autonomyOverride = l),
+                ),
               ],
             ),
           ),
@@ -120,6 +128,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         contactUserId: peer,
         relationshipNote: noteCtrl.text.trim(),
         relationshipTier: tierOverride,
+        autonomyLevel: autonomyOverride,
       );
       setState(() {
         _contacts = [..._contacts, created];
@@ -163,6 +172,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     // PATCH는 전체 교체라 매번 이 값을 그대로 다시 보낸다 — 안 보내면(=이전
     // 코드처럼 필드 자체를 안 넣으면) 서버가 기존 오버라이드를 null로 되돌림.
     RelationshipTier? tierOverride = contact.relationshipTier;
+    AutonomyLevel? autonomyOverride = contact.autonomyLevel;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -206,6 +216,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   value: tierOverride,
                   onChanged: (t) => setDialogState(() => tierOverride = t),
                 ),
+                const SizedBox(height: 12),
+                Text('이 상대에 대한 자율성 (roadmap.md §2.7-D)', style: Theme.of(ctx).textTheme.bodySmall),
+                const SizedBox(height: 6),
+                _AutonomyLevelPicker(
+                  value: autonomyOverride,
+                  onChanged: (l) => setDialogState(() => autonomyOverride = l),
+                ),
               ],
             ),
           ),
@@ -236,6 +253,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         contactUserId: peer,
         relationshipNote: noteCtrl.text.trim(),
         relationshipTier: tierOverride,
+        autonomyLevel: autonomyOverride,
       );
       setState(() {
         _contacts = _contacts.map((c) => c.id == updated.id ? updated : c).toList();
@@ -358,6 +376,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             : [
                                 '사용자 #${c.contactUserId}',
                                 if (c.relationshipTier != null) c.relationshipTier!.label,
+                                if (c.autonomyLevel != null) c.autonomyLevel!.label,
                                 if (c.relationshipNote.isNotEmpty) c.relationshipNote,
                               ].join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -430,6 +449,36 @@ class _RelationshipTierPicker extends StatelessWidget {
             label: Text(tier.label),
             selected: value == tier,
             onSelected: (_) => onChanged(tier),
+          ),
+      ],
+    );
+  }
+}
+
+/// Per-contact override of the global autonomy level (roadmap.md §2.7-D).
+/// `value: null` means "use the global default set in 자율성 설정".
+/// Mirrors _RelationshipTierPicker's structure exactly.
+class _AutonomyLevelPicker extends StatelessWidget {
+  const _AutonomyLevelPicker({required this.value, required this.onChanged});
+
+  final AutonomyLevel? value;
+  final ValueChanged<AutonomyLevel?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      children: [
+        ChoiceChip(
+          label: const Text('기본값 사용'),
+          selected: value == null,
+          onSelected: (_) => onChanged(null),
+        ),
+        for (final level in AutonomyLevel.values)
+          ChoiceChip(
+            label: Text(level.label),
+            selected: value == level,
+            onSelected: (_) => onChanged(level),
           ),
       ],
     );

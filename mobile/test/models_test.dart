@@ -50,5 +50,28 @@ void main() {
       'relationship_note': '대학',
     });
     expect(contact.contactUserId, 7);
+    expect(contact.relationshipTier, isNull);
+    expect(contact.autonomyLevel, isNull);
+  });
+
+  // roadmap.md §2.7-D: Contact.autonomyLevel is a nullable per-contact
+  // override of the global autonomy level, parsed only when present --
+  // mirrors relationshipTier's null-safe parsing above.
+  test('Contact parses autonomy_level override when present', () {
+    final withOverride = Contact.fromJson({
+      'id': 2,
+      'display_name': '친구2',
+      'contact_user_id': 8,
+      'autonomy_level': 'L2',
+    });
+    expect(withOverride.autonomyLevel, AutonomyLevel.L2);
+    expect(withOverride.autonomyLevel!.label, 'L2');
+
+    final withoutOverride = Contact.fromJson({
+      'id': 3,
+      'display_name': '친구3',
+      'contact_user_id': 9,
+    });
+    expect(withoutOverride.autonomyLevel, isNull);
   });
 }

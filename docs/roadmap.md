@@ -193,15 +193,24 @@
 
 **2.7-D 자율성 상대별 예외** (`PRD.md` §3.1 "자율성 설정(L0~L2) | 전역 기본값 + 상대별 예외
 설정", §4 엣지케이스 "사용자가 여러 상대에게 다른 자율성 레벨을 원함" — P0인데 현재 전역
-`TwinSettings.AutonomyLevel` 하나뿐, `Contact`에 오버라이드 필드 자체가 없음, 2026-08-03 발견)
-- [ ] `Contact`에 `AutonomyLevel *AutonomyLevel` 오버라이드 필드 추가(`RelationshipTier`와
-  동일 패턴, nil = 전역 기본값 사용)
-- [ ] 자율성 레벨 해석 함수 추가(연락처 오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`
-  와 동일 구조) — 메시지 발송 게이트(`main.go` `POST /conversations/:id/messages`)가 전역값만
-  읽던 걸 이 해석 함수로 교체
-- [ ] 연락처 추가/수정 다이얼로그에 자율성 레벨 오버라이드 UI(`contacts_screen.dart`,
-  `_RelationshipTierPicker`와 나란히 `_AutonomyLevelPicker` 같은 위젯)
-- [ ] 그룹 대화는 기존과 동일하게 항상 전역 L0 취급 유지(단톡 따라잡기 안전 불변식 변경 없음)
+`TwinSettings.AutonomyLevel` 하나뿐, `Contact`에 오버라이드 필드 자체가 없음, 2026-08-03 발견 —
+**완료** 2026-08-03)
+- [x] `Contact`에 `AutonomyLevel *AutonomyLevel` 오버라이드 필드 추가(`RelationshipTier`와
+  동일 패턴, nil = 전역 기본값 사용) — `core-backend/models.go`
+- [x] 자율성 레벨 해석 함수 추가(연락처 오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`
+  와 동일 구조) — `core-backend/autonomy_resolve.go`의 `resolveAutonomyLevel()`. 메시지
+  발송 게이트(`main.go` `POST /conversations/:id/messages`)가 `db.Where("user_id =
+  ?", req.SenderID).First(&settings)`로 전역값만 읽던 걸 이 해석 함수 호출 한 줄로 교체 —
+  peer-veto·그룹 차단·도배 감지·에스컬레이션 하드게이트는 순서 그대로 유지, "level" 계산
+  방식만 바뀜. 실패 시 폴백은 `L1`/`L2`가 아니라 `L0`(이 코드베이스 전반의 안전 우선 기본값과
+  동일한 이유 — 알 수 없으면 항상 초안만 만들고 사람이 직접 보냄)
+- [x] 연락처 추가/수정 다이얼로그에 자율성 레벨 오버라이드 UI(`contacts_screen.dart`,
+  `_RelationshipTierPicker`와 나란히 `_AutonomyLevelPicker`(기본값 사용/L0/L1/L2 4-way 칩) 추가,
+  연락처 목록 서브타이틀에도 오버라이드 표시)
+- [x] 그룹 대화는 기존과 동일하게 항상 전역 L0 취급 유지(단톡 따라잡기 안전 불변식 변경 없음) —
+  `resolveAutonomyLevel()`도 `RelationshipTier`와 동일하게 그룹 대화면 연락처 오버라이드를
+  건너뛰고 전역 기본값만 사용하도록 구현, 그룹 대화는 애초에 `main.go`의 무조건 차단이 이
+  해석 함수 호출보다 먼저 걸려서 두 안전장치가 이중으로 겹침
 
 **2.7-E 관계 메모 실제 반영** (`PRD.md` §3.2 P1, `Contact.RelationshipNote` 필드·CRUD는 이미
 있으나 `draftRequest`에 필드 자체가 없어 ai-service 프롬프트에 전혀 전달되지 않음 — 저장만 되는
