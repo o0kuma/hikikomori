@@ -171,7 +171,6 @@ class AppTheme {
           elevation: 0,
         ),
       ),
-      tonalButtonTheme: null,
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: ink,
