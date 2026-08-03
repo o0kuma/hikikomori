@@ -84,11 +84,18 @@ type Contact struct {
 // it lives here rather than on Contact. Set by POST /conversations/:id/veto
 // when the counterpart asks to talk to the human only; checked before any
 // twin auto-send in that conversation (main.go).
+// TwinDisabledByFlood is the flood/spam auto-pause flag (roadmap.md §2.7-C,
+// PRD.md §4 "스팸 감지 임계치 초과 시 응대 중단"). Unlike TwinDisabledByPeer
+// (a deliberate one-way human/peer choice, no un-veto endpoint by design),
+// this is a fully automatic system action, so AGENTS.md's "every automatic
+// action needs post-hoc notification + one-tap undo" applies -- it's
+// reversible via POST /conversations/:id/flood-reset, unlike peer veto.
 type Conversation struct {
-	ID                 uint `gorm:"primaryKey"`
-	IsGroup            bool `gorm:"not null;default:false"`
-	TwinDisabledByPeer bool `gorm:"not null;default:false"`
-	CreatedAt          time.Time
+	ID                  uint `gorm:"primaryKey"`
+	IsGroup             bool `gorm:"not null;default:false"`
+	TwinDisabledByPeer  bool `gorm:"not null;default:false"`
+	TwinDisabledByFlood bool `gorm:"not null;default:false"`
+	CreatedAt           time.Time
 }
 
 type ConversationParticipant struct {

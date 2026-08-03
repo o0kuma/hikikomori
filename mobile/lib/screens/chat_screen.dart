@@ -11,11 +11,21 @@ import '../theme/app_theme.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.conversationId, this.title, this.isGroup = false});
+  const ChatScreen({
+    super.key,
+    required this.conversationId,
+    this.title,
+    this.isGroup = false,
+    this.twinDisabledByFlood = false,
+  });
 
   final int conversationId;
   final String? title;
   final bool isGroup;
+  // roadmap.md §2.7-C 도배 감지: 목록 화면이 이미 알고 있는 초기 상태를 넘겨
+  // 받아, 채팅방을 열자마자 (실패한 발송을 기다리지 않고) 배너 + 재개 버튼을
+  // 보여줄 수 있게 한다.
+  final bool twinDisabledByFlood;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -32,12 +42,17 @@ class _ChatScreenState extends State<ChatScreen> {
   DraftResult? _pendingDraft;
   bool _busy = false;
   bool _loadingHistory = true;
+  late bool _floodBlocked;
   late final ApiClient _api;
 
   @override
   void initState() {
     super.initState();
     _api = context.read<SessionState>().api;
+    _floodBlocked = widget.twinDisabledByFlood;
+    if (_floodBlocked) {
+      _banner = '도배 감지로 이 대화방의 와카뷰 자동응대가 일시중단되었습니다.';
+    }
     _socket = ConversationSocket(widget.conversationId)..connect();
     _sub = _socket!.events.listen(_onEvent);
     _loadHistory();
@@ -231,9 +246,36 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToEnd();
     } on ApiException catch (e) {
-      setState(() => _banner = '와카뷰 발송 차단 (${e.statusCode}): ${e.body}');
+      setState(() {
+        _banner = '와카뷰 발송 차단 (${e.statusCode}): ${e.body}';
+        // roadmap.md §2.7-C: 이 화면을 열어둔 채로 있다가 도배 임계치를
+        // 새로 넘긴 경우, 목록에서 넘겨받은 초기 상태와 무관하게 지금
+        // 바로 재개 버튼을 보여줘야 한다.
+        if (e.body.contains('도배')) _floodBlocked = true;
+      });
     } finally {
       setState(() => _busy = false);
+    }
+  }
+
+  /// 도배 감지로 자동 중단된 자동응대를 다시 켠다 (roadmap.md §2.7-C,
+  /// AGENTS.md "every automatic action needs post-hoc notification +
+  /// one-tap undo"). 거부권(veto)과 달리 이 중단은 시스템이 자동으로 취한
+  /// 조치라서 되돌리기 경로가 있어야 한다.
+  Future<void> _resumeFlood() async {
+    final session = context.read<SessionState>();
+    setState(() => _busy = true);
+    try {
+      await session.api.resetFlood(widget.conversationId);
+      if (!mounted) return;
+      setState(() {
+        _floodBlocked = false;
+        _banner = '와카뷰 자동응대를 다시 켰습니다.';
+      });
+    } on ApiException catch (e) {
+      setState(() => _banner = '재개 실패 (${e.statusCode})');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -463,6 +505,10 @@ class _ChatScreenState extends State<ChatScreen> {
               leading: Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),
               content: Text(_banner!),
               actions: [
+                // 도배 감지 자동중단의 one-tap undo (AGENTS.md 안전 불변식) —
+                // 거부권과 달리 되돌릴 수 있으므로 여기서 바로 재개 가능.
+                if (_floodBlocked)
+                  TextButton(onPressed: _busy ? null : _resumeFlood, child: const Text('자동응대 재개')),
                 TextButton(onPressed: () => setState(() => _banner = null), child: const Text('닫기')),
               ],
             ),

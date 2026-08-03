@@ -211,12 +211,13 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			unreadQuery.Count(&unreadCount)
 
 			out = append(out, gin.H{
-				"id":                    conv.ID,
-				"is_group":              conv.IsGroup,
-				"twin_disabled_by_peer": conv.TwinDisabledByPeer,
-				"user_ids":              participantIDs,
-				"created_at":            conv.CreatedAt,
-				"unread_count":          unreadCount,
+				"id":                     conv.ID,
+				"is_group":               conv.IsGroup,
+				"twin_disabled_by_peer":  conv.TwinDisabledByPeer,
+				"twin_disabled_by_flood": conv.TwinDisabledByFlood,
+				"user_ids":               participantIDs,
+				"created_at":             conv.CreatedAt,
+				"unread_count":           unreadCount,
 			})
 		}
 		c.JSON(http.StatusOK, gin.H{"conversations": out})

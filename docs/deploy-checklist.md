@@ -45,7 +45,13 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
   그룹 생성 UI, 안 본 동안 요약(`GET /conversations/:id/summary`), 읽음 마커,
   안 본 배지, 그룹 트윈 발송 서버측 차단까지. C2(관계별 페르소나)도 **완료**
   (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션 미배포) — `relationship_tier`
-  전역 기본값+연락처별 오버라이드, 초안 생성 톤 프롬프트 분기. 다음은 C3(스팸/도배 감지).
+  전역 기본값+연락처별 오버라이드, 초안 생성 톤 프롬프트 분기. C3(스팸/도배 감지)도
+  **완료** (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션 미배포) —
+  `core-backend/flood_detect.go`(`floodMessageThreshold=5`건/`floodWindow=2분`,
+  안전 최소값 placeholder), `POST /conversations/:id/messages` 하드게이트에 peer-veto·
+  그룹차단 다음 순서로 추가, `TwinDisabledByFlood` 대화방 플래그 + `POST
+  /conversations/:id/flood-reset` one-tap undo, 기존 `EscalationLog`/`InboxScreen`
+  재사용 + 대화 목록/채팅방 배너에 상태·재개 버튼 노출. **Track C 콘텐츠 갭 전체(A/B/C) 완료.**
   Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
@@ -193,8 +199,8 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-C2b** | 온보딩 관계 티어 선택 스텝 | **done** (2026-08-03) | `onboarding_tone_screen.dart`, 말투 샘플 다음에 전역 기본값 선택 |
 | **N4-C2c** | 연락처별 관계 티어 오버라이드 | **done** (2026-08-03) | `contacts_screen.dart` `_RelationshipTierPicker`, 자율성 설정 화면에 전역 기본값 변경 UI |
 | **N4-C2d** | 초안 생성 시 티어별 톤 프롬프트 분기 | **done** (2026-08-03) | `ai-service/app/generation.py` `RELATIONSHIP_TIER_INSTRUCTIONS` + `core-backend/persona.go` `resolveRelationshipTier()`(연락처 오버라이드 → 전역 기본값 → `formal`) |
-| **N4-C3a** | 짧은 시간 내 동일 상대 도배 감지 → 응대 일시중단 | todo | 에스컬레이션 하드게이트와 동일 위치(우회 불가) |
-| **N4-C3b** | 도배 중단 시 사후 알림 | todo | 기존 `EscalationLog`/`InboxScreen` 재사용 |
+| **N4-C3a** | 짧은 시간 내 동일 상대 도배 감지 → 응대 일시중단 | **done** (2026-08-03) | `core-backend/flood_detect.go`(`floodMessageThreshold=5`건/`floodWindow=2분`, 안전 최소값 placeholder) + `main.go` `POST /conversations/:id/messages`의 peer-veto·그룹차단 다음, 에스컬레이션 이전 지점(우회 불가). `Conversation.TwinDisabledByFlood`로 대화방 단위 차단, `POST /conversations/:id/flood-reset`로 재개(거부권과 달리 되돌리기 가능) |
+| **N4-C3b** | 도배 중단 시 사후 알림 | **done** (2026-08-03) | 기존 `EscalationLog`/`InboxScreen` 그대로 재사용(신규 알림 경로 없음). 대화 목록·채팅방 배너에 상태 표시 + "자동응대 재개" one-tap undo 버튼 추가 |
 
 ### FCM — [`fcm-setup.md`](./fcm-setup.md)
 
@@ -254,8 +260,10 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
 4. ~~N2-B8~B12 컷오버~~ **done** (`msn.iykyka.com` 라이브)  
 5. ~~N3 안정화 + Track A/B~~ **done**, ~~Track C1 단톡 따라잡기~~ **done** (2026-08-03),
-   ~~Track C2 관계별 페르소나~~ **done** (2026-08-03) — 다음: **Track C3 스팸/도배 감지**
-   병행하며 **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10)
+   ~~Track C2 관계별 페르소나~~ **done** (2026-08-03), ~~Track C3 스팸/도배 감지~~ **done**
+   (2026-08-03) — **Track C 콘텐츠 갭 전체 완료.** 남은 것: **Master FCM 시크릿(N4-1/3)**
+   → N4-4 스모크 → Android UI QA (N4-5~10), Track C 프로덕션 재배포(C2/C3는 아직 GitHub
+   `main`에만 있음)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

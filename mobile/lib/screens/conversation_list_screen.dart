@@ -77,6 +77,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
 
   String _subtitleFor(ConversationSummary room, int? me) {
     if (room.twinDisabledByPeer) return '상대가 와카뷰를 거부함';
+    // roadmap.md §2.7-C 도배 감지 — 사후 알림 함(InboxScreen)에서도 보이지만
+    // 대화 목록에서 바로 상태를 알 수 있어야 한다.
+    if (room.twinDisabledByFlood) return '도배 감지로 자동응대 일시중단 (사후 알림에서 재개)';
     final peers = me == null ? const <int>[] : room.userIds.where((id) => id != me).toList();
     final peerPart = peers.isEmpty ? '참가자 없음' : '상대 ID ${peers.first}';
     return '$peerPart · 방 #${room.id}';
@@ -342,6 +345,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                                 conversationId: room.id,
                                 title: _titleFor(room, me),
                                 isGroup: room.isGroup,
+                                twinDisabledByFlood: room.twinDisabledByFlood,
                               ),
                             ),
                           );
@@ -372,8 +376,12 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                                     const SizedBox(height: 2),
                                     Row(
                                       children: [
-                                        if (room.twinDisabledByPeer) ...[
-                                          Icon(Icons.block, size: 13, color: theme.colorScheme.error),
+                                        if (room.twinDisabledByPeer || room.twinDisabledByFlood) ...[
+                                          Icon(
+                                            room.twinDisabledByFlood ? Icons.pause_circle_outline : Icons.block,
+                                            size: 13,
+                                            color: theme.colorScheme.error,
+                                          ),
                                           const SizedBox(width: 4),
                                         ],
                                         Expanded(
@@ -382,7 +390,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: theme.textTheme.bodySmall?.copyWith(
-                                              color: room.twinDisabledByPeer
+                                              color: room.twinDisabledByPeer || room.twinDisabledByFlood
                                                   ? theme.colorScheme.error
                                                   : theme.colorScheme.onSurfaceVariant,
                                             ),

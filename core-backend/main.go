@@ -257,8 +257,9 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// words and are never gated. On any doubt (AI service unreachable
 		// or erroring) we fail closed and block the send. Peer veto is
 		// checked first (it's a total kill switch for this conversation,
-		// independent of content), then escalation, then autonomy level --
-		// none of the later checks can override an earlier block.
+		// independent of content), then the group-chat block, then flood
+		// detection, then escalation, then autonomy level -- none of the
+		// later checks can override an earlier block.
 		if req.SenderMode == SenderTwin {
 			if conversation.TwinDisabledByPeer {
 				runtimeMetrics.recordTwinBlocked()
@@ -273,6 +274,41 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			if conversation.IsGroup {
 				runtimeMetrics.recordTwinBlocked()
 				c.JSON(http.StatusForbidden, gin.H{"detail": "그룹 대화에서는 와카뷰 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
+				return
+			}
+
+			// 스팸/도배 감지 최소 버전(PRD.md §4, roadmap.md §2.7-C): 이미
+			// 도배로 중단된 대화방이면 재검사 없이 바로 막는다 (중복
+			// EscalationLog 방지 + 매 시도마다 카운트 쿼리를 다시 돌리지
+			// 않기 위함). 아직 중단되지 않았다면 이번 전송을 계기로 트리거를
+			// 검사한다 -- 이 게이트는 에스컬레이션 하드게이트와 같은 우회
+			// 불가 지점에 있어, 어떤 자율성 레벨/화이트리스트로도 건너뛸 수
+			// 없다.
+			if conversation.TwinDisabledByFlood {
+				runtimeMetrics.recordTwinBlocked()
+				c.JSON(http.StatusForbidden, gin.H{"detail": "도배 감지로 이 대화방의 와카뷰 자동 발송이 일시중단되어 있습니다 -- 사후 알림에서 확인 후 재개할 수 있습니다"})
+				return
+			}
+			if exceeded, count := floodDetected(db, convID, req.SenderID); exceeded {
+				conversation.TwinDisabledByFlood = true
+				db.Save(&conversation)
+				runtimeMetrics.recordTwinBlocked()
+				reason := floodReason(count)
+				db.Create(&EscalationLog{
+					UserID:         req.SenderID,
+					ConversationID: convID,
+					Reason:         reason,
+					MessageSnippet: req.Text,
+				})
+				// Automatic action -> post-hoc notification (AGENTS.md
+				// absolute safety invariants), same as the escalation gate
+				// below. Best-effort push (no-op without FCM_SERVER_KEY /
+				// real tokens).
+				_, _, _ = notifyUser(db, req.SenderID, "와카뷰 자동응대 일시중단", reason, map[string]string{
+					"type":            "flood",
+					"conversation_id": strconv.FormatUint(uint64(convID), 10),
+				})
+				c.JSON(http.StatusForbidden, gin.H{"detail": "도배 감지로 자동 발송이 일시중단되었습니다", "reason": reason})
 				return
 			}
 
@@ -465,6 +501,32 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		}
 
 		c.JSON(http.StatusOK, gin.H{"conversation_id": convID, "twin_disabled_by_peer": true})
+	})
+
+	// 도배 감지로 자동 발송이 일시중단된 대화방을 다시 켠다 (roadmap.md
+	// §2.7-C, AGENTS.md "every automatic action needs post-hoc notification +
+	// one-tap undo"). 거부권(veto)과 달리 이 중단은 사람의 결정이 아니라
+	// 시스템이 자동으로 취한 조치라서, 되돌리기 경로가 반드시 있어야 한다 --
+	// 거부권처럼 영구적으로 막아두지 않는다.
+	r.POST("/conversations/:id/flood-reset", func(c *gin.Context) {
+		convID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var conversation Conversation
+		if err := db.First(&conversation, convID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "conversation not found"})
+			return
+		}
+
+		conversation.TwinDisabledByFlood = false
+		if err := db.Save(&conversation).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"conversation_id": convID, "twin_disabled_by_flood": false})
 	})
 
 	r.PATCH("/users/:id/twin-settings", func(c *gin.Context) {

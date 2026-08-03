@@ -189,6 +189,13 @@ class ApiClient {
     await _json('POST', '/conversations/$conversationId/veto');
   }
 
+  /// 도배 감지로 자동 중단된 대화방을 다시 켠다 (roadmap.md §2.7-C, AGENTS.md
+  /// "every automatic action needs post-hoc notification + one-tap undo").
+  /// 거부권(veto)과 달리 되돌릴 수 있다.
+  Future<void> resetFlood(int conversationId) async {
+    await _json('POST', '/conversations/$conversationId/flood-reset');
+  }
+
   /// 단톡 따라잡기(roadmap.md §2.7-A): advances the caller's read marker.
   Future<void> markRead(int conversationId, int messageId) async {
     await _json('POST', '/conversations/$conversationId/read', body: {

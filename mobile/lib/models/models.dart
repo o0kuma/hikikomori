@@ -55,6 +55,7 @@ class ConversationSummary {
     required this.isGroup,
     required this.userIds,
     required this.twinDisabledByPeer,
+    this.twinDisabledByFlood = false,
     this.unreadCount = 0,
     this.createdAt,
   });
@@ -63,6 +64,9 @@ class ConversationSummary {
   final bool isGroup;
   final List<int> userIds;
   final bool twinDisabledByPeer;
+  // roadmap.md §2.7-C 스팸/도배 감지: 자동으로 켜지지만(사람의 선택이 아님)
+  // twinDisabledByPeer와 달리 되돌릴 수 있음 (POST /conversations/:id/flood-reset).
+  final bool twinDisabledByFlood;
   final int unreadCount;
   final DateTime? createdAt;
 
@@ -73,6 +77,7 @@ class ConversationSummary {
       isGroup: json['is_group'] as bool? ?? false,
       userIds: rawIds.map((e) => e as int).toList(),
       twinDisabledByPeer: json['twin_disabled_by_peer'] as bool? ?? false,
+      twinDisabledByFlood: json['twin_disabled_by_flood'] as bool? ?? false,
       unreadCount: json['unread_count'] as int? ?? 0,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
     );
