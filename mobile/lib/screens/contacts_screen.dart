@@ -299,8 +299,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 32),
                       child: Column(
                         children: [
-                          Icon(Icons.person_add_outlined, size: 40, color: theme.colorScheme.outline),
-                          const SizedBox(height: 12),
                           Text('연락처가 없습니다', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),
                           Text(
@@ -316,66 +314,65 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ),
                     ),
                   for (final c in _contacts)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          child: Text(
-                            c.displayName.isEmpty ? '?' : c.displayName.substring(0, 1),
-                            style: TextStyle(
-                              color: theme.colorScheme.onSecondaryContainer,
-                              fontWeight: FontWeight.w700,
-                            ),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                      leading: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        child: Text(
+                          c.displayName.isEmpty ? '?' : c.displayName.substring(0, 1),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        title: Text(c.displayName, style: theme.textTheme.titleSmall),
-                        subtitle: Text(
-                          c.contactUserId == null
-                              ? '사용자 ID 없음 — 대화 불가 (다시 추가 필요)'
-                              : [
-                                  '사용자 #${c.contactUserId}',
-                                  if (c.relationshipNote.isNotEmpty) c.relationshipNote,
-                                ].join(' · '),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: c.contactUserId == null
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (c.contactUserId != null) ...[
-                              FilledButton.tonal(
-                                onPressed: () => _startChat(c),
-                                child: const Text('대화'),
-                              ),
-                              IconButton(
-                                tooltip: '수정',
-                                icon: const Icon(Icons.edit_outlined, size: 20),
-                                onPressed: () => _editContact(c),
-                              ),
-                            ] else
-                              FilledButton(
-                                onPressed: () => _editContact(c),
-                                child: const Text('ID 입력'),
-                              ),
-                            IconButton(
-                              tooltip: '삭제',
-                              icon: const Icon(Icons.delete_outline, size: 20),
-                              onPressed: () => _delete(c),
-                            ),
-                          ],
-                        ),
-                        onTap: () {
-                          if (c.contactUserId == null) {
-                            _editContact(c);
-                          } else {
-                            _startChat(c);
-                          }
-                        },
                       ),
+                      title: Text(c.displayName, style: theme.textTheme.titleSmall),
+                      subtitle: Text(
+                        c.contactUserId == null
+                            ? '사용자 ID 없음 — 대화 불가 (다시 추가 필요)'
+                            : [
+                                '사용자 #${c.contactUserId}',
+                                if (c.relationshipNote.isNotEmpty) c.relationshipNote,
+                              ].join(' · '),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: c.contactUserId == null
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (c.contactUserId != null) ...[
+                            TextButton(
+                              onPressed: () => _startChat(c),
+                              child: const Text('대화'),
+                            ),
+                            IconButton(
+                              tooltip: '수정',
+                              icon: const Icon(Icons.edit_outlined, size: 20),
+                              onPressed: () => _editContact(c),
+                            ),
+                          ] else
+                            FilledButton(
+                              onPressed: () => _editContact(c),
+                              child: const Text('ID 입력'),
+                            ),
+                          IconButton(
+                            tooltip: '삭제',
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            onPressed: () => _delete(c),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        if (c.contactUserId == null) {
+                          _editContact(c);
+                        } else {
+                          _startChat(c);
+                        }
+                      },
                     ),
                   const SizedBox(height: 72),
                 ],

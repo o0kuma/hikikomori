@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
-/// Twin messages get a dashed border + badge (PRD §3.1 와카뷰 뱃지).
+/// Twin messages get a warm thin border + label (PRD §3.1 와카뷰 뱃지).
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -34,49 +34,54 @@ class MessageBubble extends StatelessWidget {
 
     final Color bg;
     final Color fg;
+    Border? border;
     if (retracted) {
       bg = scheme.surfaceContainerHigh;
       fg = scheme.onSurfaceVariant;
+    } else if (twin) {
+      bg = brightness == Brightness.dark
+          ? const Color(0xFF221C14)
+          : const Color(0xFFFAF6F0);
+      fg = scheme.onSurface;
+      border = Border.all(color: accent.withValues(alpha: 0.4), width: 1);
     } else if (isMine) {
       bg = AppTheme.mineBubble(brightness);
       fg = AppTheme.mineBubbleFg(brightness);
     } else {
       bg = AppTheme.peerBubble(brightness);
       fg = scheme.onSurface;
+      border = Border.all(color: scheme.outlineVariant.withValues(alpha: 0.9));
     }
 
     final radius = BorderRadius.only(
-      topLeft: const Radius.circular(18),
-      topRight: const Radius.circular(18),
-      bottomLeft: Radius.circular(isMine ? 18 : 5),
-      bottomRight: Radius.circular(isMine ? 5 : 18),
+      topLeft: const Radius.circular(AppTheme.rBubble),
+      topRight: const Radius.circular(AppTheme.rBubble),
+      bottomLeft: Radius.circular(isMine ? AppTheme.rBubble : 6),
+      bottomRight: Radius.circular(isMine ? 6 : AppTheme.rBubble),
     );
 
     final bubble = Container(
       constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.76),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-      decoration: BoxDecoration(color: bg, borderRadius: radius),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: radius,
+        border: border,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (twin)
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.auto_awesome, size: 13, color: accent),
-                  const SizedBox(width: 4),
-                  Text(
-                    '와카뷰',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                '와카뷰',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           if (retracted)
@@ -109,12 +114,7 @@ class MessageBubble extends StatelessWidget {
       crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        twin
-            ? CustomPaint(
-                painter: _DashedRRectPainter(color: accent, radius: radius),
-                child: bubble,
-              )
-            : bubble,
+        bubble,
         if (twin && isMine && !retracted && onRetract != null)
           Padding(
             padding: const EdgeInsets.only(top: 2, right: 4, left: 4),
@@ -142,40 +142,4 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedRRectPainter extends CustomPainter {
-  _DashedRRectPainter({required this.color, required this.radius});
-
-  final Color color;
-  final BorderRadius radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final rrect = radius.toRRect(Rect.fromLTWH(0.7, 0.7, size.width - 1.4, size.height - 1.4));
-    final path = Path()..addRRect(rrect);
-    canvas.drawPath(_dashPath(path, dashLength: 5, gapLength: 4), paint);
-  }
-
-  Path _dashPath(Path source, {required double dashLength, required double gapLength}) {
-    final metrics = source.computeMetrics();
-    final out = Path();
-    for (final metric in metrics) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final next = distance + dashLength;
-        out.addPath(metric.extractPath(distance, next.clamp(0, metric.length)), Offset.zero);
-        distance = next + gapLength;
-      }
-    }
-    return out;
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
 }

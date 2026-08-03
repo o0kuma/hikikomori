@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Brand wordmark — ink (not rainbow gradient) so Quiet Ink stays calm.
+/// Brand wordmark — ink weight, no rainbow gradient.
 class GradientText extends StatelessWidget {
   const GradientText(this.text, {super.key, this.style, this.textAlign});
 
@@ -16,7 +16,7 @@ class GradientText extends StatelessWidget {
     return Text(
       text,
       textAlign: textAlign,
-      style: (style ?? const TextStyle()).copyWith(color: ink, fontWeight: FontWeight.w800),
+      style: (style ?? const TextStyle()).copyWith(color: ink, fontWeight: FontWeight.w700),
     );
   }
 }

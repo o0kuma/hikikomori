@@ -95,30 +95,17 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
                     ),
                   for (final s in _sessions)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: s['is_current'] == true
-                              ? theme.colorScheme.primaryContainer
-                              : theme.colorScheme.surfaceContainerHighest,
-                          child: Icon(
-                            s['is_current'] == true ? Icons.smartphone : Icons.devices_other,
-                            color: s['is_current'] == true
-                                ? theme.colorScheme.onPrimaryContainer
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        title: Text(
-                          s['is_current'] == true ? '이 기기 (현재)' : '세션 #${s['id']}',
-                          style: theme.textTheme.titleSmall,
-                        ),
-                        subtitle: Text('만료: ${s['expires_at'] ?? ''}', style: theme.textTheme.bodySmall),
-                        trailing: IconButton(
-                          tooltip: '세션 종료',
-                          icon: const Icon(Icons.logout),
-                          onPressed: () => _revoke(s),
-                        ),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      title: Text(
+                        s['is_current'] == true ? '이 기기 (현재)' : '세션 #${s['id']}',
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      subtitle: Text('만료: ${s['expires_at'] ?? ''}', style: theme.textTheme.bodySmall),
+                      trailing: IconButton(
+                        tooltip: '세션 종료',
+                        icon: const Icon(Icons.logout),
+                        onPressed: () => _revoke(s),
                       ),
                     ),
                 ],

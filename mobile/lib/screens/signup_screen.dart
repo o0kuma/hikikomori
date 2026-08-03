@@ -133,15 +133,15 @@ class _DemoTestPanel extends StatelessWidget {
     final brightness = theme.brightness;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppTheme.rPanel),
       child: InkWell(
         onTap: onFill,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.rPanel),
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
           decoration: BoxDecoration(
             color: AppTheme.glassFill(brightness),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppTheme.rPanel),
             border: Border.all(color: AppTheme.glassBorder(brightness)),
           ),
           child: Column(
@@ -150,8 +150,9 @@ class _DemoTestPanel extends StatelessWidget {
               Text(
                 '테스트용 (누구나)',
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.primary,
-                  letterSpacing: 0.2,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 6),
@@ -162,7 +163,7 @@ class _DemoTestPanel extends StatelessWidget {
                       '초대 코드  ${AppConfig.demoInviteCode}\n표시 이름  ${AppConfig.demoDisplayName}',
                       style: theme.textTheme.titleSmall?.copyWith(
                         height: 1.45,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Primary CTA — solid teal (API name kept for existing call sites).
+/// Primary CTA — Soft Neutral ink fill (API name kept for call sites).
 class PrimaryGradientButton extends StatelessWidget {
   const PrimaryGradientButton({
     super.key,
@@ -18,28 +18,34 @@ class PrimaryGradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppTheme.tealBright : AppTheme.teal;
+    final bg = isDark ? AppTheme.inkDark : AppTheme.inkLight;
     final fg = isDark ? AppTheme.canvasDark : Colors.white;
     final disabled = onPressed == null || loading;
     return SizedBox(
-      height: 52,
+      height: 48,
       width: double.infinity,
       child: FilledButton(
         onPressed: disabled && !loading ? null : onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: bg,
           foregroundColor: fg,
-          disabledBackgroundColor: bg.withValues(alpha: 0.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          disabledBackgroundColor: bg.withValues(alpha: 0.35),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.rButton),
+          ),
           elevation: 0,
+          shadowColor: Colors.transparent,
         ),
         child: loading
             ? SizedBox(
-                height: 20,
-                width: 20,
+                height: 18,
+                width: 18,
                 child: CircularProgressIndicator(strokeWidth: 2, color: fg),
               )
-            : Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 16)),
+            : Text(
+                label,
+                style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 15),
+              ),
       ),
     );
   }

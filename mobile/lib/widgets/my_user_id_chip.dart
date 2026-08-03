@@ -34,19 +34,19 @@ class MyUserIdChip extends StatelessWidget {
     final brightness = theme.brightness;
     return Material(
       color: AppTheme.glassFill(brightness),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppTheme.rPanel),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppTheme.rPanel),
         onTap: () => _copy(context),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppTheme.rPanel),
             border: Border.all(color: AppTheme.glassBorder(brightness)),
           ),
           child: Row(
             children: [
-              Icon(Icons.badge_outlined, size: 18, color: theme.colorScheme.primary),
+              Icon(Icons.badge_outlined, size: 18, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -61,8 +61,8 @@ class MyUserIdChip extends StatelessWidget {
                     Text(
                       '$userId',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
@@ -72,7 +72,7 @@ class MyUserIdChip extends StatelessWidget {
                 '복사',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: 4),

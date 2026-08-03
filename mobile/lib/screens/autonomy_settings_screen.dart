@@ -66,24 +66,27 @@ class _AutonomySettingsScreenState extends State<AutonomySettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.glassFill(theme.brightness),
+              borderRadius: BorderRadius.circular(AppTheme.rPanel),
+              border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
+            ),
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined),
                   title: const Text('데이터 흐름'),
                   subtitle: const Text('무엇이 기기에 남고 서버로 가는지'),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DataFlowScreen()));
                   },
                 ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
+                Divider(height: 1, indent: 16, endIndent: 16, color: AppTheme.glassBorder(theme.brightness)),
                 ListTile(
-                  leading: const Icon(Icons.devices),
                   title: const Text('로그인 세션'),
                   subtitle: const Text('멀티 디바이스 세션 목록'),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SessionsScreen()));
                   },

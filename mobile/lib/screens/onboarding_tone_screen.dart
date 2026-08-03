@@ -61,21 +61,8 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(Icons.record_voice_over_outlined, size: 26, color: scheme.primary),
-              ),
-            ),
-            const SizedBox(height: 18),
             Text('와카뷰가 따라 쓸 말투', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
@@ -93,21 +80,6 @@ class _OnboardingToneScreenState extends State<OnboardingToneScreen> {
                 decoration: InputDecoration(
                   labelText: '샘플 ${i + 1}',
                   hintText: i == 0 ? '예: ㅇㅇ 알겠음' : null,
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 10, right: 4),
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: scheme.primaryContainer,
-                      child: Text(
-                        '${i + 1}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: 12),

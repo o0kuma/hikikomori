@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/my_user_id_chip.dart';
 import 'autonomy_settings_screen.dart';
@@ -157,16 +156,16 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   Color _avatarColor(BuildContext context, int seed) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark
-        ? const [Color(0xFF1F3A37), Color(0xFF2A3140), Color(0xFF3A3224)]
-        : const [Color(0xFFD9F3F0), Color(0xFFE8E6E1), Color(0xFFFFE8C8)];
+        ? const [Color(0xFF1C1C1C), Color(0xFF22262E), Color(0xFF242018)]
+        : const [Color(0xFFF4F4F5), Color(0xFFE8EEF4), Color(0xFFF3F0EA)];
     return palette[seed % palette.length];
   }
 
   Color _onAvatarColor(BuildContext context, int seed) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark
-        ? const [Color(0xFF2DD4BF), Color(0xFFF2F1EF), Color(0xFFFBBF24)]
-        : const [Color(0xFF0F766E), Color(0xFF1C1B1A), Color(0xFFB45309)];
+        ? const [Color(0xFFA3A3A3), Color(0xFF8BB4D9), Color(0xFFC4A574)]
+        : const [Color(0xFF525252), Color(0xFF3B6D9B), Color(0xFF9A7B4F)];
     return palette[seed % palette.length];
   }
 
@@ -224,10 +223,10 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _createConversation,
-        icon: const Icon(Icons.chat),
-        label: const Text('새 대화'),
+        tooltip: '새 대화',
+        child: const Icon(Icons.chat_outlined),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -255,19 +254,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                     ),
                   if (_rooms.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 56, 32, 32),
+                      padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
                       child: Column(
                         children: [
-                          Container(
-                            width: 68,
-                            height: 68,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: theme.colorScheme.primaryContainer,
-                            ),
-                            child: Icon(Icons.chat_bubble_outline, size: 28, color: theme.colorScheme.primary),
-                          ),
-                          const SizedBox(height: 18),
                           Text('대화방이 없습니다', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),
                           Text(
@@ -281,86 +270,81 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                             ),
                           ),
                           const SizedBox(height: 18),
-                          FilledButton.tonalIcon(
+                          OutlinedButton(
                             onPressed: () async {
                               await Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const ContactsScreen()),
                               );
                               await _load();
                             },
-                            icon: const Icon(Icons.contacts_outlined),
-                            label: const Text('연락처 열기'),
+                            child: const Text('연락처 열기'),
                           ),
                         ],
                       ),
                     ),
                   for (final room in _rooms)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      child: Material(
-                        color: AppTheme.glassFill(theme.brightness),
-                        borderRadius: BorderRadius.circular(16),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ChatScreen(
-                                  conversationId: room.id,
-                                  title: _titleFor(room, me),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(
+                                conversationId: room.id,
+                                title: _titleFor(room, me),
+                              ),
+                            ),
+                          );
+                          await _load();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: _avatarColor(context, room.id),
+                                child: Icon(
+                                  room.isGroup ? Icons.groups_outlined : Icons.person_outline,
+                                  size: 20,
+                                  color: _onAvatarColor(context, room.id),
                                 ),
                               ),
-                            );
-                            await _load();
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: _avatarColor(context, room.id),
-                                  child: Icon(
-                                    room.isGroup ? Icons.groups_outlined : Icons.person_outline,
-                                    color: _onAvatarColor(context, room.id),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _titleFor(room, me),
-                                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Row(
-                                        children: [
-                                          if (room.twinDisabledByPeer) ...[
-                                            Icon(Icons.block, size: 13, color: theme.colorScheme.error),
-                                            const SizedBox(width: 4),
-                                          ],
-                                          Expanded(
-                                            child: Text(
-                                              _subtitleFor(room, me),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: room.twinDisabledByPeer
-                                                    ? theme.colorScheme.error
-                                                    : theme.colorScheme.onSurfaceVariant,
-                                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _titleFor(room, me),
+                                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        if (room.twinDisabledByPeer) ...[
+                                          Icon(Icons.block, size: 13, color: theme.colorScheme.error),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Expanded(
+                                          child: Text(
+                                            _subtitleFor(room, me),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: room.twinDisabledByPeer
+                                                  ? theme.colorScheme.error
+                                                  : theme.colorScheme.onSurfaceVariant,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                Icon(Icons.chevron_right, size: 20, color: theme.colorScheme.onSurfaceVariant),
-                              ],
-                            ),
+                              ),
+                              Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                            ],
                           ),
                         ),
                       ),

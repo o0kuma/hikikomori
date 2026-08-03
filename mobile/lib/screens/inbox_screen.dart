@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../state/session_state.dart';
+import '../theme/app_theme.dart';
 import 'chat_screen.dart';
 
 /// Post-hoc notification inbox: escalation logs that need human attention.
@@ -53,98 +54,89 @@ class _InboxScreenState extends State<InboxScreen> {
         child: _loading
             ? ListView(children: const [SizedBox(height: 160), Center(child: CircularProgressIndicator())])
             : ListView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                    child: Text(
-                      '와카뷰가 보류·차단한 내용과 에스컬레이션 기록입니다. '
-                      '이미 보낸 와카뷰 메시지는 해당 대화방에서 되돌릴 수 있습니다.',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                  Text(
+                    '와카뷰가 보류·차단한 내용과 에스컬레이션 기록입니다. '
+                    '이미 보낸 와카뷰 메시지는 해당 대화방에서 되돌릴 수 있습니다.',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
+                  const SizedBox(height: 12),
                   if (_error != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
                     ),
                   if (_logs.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 32),
-                      child: Column(
-                        children: [
-                          Icon(Icons.notifications_none, size: 40, color: theme.colorScheme.outline),
-                          const SizedBox(height: 12),
-                          Text('새 알림이 없습니다', style: theme.textTheme.titleMedium),
-                        ],
+                      padding: const EdgeInsets.symmetric(vertical: 56),
+                      child: Center(
+                        child: Text('새 알림이 없습니다', style: theme.textTheme.titleMedium),
                       ),
                     ),
                   for (final log in _logs)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Card(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ChatScreen(conversationId: log.conversationId),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(conversationId: log.conversationId),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(AppTheme.rPanel),
+                            border: Border.all(color: AppTheme.glassBorder(theme.brightness)),
+                            color: AppTheme.glassFill(theme.brightness),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      log.reason.isEmpty ? '에스컬레이션' : log.reason,
+                                      style: theme.textTheme.titleSmall,
+                                    ),
+                                  ),
+                                  Text(
+                                    log.resolved ? '처리됨' : '확인 필요',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: log.resolved
+                                          ? theme.colorScheme.onSurfaceVariant
+                                          : theme.colorScheme.error,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(14),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: log.resolved
-                                      ? theme.colorScheme.primaryContainer
-                                      : theme.colorScheme.errorContainer,
-                                  child: Icon(
-                                    log.resolved ? Icons.check_circle_outline : Icons.warning_amber_rounded,
-                                    size: 18,
-                                    color: log.resolved
-                                        ? theme.colorScheme.onPrimaryContainer
-                                        : theme.colorScheme.onErrorContainer,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        log.reason.isEmpty ? '에스컬레이션' : log.reason,
-                                        style: theme.textTheme.titleSmall,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '대화방 #${log.conversationId}',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                                      ),
-                                      if (log.messageSnippet.isNotEmpty) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          log.messageSnippet,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: theme.textTheme.bodyMedium,
-                                        ),
-                                      ],
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        log.createdAt.toLocal().toString().split('.').first,
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(color: theme.colorScheme.outline),
-                                      ),
-                                    ],
-                                  ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '대화방 #${log.conversationId}',
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              ),
+                              if (log.messageSnippet.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  log.messageSnippet,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium,
                                 ),
                               ],
-                            ),
+                              const SizedBox(height: 6),
+                              Text(
+                                log.createdAt.toLocal().toString().split('.').first,
+                                style: theme.textTheme.labelSmall
+                                    ?.copyWith(color: theme.colorScheme.outline),
+                              ),
+                            ],
                           ),
                         ),
                       ),
