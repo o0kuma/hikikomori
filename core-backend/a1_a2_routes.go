@@ -257,15 +257,7 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 		query.Order("id asc").Find(&messages)
 		out := make([]gin.H, 0, len(messages))
 		for _, m := range messages {
-			out = append(out, gin.H{
-				"id":              m.ID,
-				"conversation_id": m.ConversationID,
-				"sender_id":       m.SenderID,
-				"sender_mode":     m.SenderMode,
-				"text":            m.Text,
-				"retracted":       m.Retracted,
-				"created_at":      m.CreatedAt,
-			})
+			out = append(out, messageJSON(m))
 		}
 		c.JSON(http.StatusOK, gin.H{"messages": out})
 	})

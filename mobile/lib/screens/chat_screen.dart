@@ -52,6 +52,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _loadingHistory = true;
   late bool _floodBlocked;
   late final ApiClient _api;
+  // "이 답장 나답아요?" 피드백(vision.md 지표, deploy-checklist.md N4-12):
+  // 이번 세션에서(또는 서버에서 이미) 평가된 메시지 id들 — 한 번 탭한 메시지엔
+  // 화면이 다시 그려져도(리로드 없이) 뱃지를 다시 보여주지 않는다.
+  final _ratedMessageIds = <int>{};
   // 답장 마감 알림(roadmap.md §2.7-F) — 이 대화방에 걸린 "이따 답장" 스누즈 시각.
   // 서버에는 존재하지 않는 순수 온디바이스 상태라 화면에 들어올 때 로컬 DB에서 로드한다.
   DateTime? _snoozedUntil;
@@ -97,6 +101,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         _messages
           ..clear()
           ..addAll(merged);
+        _syncRatedMessageIds(merged);
       });
       _scrollToEnd();
       _markLatestRead();
@@ -194,6 +199,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ..clear()
           ..addAll(history);
         _loadingHistory = false;
+        _syncRatedMessageIds(history);
       });
       _scrollToEnd();
       // 읽음 마커는 화면에 들어올 때가 아니라 "나갈 때"(dispose) 찍는다 --
@@ -232,6 +238,28 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     });
   }
 
+  /// 서버에서 이미 평가된 메시지(다른 세션/기기에서 탭했거나, 새로고침 전에
+  /// 이미 평가된 경우)를 _ratedMessageIds에 반영 — UI를 다시 보여주지 않기
+  /// 위함. 실제 판정은 message_sync.dart의 순수 함수(ratedMessageIdsFrom)로
+  /// 분리해 위젯 없이도 테스트할 수 있게 했다.
+  void _syncRatedMessageIds(List<ChatMessage> messages) {
+    _ratedMessageIds.addAll(ratedMessageIdsFrom(messages));
+  }
+
+  /// "이 답장 나답아요?" 원탭 피드백(vision.md 지표, deploy-checklist.md
+  /// N4-12) — 트윈이 보낸 메시지 위에서만 노출(MessageBubble이 이미 twin +
+  /// isMine + !retracted로 걸러서 호출). 한 번 탭하면 다시 평가를 받지 않음.
+  Future<void> _submitFeedback(ChatMessage message, bool natural) async {
+    setState(() => _ratedMessageIds.add(message.id));
+    try {
+      await _api.submitMessageFeedback(message.id, natural);
+    } on ApiException {
+      // Best-effort — this is a soft signal, not a safety-critical action;
+      // if it fails to save server-side we don't re-offer the tap (that
+      // would look like a broken button), we just quietly drop it.
+    }
+  }
+
   void _onEvent(Map<String, dynamic> event) {
     final retractionId = _socket!.parseRetractionId(event);
     if (retractionId != null) {
@@ -247,6 +275,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             text: m.text,
             retracted: true,
             createdAt: m.createdAt,
+            draftEdited: m.draftEdited,
+            naturalnessRating: m.naturalnessRating,
           );
         }
       });
@@ -368,6 +398,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         text: text,
         senderMode: SenderMode.twin,
         approved: true,
+        // 초안 무수정 발송률(PRD.md §5, N4-12): draft.text는 사용자가 편집
+        // 컨트롤러(_draftEdit)를 건드리기 전 AI 초안 원문 — 서버가 이걸
+        // 최종 text와 diff해 draft_edited를 계산한다.
+        originalDraftText: draft.text,
       );
       setState(() {
         _pendingDraft = null;
@@ -675,10 +709,18 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         itemCount: _messages.length,
                         itemBuilder: (context, i) {
                           final m = _messages[i];
+                          final isMine = me != null && m.senderId == me;
                           return MessageBubble(
                             message: m,
-                            isMine: me != null && m.senderId == me,
+                            isMine: isMine,
                             onRetract: m.isTwin ? () => _retract(m) : null,
+                            // "이 답장 나답아요?" (vision.md 지표, N4-12): 트윈이
+                            // 실제로 보낸(=내가 보낸) 메시지에만 노출, 이미
+                            // 평가된 메시지는 다시 보여주지 않는다.
+                            alreadyRated: _ratedMessageIds.contains(m.id),
+                            onFeedback: m.isTwin && isMine && !m.retracted
+                                ? (natural) => _submitFeedback(m, natural)
+                                : null,
                           );
                         },
                       ),

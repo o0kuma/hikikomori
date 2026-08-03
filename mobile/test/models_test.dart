@@ -74,4 +74,37 @@ void main() {
     });
     expect(withoutOverride.autonomyLevel, isNull);
   });
+
+  // 초안 무수정 발송률 + 자연스러움 피드백(PRD.md §5, deploy-checklist.md
+  // N4-12): 서버가 null을 보낼 수 있는 두 필드가 각각 null/true/false를
+  // 그대로 통과시키는지 확인.
+  test('ChatMessage parses draft_edited and naturalness_rating when present', () {
+    final withBoth = ChatMessage.fromJson({
+      'id': 10,
+      'conversation_id': 1,
+      'sender_id': 1,
+      'sender_mode': 'twin',
+      'text': 'ㅇㅇ 좋아',
+      'retracted': false,
+      'draft_edited': true,
+      'naturalness_rating': false,
+      'created_at': '2026-08-03T00:00:00Z',
+    });
+    expect(withBoth.draftEdited, isTrue);
+    expect(withBoth.naturalnessRating, isFalse);
+  });
+
+  test('ChatMessage defaults draft_edited and naturalness_rating to null when absent', () {
+    final withoutEither = ChatMessage.fromJson({
+      'id': 11,
+      'conversation_id': 1,
+      'sender_id': 1,
+      'sender_mode': 'human',
+      'text': '안녕',
+      'retracted': false,
+      'created_at': '2026-08-03T00:00:00Z',
+    });
+    expect(withoutEither.draftEdited, isNull);
+    expect(withoutEither.naturalnessRating, isNull);
+  });
 }

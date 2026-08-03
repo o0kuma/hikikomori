@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ykavu_mobile/models/models.dart';
 import 'package:ykavu_mobile/services/message_sync.dart';
 
-ChatMessage _msg(int id, {bool retracted = false}) => ChatMessage(
+ChatMessage _msg(int id, {bool retracted = false, bool? naturalnessRating}) => ChatMessage(
       id: id,
       conversationId: 1,
       senderId: 1,
@@ -10,6 +10,7 @@ ChatMessage _msg(int id, {bool retracted = false}) => ChatMessage(
       text: 'msg-$id',
       retracted: retracted,
       createdAt: DateTime(2026, 8, 3),
+      naturalnessRating: naturalnessRating,
     );
 
 void main() {
@@ -80,6 +81,29 @@ void main() {
       final merged = mergeNewMessages(existing, [_msg(2)]);
       expect(existing.length, 1);
       expect(merged.length, 2);
+    });
+  });
+
+  // "이 답장 나답아요?" 피드백(vision.md 지표, deploy-checklist.md N4-12):
+  // chat_screen.dart는 이 순수 함수의 결과를 세션 상태의 "이미 평가됨" id
+  // 집합에 합쳐서, 히스토리를 다시 불러와도(화면 재진입, 캐치업 등) 이미
+  // 평가된 메시지 위에 뱃지/버튼을 다시 보여주지 않는다.
+  group('ratedMessageIdsFrom', () {
+    test('picks up ids with a non-null naturalness rating (true or false)', () {
+      final messages = [
+        _msg(1, naturalnessRating: true),
+        _msg(2, naturalnessRating: false),
+        _msg(3),
+      ];
+      expect(ratedMessageIdsFrom(messages), {1, 2});
+    });
+
+    test('empty list -> empty set', () {
+      expect(ratedMessageIdsFrom(const []), isEmpty);
+    });
+
+    test('no rated messages -> empty set', () {
+      expect(ratedMessageIdsFrom([_msg(1), _msg(2)]), isEmpty);
     });
   });
 }

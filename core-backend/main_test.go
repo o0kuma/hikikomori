@@ -937,6 +937,304 @@ func TestRetractMissingMessage(t *testing.T) {
 	}
 }
 
+// --- Draft-edited implicit signal (PRD.md §5, deploy-checklist.md N4-12) ---
+
+func TestDraftEditedTrueWhenSentTextDiffersFromOriginalDraft(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID, token := mustSignup(t, server.URL, "수정함")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	resp := postJSON(t, convBase+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "ㅇㅇ 좋아 이따 보자", SenderMode: SenderTwin, Approved: true,
+		OriginalDraftText: "ㅇㅇ 좋아",
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+	msgID := uint(out["id"].(float64))
+
+	var message Message
+	db.First(&message, msgID)
+	if message.DraftEdited == nil || *message.DraftEdited != true {
+		t.Fatalf("expected DraftEdited=true, got %v", message.DraftEdited)
+	}
+}
+
+func TestDraftEditedFalseWhenSentTextMatchesOriginalDraft(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID, token := mustSignup(t, server.URL, "그대로")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	resp := postJSON(t, convBase+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "ㅇㅇ 좋아", SenderMode: SenderTwin, Approved: true,
+		OriginalDraftText: "ㅇㅇ 좋아",
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+	msgID := uint(out["id"].(float64))
+
+	var message Message
+	db.First(&message, msgID)
+	if message.DraftEdited == nil || *message.DraftEdited != false {
+		t.Fatalf("expected DraftEdited=false, got %v", message.DraftEdited)
+	}
+}
+
+func TestDraftEditedNilWhenNoOriginalDraftTextSent(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID, token := mustSignup(t, server.URL, "구버전클라")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	// No OriginalDraftText field at all (e.g. an older client) -- must not
+	// be guessed as edited or unedited, stays nil.
+	resp := postJSON(t, convBase+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "ㅇㅇ 알겠음", SenderMode: SenderTwin, Approved: true,
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+	msgID := uint(out["id"].(float64))
+	if _, present := out["draft_edited"]; !present || out["draft_edited"] != nil {
+		t.Fatalf("expected draft_edited to be null in response, got %v", out["draft_edited"])
+	}
+
+	var message Message
+	db.First(&message, msgID)
+	if message.DraftEdited != nil {
+		t.Fatalf("expected DraftEdited nil, got %v", *message.DraftEdited)
+	}
+}
+
+func TestDraftEditedNotSetForHumanMessages(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID, _ := mustSignup(t, server.URL, "사람메시지")
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	// Even if a caller weirdly sent original_draft_text on a human message,
+	// it must be ignored -- DraftEdited is a twin-only signal.
+	resp := postJSON(t, convBase+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "안녕", SenderMode: SenderHuman,
+		OriginalDraftText: "다른 텍스트",
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+	msgID := uint(out["id"].(float64))
+
+	var message Message
+	db.First(&message, msgID)
+	if message.DraftEdited != nil {
+		t.Fatalf("expected DraftEdited nil for a human message, got %v", *message.DraftEdited)
+	}
+}
+
+// --- Explicit naturalness feedback ("이 답장 나답아요?", vision.md, N4-12) ---
+
+func TestMessageFeedbackOnTwinMessageReflectedOnRefetch(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID, token := mustSignup(t, server.URL, "피드백")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	if err := db.Create(&ConversationParticipant{ConversationID: conv.ID, UserID: senderID}).Error; err != nil {
+		t.Fatalf("create participant: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	sendResp := postJSON(t, convBase+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "ㅇㅇ 좋아", SenderMode: SenderTwin, Approved: true,
+	})
+	var sent map[string]interface{}
+	json.NewDecoder(sendResp.Body).Decode(&sent)
+	msgID := uint(sent["id"].(float64))
+
+	feedbackResp := postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(msgID), 10)+"/feedback", messageFeedbackRequest{Natural: true})
+	if feedbackResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 submitting feedback, got %d", feedbackResp.StatusCode)
+	}
+
+	// Re-fetch via the conversation history endpoint (authenticated) and
+	// confirm the rating stuck.
+	req, _ := http.NewRequest(http.MethodGet, convBase+"/messages", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	listResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("list messages: %v", err)
+	}
+	var listOut map[string]interface{}
+	json.NewDecoder(listResp.Body).Decode(&listOut)
+	messages := listOut["messages"].([]interface{})
+	var found map[string]interface{}
+	for _, m := range messages {
+		mm := m.(map[string]interface{})
+		if uint(mm["id"].(float64)) == msgID {
+			found = mm
+		}
+	}
+	if found == nil {
+		t.Fatalf("sent message not found in refetch: %v", messages)
+	}
+	if found["naturalness_rating"] != true {
+		t.Fatalf("expected naturalness_rating=true on refetch, got %v", found["naturalness_rating"])
+	}
+
+	// Resubmission overwrites rather than 409ing (documented choice: a
+	// bounded rating change isn't unsafe the way re-retracting would be).
+	overwrite := postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(msgID), 10)+"/feedback", messageFeedbackRequest{Natural: false})
+	if overwrite.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 overwriting feedback, got %d", overwrite.StatusCode)
+	}
+	var overwriteOut map[string]interface{}
+	json.NewDecoder(overwrite.Body).Decode(&overwriteOut)
+	if overwriteOut["naturalness_rating"] != false {
+		t.Fatalf("expected naturalness_rating=false after overwrite, got %v", overwriteOut["naturalness_rating"])
+	}
+}
+
+func TestMessageFeedbackRejectsHumanMessage(t *testing.T) {
+	server, db := setupTestServer(t)
+	senderID, _ := mustSignup(t, server.URL, "사람피드백")
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	sendResp := postJSON(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(conv.ID), 10)+"/messages", sendMessageRequest{
+		SenderID: senderID, Text: "안녕", SenderMode: SenderHuman,
+	})
+	var sent map[string]interface{}
+	json.NewDecoder(sendResp.Body).Decode(&sent)
+	msgID := uint(sent["id"].(float64))
+
+	resp := postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(msgID), 10)+"/feedback", messageFeedbackRequest{Natural: true})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 rating a human message, got %d", resp.StatusCode)
+	}
+}
+
+func TestMessageFeedbackMissingMessage(t *testing.T) {
+	server, _ := setupTestServer(t)
+	resp := postJSON(t, server.URL+"/messages/9999/feedback", messageFeedbackRequest{Natural: true})
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+// --- /admin/metrics rate calculations for the two signals above ---
+
+func TestAdminMetricsDraftUneditedAndNaturalnessRates(t *testing.T) {
+	runtimeMetrics = &RuntimeMetrics{} // see comment in TestAdminMetricsCountsMessagesEscalationsAndVeto
+	server, db := setupTestServer(t)
+	senderID, token := mustSignup(t, server.URL, "지표계산")
+	setAutonomyLevel(t, server.URL, senderID, token, AutonomyL1)
+
+	conv := Conversation{IsGroup: false}
+	if err := db.Create(&conv).Error; err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	convBase := server.URL + "/conversations/" + strconv.FormatUint(uint64(conv.ID), 10)
+
+	// 2 edited + 3 unedited twin sends -> draft_unedited_rate should be
+	// 3/5 = 0.6. A plain human message and a twin send with no
+	// original_draft_text must not affect the denominator either way.
+	postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "인간이 직접", SenderMode: SenderHuman})
+	postJSON(t, convBase+"/messages", sendMessageRequest{SenderID: senderID, Text: "초안없음", SenderMode: SenderTwin, Approved: true})
+	for i := 0; i < 2; i++ {
+		postJSON(t, convBase+"/messages", sendMessageRequest{
+			SenderID: senderID, Text: "수정된 문구", SenderMode: SenderTwin, Approved: true,
+			OriginalDraftText: "원래 초안",
+		})
+	}
+	for i := 0; i < 3; i++ {
+		postJSON(t, convBase+"/messages", sendMessageRequest{
+			SenderID: senderID, Text: "그대로", SenderMode: SenderTwin, Approved: true,
+			OriginalDraftText: "그대로",
+		})
+	}
+
+	mreq, _ := http.NewRequest(http.MethodGet, server.URL+"/admin/metrics", nil)
+	mreq.Header.Set("Authorization", "Bearer test-admin-token")
+	resp, err := http.DefaultClient.Do(mreq)
+	if err != nil {
+		t.Fatalf("get metrics: %v", err)
+	}
+	var out map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&out)
+
+	if out["draft_edited_tracked_total"].(float64) != 5 {
+		t.Fatalf("expected 5 draft-tracked messages, got %v", out["draft_edited_tracked_total"])
+	}
+	if got := out["draft_unedited_rate"].(float64); got != 0.6 {
+		t.Fatalf("expected draft_unedited_rate 0.6, got %v", got)
+	}
+
+	// No naturalness ratings submitted yet -- must not divide by zero.
+	if out["naturalness_ratings_total"].(float64) != 0 {
+		t.Fatalf("expected 0 naturalness ratings, got %v", out["naturalness_ratings_total"])
+	}
+	if out["naturalness_positive_rate"].(float64) != 0 {
+		t.Fatalf("expected naturalness_positive_rate 0 (zero-guarded), got %v", out["naturalness_positive_rate"])
+	}
+
+	// Rate a couple of the twin messages we just sent and check the rate
+	// updates too (1 positive out of 2 rated -> 0.5).
+	var twinMessages []Message
+	db.Where("sender_mode = ?", SenderTwin).Order("id asc").Find(&twinMessages)
+	if len(twinMessages) < 2 {
+		t.Fatalf("expected at least 2 twin messages, got %d", len(twinMessages))
+	}
+	postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(twinMessages[0].ID), 10)+"/feedback", messageFeedbackRequest{Natural: true})
+	postJSON(t, server.URL+"/messages/"+strconv.FormatUint(uint64(twinMessages[1].ID), 10)+"/feedback", messageFeedbackRequest{Natural: false})
+
+	resp2, err := http.DefaultClient.Do(mreq)
+	if err != nil {
+		t.Fatalf("get metrics again: %v", err)
+	}
+	var out2 map[string]interface{}
+	json.NewDecoder(resp2.Body).Decode(&out2)
+	if out2["naturalness_ratings_total"].(float64) != 2 {
+		t.Fatalf("expected 2 naturalness ratings, got %v", out2["naturalness_ratings_total"])
+	}
+	if got := out2["naturalness_positive_rate"].(float64); got != 0.5 {
+		t.Fatalf("expected naturalness_positive_rate 0.5, got %v", got)
+	}
+}
+
 func TestDraftMissingConversation(t *testing.T) {
 	server, _ := setupTestServer(t)
 	resp := postJSON(t, server.URL+"/conversations/9999/draft", draftMessageRequest{

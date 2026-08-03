@@ -53,3 +53,12 @@ List<ChatMessage> mergeNewMessages(
   if (toAdd.isEmpty) return List.of(existing);
   return [...existing, ...toAdd];
 }
+
+/// "이 답장 나답아요?" 피드백(vision.md 지표, deploy-checklist.md N4-12) 순수
+/// 로직: [messages] 중 이미 평가된(naturalness_rating != null) 메시지 id들만
+/// 뽑아낸다. chat_screen.dart는 히스토리를 새로 불러올 때마다(또는 캐치업
+/// 때마다) 이 결과를 세션 상태의 "이미 평가됨" 집합에 합쳐 — 서버가 이미
+/// 알고 있는 평가는 화면이 다시 그려져도 뱅지/버튼을 다시 보여주지 않는다.
+Set<int> ratedMessageIdsFrom(List<ChatMessage> messages) {
+  return messages.where((m) => m.naturalnessRating != null).map((m) => m.id).toSet();
+}

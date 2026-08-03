@@ -129,7 +129,22 @@ type Message struct {
 	// one-tap undo") -- set via POST /messages/:id/retract, twin-authored
 	// messages only.
 	Retracted bool `gorm:"not null;default:false"`
-	CreatedAt time.Time
+	// DraftEdited is the implicit L1-approval-rate signal (PRD.md §5's
+	// "초안을 수정 없이 그대로 발송한 비율", vision.md's naturalness metric,
+	// deploy-checklist.md N4-12). Nil for human-authored messages and for
+	// any message not sent through the draft-approval flow (old rows, or a
+	// client that didn't send original_draft_text) -- only set to a
+	// concrete true/false for twin-mode messages where the client told us
+	// what the original AI draft text was, so we could diff it against
+	// what actually got sent. Never guessed.
+	DraftEdited *bool
+	// NaturalnessRating is the explicit "이 답장 나답아요?" signal (vision.md
+	// naturalness metric, PRD.md §5, deploy-checklist.md N4-12): true = 👍,
+	// false = 👎, nil = not rated yet. Set via POST /messages/:id/feedback,
+	// twin-authored messages only (rating a human's own words doesn't make
+	// sense for this metric).
+	NaturalnessRating *bool
+	CreatedAt         time.Time
 }
 
 type TwinSettings struct {

@@ -31,6 +31,20 @@ type sendMessageRequest struct {
 	// L2 draft outside the whitelist (PRD.md §2.2). Ignored for
 	// human-authored messages.
 	Approved bool `json:"approved"`
+	// OriginalDraftText is the AI draft's text before any edits, sent by the
+	// client alongside the (possibly edited) final Text so the server can
+	// diff them into Message.DraftEdited (PRD.md §5 L1 approval-rate proxy,
+	// deploy-checklist.md N4-12). Optional -- omitted/empty means "not
+	// derived from a draft, or an older client", and DraftEdited stays nil
+	// rather than being guessed. Only consulted for SenderMode == twin.
+	OriginalDraftText string `json:"original_draft_text"`
+}
+
+// messageFeedbackRequest is the explicit naturalness signal (vision.md
+// metric, PRD.md §5, deploy-checklist.md N4-12) — "이 답장 나답아요?" one-tap
+// thumbs up/down on a twin-authored message.
+type messageFeedbackRequest struct {
+	Natural bool `json:"natural"`
 }
 
 type updateTwinSettingsRequest struct {
@@ -125,6 +139,34 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			peerVetoRate = float64(conversationsVetoed) / float64(conversationsTotal)
 		}
 
+		// L1 approval-rate proxy (PRD.md §5 "초안을 수정 없이 그대로 발송한
+		// 비율", vision.md 자연스러움 지표, deploy-checklist.md N4-12):
+		// draft_edited is only set (non-nil) for twin-mode messages sent
+		// through the draft-approval flow with an original draft to diff
+		// against -- messages where it's nil (human-authored, or no draft
+		// text sent) are excluded from both counts so they can't dilute
+		// the rate either way. Zero-tracked-messages guarded the same way
+		// peer_veto_rate guards zero conversations above.
+		var draftTrackedTotal, draftEditedTrue int64
+		db.Model(&Message{}).Where("sender_mode = ? AND draft_edited IS NOT NULL", SenderTwin).Count(&draftTrackedTotal)
+		db.Model(&Message{}).Where("sender_mode = ? AND draft_edited = ?", SenderTwin, true).Count(&draftEditedTrue)
+		var draftUneditedRate float64
+		if draftTrackedTotal > 0 {
+			draftUneditedRate = float64(draftTrackedTotal-draftEditedTrue) / float64(draftTrackedTotal)
+		}
+
+		// Explicit naturalness signal ("이 답장 나답아요?" 원탭, vision.md 지표,
+		// deploy-checklist.md N4-12): same nil-excluded-from-denominator
+		// shape as draft_unedited_rate above -- unrated messages don't
+		// count as either positive or negative.
+		var naturalnessTrackedTotal, naturalnessPositiveTrue int64
+		db.Model(&Message{}).Where("sender_mode = ? AND naturalness_rating IS NOT NULL", SenderTwin).Count(&naturalnessTrackedTotal)
+		db.Model(&Message{}).Where("sender_mode = ? AND naturalness_rating = ?", SenderTwin, true).Count(&naturalnessPositiveTrue)
+		var naturalnessPositiveRate float64
+		if naturalnessTrackedTotal > 0 {
+			naturalnessPositiveRate = float64(naturalnessPositiveTrue) / float64(naturalnessTrackedTotal)
+		}
+
 		rt := runtimeMetrics.snapshot()
 		c.JSON(http.StatusOK, gin.H{
 			"users_total":           usersTotal,
@@ -139,6 +181,14 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			// vision.md doesn't pin down the exact denominator, so treat
 			// this as a first approximation, not the final definition.
 			"peer_veto_rate": peerVetoRate,
+			// L1 approval-rate proxy / naturalness instrumentation (PRD.md §5,
+			// vision.md, deploy-checklist.md N4-12). This is capture
+			// infrastructure, not a PoC conclusion -- see docs/roadmap.md and
+			// docs/deploy-checklist.md N4-12 for that distinction.
+			"draft_edited_tracked_total": draftTrackedTotal,
+			"draft_unedited_rate":        draftUneditedRate,
+			"naturalness_ratings_total":  naturalnessTrackedTotal,
+			"naturalness_positive_rate":  naturalnessPositiveRate,
 			// Process-local draft/AI timings (roadmap B). Reset on restart.
 			"draft_requests":               rt.DraftRequests,
 			"draft_errors":                 rt.DraftErrors,
@@ -371,11 +421,23 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			}
 		}
 
+		// Implicit L1-approval-rate signal (PRD.md §5, deploy-checklist.md
+		// N4-12): only meaningful for twin-mode sends where the client told
+		// us what the original draft said. Absent/empty original text
+		// (human messages, or a client that isn't draft-derived) leaves
+		// DraftEdited nil rather than guessing true/false.
+		var draftEdited *bool
+		if req.SenderMode == SenderTwin && req.OriginalDraftText != "" {
+			edited := req.Text != req.OriginalDraftText
+			draftEdited = &edited
+		}
+
 		message := Message{
 			ConversationID: convID,
 			SenderID:       req.SenderID,
 			SenderMode:     req.SenderMode,
 			Text:           req.Text,
+			DraftEdited:    draftEdited,
 		}
 		if err := db.Create(&message).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
@@ -430,6 +492,46 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		})
 
 		c.JSON(http.StatusOK, gin.H{"id": message.ID, "retracted": true})
+	})
+
+	// "이 답장 나답아요?" 자연스러움 피드백(vision.md 지표, PRD.md §5,
+	// deploy-checklist.md N4-12): 트윈이 실제로 보낸 메시지 위에 붙는 가벼운
+	// 원탭 피드백 -- 사람이 직접 쓴 메시지는 이 지표의 대상이 아니라 400.
+	// 재제출은 덮어쓰기로 처리한다(409로 막지 않음): 클라이언트가 이미 한
+	// 번 탭한 메시지는 다시 UI를 보여주지 않아 재제출 자체가 드물고, 네트워크
+	// 재시도 등으로 같은 요청이 두 번 가더라도 "평가를 덮어쓴다"는 동작이
+	// 사용자에게 해롭지 않기 때문 -- retract의 409(한 번 되돌린 걸 다시
+	// 되돌릴 수 없음, 되돌리기는 상태를 한 방향으로만 바꿈)와는 성격이 다름.
+	r.POST("/messages/:id/feedback", func(c *gin.Context) {
+		msgID, ok := parseUintParam(c, "id")
+		if !ok {
+			return
+		}
+
+		var message Message
+		if err := db.First(&message, msgID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "message not found"})
+			return
+		}
+		if message.SenderMode != SenderTwin {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "only twin-authored messages can be rated for naturalness"})
+			return
+		}
+
+		var req messageFeedbackRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+			return
+		}
+
+		natural := req.Natural
+		message.NaturalnessRating = &natural
+		if err := db.Save(&message).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, messageJSON(message))
 	})
 
 	r.POST("/conversations/:id/draft", func(c *gin.Context) {

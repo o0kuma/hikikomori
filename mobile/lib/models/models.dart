@@ -174,6 +174,8 @@ class ChatMessage {
     required this.text,
     required this.retracted,
     required this.createdAt,
+    this.draftEdited,
+    this.naturalnessRating,
   });
 
   final int id;
@@ -183,6 +185,15 @@ class ChatMessage {
   final String text;
   final bool retracted;
   final DateTime createdAt;
+  /// L1 approval-rate proxy (PRD.md §5, deploy-checklist.md N4-12) — null
+  /// for human messages and any twin message the server couldn't diff
+  /// against an original draft; otherwise true = edited before send,
+  /// false = sent verbatim. Purely informational on the client; the server
+  /// is the source of truth (computed once at send time).
+  final bool? draftEdited;
+  /// "이 답장 나답아요?" explicit feedback (vision.md metric, N4-12) — null
+  /// = not rated yet, true = 👍, false = 👎.
+  final bool? naturalnessRating;
 
   bool get isTwin => senderMode == SenderMode.twin;
 
@@ -196,6 +207,8 @@ class ChatMessage {
       text: json['text'] as String? ?? '',
       retracted: json['retracted'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      draftEdited: json['draft_edited'] as bool?,
+      naturalnessRating: json['naturalness_rating'] as bool?,
     );
   }
 }

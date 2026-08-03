@@ -15,13 +15,15 @@ type registerDeviceRequest struct {
 
 func messageJSON(m Message) gin.H {
 	return gin.H{
-		"id":              m.ID,
-		"conversation_id": m.ConversationID,
-		"sender_id":       m.SenderID,
-		"sender_mode":     m.SenderMode,
-		"text":            m.Text,
-		"retracted":       m.Retracted,
-		"created_at":      m.CreatedAt,
+		"id":                 m.ID,
+		"conversation_id":    m.ConversationID,
+		"sender_id":          m.SenderID,
+		"sender_mode":        m.SenderMode,
+		"text":               m.Text,
+		"retracted":          m.Retracted,
+		"draft_edited":       m.DraftEdited,
+		"naturalness_rating": m.NaturalnessRating,
+		"created_at":         m.CreatedAt,
 	}
 }
 
@@ -251,6 +253,8 @@ const adminDashboardHTML = `<!doctype html>
         ['twin msgs', data.messages_twin_total],
         ['escalations', data.escalations_total],
         ['peer veto rate', (data.peer_veto_rate || 0).toFixed(3)],
+        ['초안 무수정 발송률', (data.draft_unedited_rate || 0).toFixed(3) + ' (n=' + (data.draft_edited_tracked_total || 0) + ')'],
+        ['자연스러움 긍정률', (data.naturalness_positive_rate || 0).toFixed(3) + ' (n=' + (data.naturalness_ratings_total || 0) + ')'],
         ['draft req', data.draft_requests],
         ['draft err rate', (data.draft_error_rate || 0).toFixed(3)],
         ['draft avg ms', (data.draft_latency_avg_ms || 0).toFixed(1)],

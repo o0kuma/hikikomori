@@ -173,12 +173,28 @@ class ApiClient {
     required String text,
     SenderMode senderMode = SenderMode.human,
     bool approved = false,
+    // 초안 무수정 발송률(PRD.md §5, deploy-checklist.md N4-12): 트윈
+    // 승인-발송 경로에서만 AI 초안 원문을 같이 보내 서버가 diff할 수 있게
+    // 한다. null이면(사람 메시지, 또는 초안 기반이 아닌 발송) 아예 필드를
+    // 넣지 않음 — relationshipTier/autonomyLevel 등과 같은 "값 있을 때만
+    // 포함" 관례.
+    String? originalDraftText,
   }) async {
     final json = await _json('POST', '/conversations/$conversationId/messages', body: {
       'sender_id': senderId,
       'text': text,
       'sender_mode': senderMode == SenderMode.twin ? 'twin' : 'human',
       if (approved) 'approved': true,
+      if (originalDraftText != null) 'original_draft_text': originalDraftText,
+    });
+    return ChatMessage.fromJson(json);
+  }
+
+  /// "이 답장 나답아요?" 자연스러움 피드백(vision.md 지표, N4-12) — 트윈
+  /// 메시지에만 허용. 재제출 시 서버가 덮어쓴다(에러 아님).
+  Future<ChatMessage> submitMessageFeedback(int messageId, bool natural) async {
+    final json = await _json('POST', '/messages/$messageId/feedback', body: {
+      'natural': natural,
     });
     return ChatMessage.fromJson(json);
   }
