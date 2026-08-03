@@ -41,38 +41,10 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
   (`ee8a41d`, 2026-08-03) — 기본 `ThemeMode.light`, 내 버블 `#007AFF`,
   다크 캔버스 `#141418` · web/core/ai 재배포 완료
-- **Track C 콘텐츠 갭**: C1(단톡 따라잡기) **완료·프로덕션 반영** (2026-08-03) —
-  그룹 생성 UI, 안 본 동안 요약(`GET /conversations/:id/summary`), 읽음 마커,
-  안 본 배지, 그룹 트윈 발송 서버측 차단까지. C2(관계별 페르소나)도 **완료**
-  (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션 미배포) — `relationship_tier`
-  전역 기본값+연락처별 오버라이드, 초안 생성 톤 프롬프트 분기. C3(스팸/도배 감지)도
-  **완료** (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션 미배포) —
-  `core-backend/flood_detect.go`(`floodMessageThreshold=5`건/`floodWindow=2분`,
-  안전 최소값 placeholder), `POST /conversations/:id/messages` 하드게이트에 peer-veto·
-  그룹차단 다음 순서로 추가, `TwinDisabledByFlood` 대화방 플래그 + `POST
-  /conversations/:id/flood-reset` one-tap undo, 기존 `EscalationLog`/`InboxScreen`
-  재사용 + 대화 목록/채팅방 배너에 상태·재개 버튼 노출. **Track C 콘텐츠 갭 A/B/C 전체 완료.**
-  2026-08-03 2차 재분석으로 D(자율성 상대별 예외)/E(관계 메모 반영)/F(답장 마감 알림) 추가
-  발견 — C4(자율성 상대별 예외)도 **완료** (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션
-  미배포) — `Contact.AutonomyLevel` 오버라이드 필드 + `resolveAutonomyLevel()`(연락처
-  오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`와 동일 구조)로 `POST
-  /conversations/:id/messages`의 자율성 게이트 교체, `contacts_screen.dart`에
-  `_AutonomyLevelPicker` 추가. C5(관계 메모 반영)도 **완료** (2026-08-03, 아직 GitHub `main`에만
-  있고 프로덕션 미배포) — `core-backend/aiservice.go` `draftRequest.RelationshipNote`,
-  `persona.go` `resolveRelationshipNote()`(그룹은 항상 빈 문자열 — 전역 기본 메모 개념 자체가
-  없어 티어/자율성과 다름), `ai-service/app/generation.py`가 메모를 `[관계 메모]` 프롬프트
-  문단으로 주입. 이 김에 세 resolver가 복붙하던 "1:1 상대 Contact 찾기" 루프를
-  `findCounterpartContact()` 공용 헬퍼로 추출. C6(답장 마감 알림)도 **완료(부분 검증)**
-  (2026-08-03, 아직 GitHub `main`에만 있고 프로덕션 미배포, 모바일 온디바이스 전용이라
-  `core-backend`/`ai-service` 변경 없음) — 순수 온디바이스 스누즈 저장(`ConversationSnoozes`
-  drift 테이블, 서버 전송 없음) + `chat_screen.dart`/`conversation_list_screen.dart` UI는
-  완전히 검증됨(단위 테스트). 로컬 알림은 `flutter_local_notifications`/`timezone`을 실제로
-  붙였지만(`flutter pub get` 성공, `zonedSchedule`/`cancel` 연동) **이 샌드박스에 실기기·
-  에뮬레이터가 없어 알림이 실제로 울리는지까지는 검증하지 못함** — 검증한 건 스케줄러 호출
-  인자가 맞는지(목 기반 단위 테스트)뿐이라 실기기 확인 전까지는 대화 목록/채팅방의 인앱
-  배지·배너가 실질적인 리마인드 경로. **이로써 2026-08-03 2차 갭 분석 배치(C4/C5/C6)는 모두
-  구현 완료 — 다만 C6의 "실제 OS 알림 발사" 부분은 Android 실기기 탭(N4-5~10)에서 처음
-  검증되는 항목으로 남는다.** Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
+- **Track C 콘텐츠 갭 A~F**: **GitHub+Gitea `main` 동기화 · 프로덕션 재배포 완료**
+  (`95422bb`, 2026-08-03) — web/core/ai 재빌드. C1 단톡 따라잡기 · C2 관계별 페르소나 ·
+  C3 스팸/도배 · C4 자율성 상대별 예외 · C5 관계 메모 프롬프트 · C6 답장 마감(인앱
+  배지·배너 포함; OS 로컬 알림 실기기 발사는 N4 Android QA에서 확인).
 - 실 FCM 기기 수신 · Android 실기기 탭(답장 마감 알림 실제 발사 확인 포함) · 사람 PoC 실행은 남음
 
 ### NEXT 순서
