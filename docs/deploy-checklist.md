@@ -37,7 +37,9 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
-- UI: **Quiet Ink** (틸 액센트 · 라이트/다크) 전면 적용 중 — FCM 실기기는 잠시 후순위
+- UI: **Soft Neutral + surface hierarchy** (`553cb62`) — GitHub `main` 머지 완료.
+  프로덕션 web 재빌드는 이 세션에 SSH/`.env`가 없어 보류 → 서버에서
+  `cd ~/project/ykavu && git pull && docker compose build web && docker compose up -d web`
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
