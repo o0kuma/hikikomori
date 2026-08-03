@@ -241,8 +241,20 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			c.JSON(http.StatusForbidden, gin.H{"detail": "not a participant of this conversation"})
 			return
 		}
+		query := db.Where("conversation_id = ?", convID)
+		// 오프라인 큐 캐치업(roadmap.md "멀티 디바이스 동기화" / deploy-checklist N4-11):
+		// 재연결·앱 복귀 시 클라이언트가 이미 가진 마지막 메시지 id 이후만
+		// 다시 받아 gap을 메운다. 파라미터가 없으면 기존 동작(전체 히스토리) 그대로.
+		if q := c.Query("since_id"); q != "" {
+			sinceID, err := strconv.ParseUint(q, 10, 64)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"detail": "since_id must be a positive integer"})
+				return
+			}
+			query = query.Where("id > ?", sinceID)
+		}
 		var messages []Message
-		db.Where("conversation_id = ?", convID).Order("id asc").Find(&messages)
+		query.Order("id asc").Find(&messages)
 		out := make([]gin.H, 0, len(messages))
 		for _, m := range messages {
 			out = append(out, gin.H{

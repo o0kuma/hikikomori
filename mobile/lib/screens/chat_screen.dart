@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/message_sync.dart';
 import '../services/snooze_service.dart';
 import '../services/ws_client.dart';
 import '../state/session_state.dart';
@@ -32,13 +33,19 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _draftEdit = TextEditingController();
   final _scroll = ScrollController();
   final _messages = <ChatMessage>[];
   ConversationSocket? _socket;
   StreamSubscription? _sub;
+  // 오프라인 큐 캐치업(roadmap.md "멀티 디바이스 동기화" / deploy-checklist N4-11):
+  // 소켓 재연결 신호를 듣기 위한 별도 구독. 실제 소켓 끊김/재연결 타이밍은
+  // 단위 테스트로 검증할 수 없어 — 신호가 왔을 때 REST since_id 캐치업을
+  // 호출한다는 것만 여기서 보장하고, 나머지(진짜 네트워크 단절, 백그라운드
+  // 전환에서 OS가 소켓을 실제로 끊는지)는 실기기 QA 대상이다.
+  StreamSubscription? _reconnectSub;
   String? _banner;
   DraftResult? _pendingDraft;
   bool _busy = false;
@@ -52,6 +59,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _api = context.read<SessionState>().api;
     _floodBlocked = widget.twinDisabledByFlood;
     if (_floodBlocked) {
@@ -59,8 +67,43 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     _socket = ConversationSocket(widget.conversationId)..connect();
     _sub = _socket!.events.listen(_onEvent);
+    // 소켓이 끊겼다가 다시 붙으면(백그라운드, 네트워크 hiccup 등) 그 사이에
+    // 놓친 메시지를 REST since_id로 다시 받아온다 — ws_client.dart 참고.
+    _reconnectSub = _socket!.reconnects.listen((_) => _catchUp());
     _loadHistory();
     _loadSnooze();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 앱이 백그라운드에 있는 동안 소켓이 조용히 죽어 있었을 수 있다 — 포그라운드로
+    // 돌아올 때마다 캐치업을 한 번 더 시도한다(소켓 자체의 재연결 신호와는 별개의
+    // 안전망). 실기기에서 OS가 실제로 어떻게 동작하는지는 QA 대상.
+    if (state == AppLifecycleState.resumed) {
+      _catchUp();
+    }
+  }
+
+  /// 오프라인 큐 캐치업 본체: 지금까지 로드된 메시지 중 가장 큰 id 이후를
+  /// REST로 다시 받아, 소켓/REST가 겹쳐 온 것이 있어도 중복 없이 합친다.
+  Future<void> _catchUp() async {
+    if (!mounted || _loadingHistory) return;
+    final sinceId = highestMessageId(_messages);
+    try {
+      final fresh = await _api.listMessages(widget.conversationId, sinceId: sinceId);
+      if (!mounted || fresh.isEmpty) return;
+      final merged = mergeNewMessages(_messages, fresh);
+      setState(() {
+        _messages
+          ..clear()
+          ..addAll(merged);
+      });
+      _scrollToEnd();
+      _markLatestRead();
+    } on ApiException {
+      // Best-effort — 실시간 소켓이 살아 있으면 다음 이벤트로 계속 채워지고,
+      // 다음 재연결/앱 복귀 때 다시 시도되므로 여기서 에러를 굳이 보여주지 않는다.
+    }
   }
 
   Future<void> _loadSnooze() async {
@@ -223,7 +266,9 @@ class _ChatScreenState extends State<ChatScreen> {
     // Fire-and-forget: dispose는 동기라 기다릴 수 없고, 실패해도 안 읽음
     // 배지가 조금 늦게 갱신되는 정도라 굳이 에러를 보여줄 필요 없음.
     _markLatestRead();
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
+    _reconnectSub?.cancel();
     _socket?.dispose();
     _input.dispose();
     _draftEdit.dispose();

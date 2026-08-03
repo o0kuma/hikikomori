@@ -35,7 +35,10 @@
 **2.1 코어 백엔드** (Go, PoC 결과 무관 — 지금 착수 가능)
 - [x] 계정/인증 (초대 코드 기반 가입) — `core-backend/` (Go, Gin), 중복 코드 409 실제 테스트로 확인함
 - [x] 메시지 릴레이 서버 (송수신) — `core-backend/` WebSocket + REST, 실제 테스트로 브로드캐스트 확인함.
-  멀티 디바이스 동기화(같은 유저 여러 기기)는 아직 — 지금은 대화방 단위 인메모리 커넥션 매니저뿐
+  멀티 디바이스 동기화(같은 유저 여러 기기)는 아직 — 지금은 대화방 단위 인메모리 커넥션 매니저뿐.
+  오프라인 큐(deploy-checklist N4-11)는 DB가 이미 모든 메시지를 durable하게 들고 있으므로
+  서버에 별도 큐를 새로 만들지 않고, `GET /conversations/:id/messages?since_id=`로 재연결 시
+  gap을 메우는 방식으로 구현함(Go 테스트로 확인) — 자세한 내용은 §4 N4-11 항목 참고
 - [x] DB 스키마: users, invite_codes, contacts, conversations, messages, twin_settings,
   escalation_logs, whitelist_rules — `core-backend/models.go` (GORM), `backend/app/models.py`
   (Python 프로토타입)와 동일 스키마(+ invite_codes는 여기서 새로 추가)
@@ -342,7 +345,16 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
   `FCM_SERVER_KEY`와 실제 FCM registration token이 있으면 전송, 없으면 soft-skip.
   Flutter는 install-id 플레이스홀더 등록(Firebase Messaging 앱 키는 배포 환경에서 교체)
 - [~] 멀티 디바이스 동기화 — 세션 목록 + 세션 종료(`DELETE /users/:id/sessions/:id`).
-  메시지 히스토리 서버 동기화는 이미 REST/WS; 오프라인 큐는 후속
+  메시지 히스토리 서버 동기화는 이미 REST/WS. 오프라인 메시지 큐(deploy-checklist N4-11)는
+  구현 완료(부분 검증) — 서버는 이미 모든 메시지를 DB에 durable하게 저장하므로 별도
+  큐를 새로 만들지 않고, `GET /conversations/:id/messages?since_id=`(신규, 없으면 기존
+  전체 히스토리 동작 그대로) + 클라이언트 WS 재연결(backoff 1s→2s→4s→8s→...→30s 캡, 성공
+  시 리셋) + 재연결/앱 포그라운드 복귀 시 그 since_id 캐치업으로 gap을 메움.
+  `core-backend/a1_a2_test.go`(`TestListMessagesSinceID`)와
+  `mobile/test/message_sync_test.dart`(backoff 계산 + 중복 없는 병합 순수 함수)로
+  결정적으로 검증한 부분과, 실제 소켓 재연결 타이밍·앱 백그라운드/포그라운드 전환에서
+  OS가 소켓을 실제로 어떻게 처리하는지는 단위 테스트로 증명할 수 없어 실기기 Android
+  QA가 남아 있음(N4-C6b 스누즈 알림과 같은 "부분 검증" 프레이밍)
 - [x] drift + SQLCipher 로컬 저장 — `mobile/lib/db/` (말투 샘플·KV). 키는
   `flutter_secure_storage`. Linux CI는 SQLCipher SO 없으면 메모리 폴백
 - [x] 말투 이력 기기 내 저장 + 서버 최소 전송 — drift 암호화 저장, draft에 샘플만 전달

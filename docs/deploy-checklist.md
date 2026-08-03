@@ -233,7 +233,7 @@ API 계층은 프로덕션에서 검증됨 (`CORE_API_BASE=https://msn.iykyka.co
 
 | ID | 작업 | Status | 비고 |
 |----|------|--------|------|
-| **N4-11** | 오프라인 메시지 큐 | todo | 멀티디바이스 고도화 |
+| **N4-11** | 오프라인 메시지 큐 | **done (부분 검증)** (2026-08-03) | 서버는 이미 모든 메시지를 DB에 durable하게 저장 — 별도 큐를 새로 만들지 않고 `GET /conversations/:id/messages?since_id=`(신규, 파라미터 없으면 기존 전체 히스토리 그대로) + 클라이언트 WS 재연결(backoff 1s→2s→...→30s 캡, 성공 시 리셋, `mobile/lib/services/ws_client.dart`) + 재연결/앱 포그라운드 복귀 시 since_id 캐치업(`mobile/lib/screens/chat_screen.dart`)으로 gap을 메움. `core-backend/a1_a2_test.go`(`TestListMessagesSinceID`)와 `mobile/test/message_sync_test.dart`(backoff 계산 + 중복 없는 병합을 순수 함수로 뽑아 검증)로 확인한 부분과, **실제 소켓 재연결 타이밍·앱 백그라운드/포그라운드 전환에서 OS가 소켓을 어떻게 처리하는지는 단위 테스트로 증명 불가 — 실기기 Android QA 남음**(N4-C6b와 같은 프레이밍) |
 | **N4-12** | 자연스러움 피드백 UI | todo | vision 지표 |
 | **N4-13** | `prototype.md` `SHARE_URL` | todo | Master 기입 |
 | **N4-14** | 내부 release APK | todo | `docs/android-release.md` |

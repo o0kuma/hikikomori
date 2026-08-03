@@ -160,6 +160,90 @@ func TestConversationContactMessageHistoryAndEscalationLogs(t *testing.T) {
 	}
 }
 
+// 오프라인 큐 캐치업(roadmap.md "멀티 디바이스 동기화" / deploy-checklist N4-11):
+// 재연결·앱 복귀 시 since_id로 놓친 메시지만 다시 받아올 수 있어야 한다.
+func TestListMessagesSinceID(t *testing.T) {
+	server, _ := setupTestServer(t)
+	ownerID, ownerToken := mustSignup(t, server.URL, "캐치업주인")
+	peerID, _ := mustSignup(t, server.URL, "캐치업상대")
+
+	convResp := postJSONAuth(t, server.URL+"/conversations", ownerToken, createConversationRequest{
+		UserIDs: []uint{ownerID, peerID},
+	})
+	if convResp.StatusCode != http.StatusOK {
+		t.Fatalf("create conversation: %d", convResp.StatusCode)
+	}
+	var conv map[string]interface{}
+	json.NewDecoder(convResp.Body).Decode(&conv)
+	convID := uint(conv["id"].(float64))
+	convPath := server.URL + "/conversations/" + strconv.FormatUint(uint64(convID), 10) + "/messages"
+
+	var sentIDs []uint
+	for _, text := range []string{"하나", "둘", "셋"} {
+		resp := postJSON(t, convPath, sendMessageRequest{SenderID: ownerID, Text: text})
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("send %q: %d", text, resp.StatusCode)
+		}
+		var sent map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&sent)
+		sentIDs = append(sentIDs, uint(sent["id"].(float64)))
+	}
+
+	getMessages := func(query string) *http.Response {
+		req, _ := http.NewRequest(http.MethodGet, convPath+query, nil)
+		req.Header.Set("Authorization", "Bearer "+ownerToken)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return resp
+	}
+
+	// No since_id -- existing behavior unchanged: full history.
+	full := getMessages("")
+	if full.StatusCode != http.StatusOK {
+		t.Fatalf("full history: %d", full.StatusCode)
+	}
+	var fullOut map[string]interface{}
+	json.NewDecoder(full.Body).Decode(&fullOut)
+	if len(fullOut["messages"].([]interface{})) != 3 {
+		t.Fatalf("expected 3 messages without since_id, got %v", fullOut)
+	}
+
+	// since_id=<first message> -- only the later two.
+	since := getMessages("?since_id=" + strconv.FormatUint(uint64(sentIDs[0]), 10))
+	if since.StatusCode != http.StatusOK {
+		t.Fatalf("since_id history: %d", since.StatusCode)
+	}
+	var sinceOut map[string]interface{}
+	json.NewDecoder(since.Body).Decode(&sinceOut)
+	sinceMsgs := sinceOut["messages"].([]interface{})
+	if len(sinceMsgs) != 2 {
+		t.Fatalf("expected 2 messages after since_id, got %v", sinceOut)
+	}
+	firstReturned := sinceMsgs[0].(map[string]interface{})
+	if uint(firstReturned["id"].(float64)) != sentIDs[1] {
+		t.Fatalf("expected first returned message to be %d, got %v", sentIDs[1], firstReturned["id"])
+	}
+
+	// since_id beyond the highest message id -- empty array, not an error.
+	beyond := getMessages("?since_id=" + strconv.FormatUint(uint64(sentIDs[2])+1000, 10))
+	if beyond.StatusCode != http.StatusOK {
+		t.Fatalf("beyond history: %d", beyond.StatusCode)
+	}
+	var beyondOut map[string]interface{}
+	json.NewDecoder(beyond.Body).Decode(&beyondOut)
+	if len(beyondOut["messages"].([]interface{})) != 0 {
+		t.Fatalf("expected 0 messages beyond highest id, got %v", beyondOut)
+	}
+
+	// Non-numeric since_id -- 400.
+	bad := getMessages("?since_id=abc")
+	if bad.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for non-numeric since_id, got %d", bad.StatusCode)
+	}
+}
+
 func TestContactScopedWhitelistMatch(t *testing.T) {
 	server, db := setupTestServer(t)
 	ownerID, ownerToken := mustSignup(t, server.URL, "화이트주인")

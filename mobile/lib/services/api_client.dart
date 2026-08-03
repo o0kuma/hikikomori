@@ -101,8 +101,15 @@ class ApiClient {
     );
   }
 
-  Future<List<ChatMessage>> listMessages(int conversationId) async {
-    final obj = await _getObject('/conversations/$conversationId/messages');
+  /// [sinceId]가 있으면 그 id보다 큰 메시지만 받아온다 — 오프라인 큐
+  /// 캐치업(roadmap.md "멀티 디바이스 동기화" / deploy-checklist N4-11)에서
+  /// 재연결·앱 복귀 시 이미 로드된 마지막 메시지 이후만 다시 받아 gap을 메우는 용도.
+  /// 생략하면 기존 동작(전체 히스토리) 그대로.
+  Future<List<ChatMessage>> listMessages(int conversationId, {int? sinceId}) async {
+    final path = sinceId != null
+        ? '/conversations/$conversationId/messages?since_id=$sinceId'
+        : '/conversations/$conversationId/messages';
+    final obj = await _getObject(path);
     final list = (obj['messages'] as List<dynamic>? ?? const []);
     return list.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>)).toList();
   }
