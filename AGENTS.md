@@ -10,7 +10,8 @@ copying content into prompts or new files.
 
 When documents disagree, follow this order:
 
-1. [`docs/decision-log.md`](docs/decision-log.md) — working assumptions for Q1~Q7
+1. [`docs/decision-log.md`](docs/decision-log.md) — working assumptions for Q1~Q7 (확정)
+   and Q8/Q9 (계정·설정 IA / L2 의미 — 제안 until Master confirms)
 2. [`docs/vision.md`](docs/vision.md) / [`docs/PRD.md`](docs/PRD.md) / [`docs/tech-design.md`](docs/tech-design.md)
 3. [`docs/roadmap.md`](docs/roadmap.md) / [`docs/risk-log.md`](docs/risk-log.md)
 4. [`docs/PLANNING.md`](docs/PLANNING.md) — process guide
@@ -20,7 +21,9 @@ Notes:
 
 - Q1~Q7 in `decision-log.md` are **확정** (Phase 1 C, 2026-07-30). PoC-dependent
   sub-questions (default autonomy level, whitelist defaults, final branding)
-  stay open — do not invent those. To reverse a Q, update `decision-log.md` and
+  stay open — do not invent those. Q8/Q9 (logout/settings IA, L2 semantics) are
+  **제안** — implement only after Master marks them 확정; see
+  `docs/account-settings-ia.md`. To reverse a Q, update `decision-log.md` and
   derived docs in the same change.
 - Prefer `decision-log.md` (and the synced summary in `PLANNING.md` §2) for
   current working answers.

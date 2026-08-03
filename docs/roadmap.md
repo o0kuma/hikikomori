@@ -333,6 +333,11 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 - [x] 로그인 세션/토큰 (`Session`, signup/login 시 Bearer 발급)
 - [x] `/invites`, `/admin/metrics` 접근 제어 (`ADMIN_API_TOKEN`)
 - [x] 프로덕션 DB 마이그레이션 명령 (`go run . migrate`)
+- [ ] **계정·설정 IA 갭** (`decision-log` Q8 제안, [`account-settings-ia.md`](./account-settings-ia.md))
+  — Master 확정 후 착수. 이메일/비번 도입 금지(Phase 1)
+  - [ ] 입장 화면: 새로 가입 / 이미 가입(`POST /auth/login`) 구분
+  - [ ] 로그아웃: 세션 revoke + 로컬 토큰 클리어 + 입장 화면 복귀
+  - [ ] 설정 진입점에 로그아웃·세션·자율성·말투·데이터흐름 묶기
 
 **A3. Flutter — 메신저답게 다듬기** (A1/A2 이후)
 - [x] 대화 목록/연락처 UI를 서버 API에 연결
@@ -342,6 +347,11 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 - [x] E2E QA — `scripts/e2e_a3.py`로 A3 HTTP 플로우 16/16 통과(가입·연락처·대화·히스토리·
   draft/L1·에스컬레이션·알림 로그·되돌리기·거부권·화이트리스트). `go test`/`pytest`/`flutter test`
   동시 통과. Android 에뮬레이터 UI 탭은 이 환경에 SDK가 없어 체크리스트는 `mobile/README.md`에 유지
+- [ ] **L2 카피·의미 정렬** (`decision-log` Q9 제안) — 현재는 발송 게이트; UI가
+  “수신 자동응대”로 오해되지 않게 설명 수정. 수신 트리거 자동응대는 별 항목
+- [ ] **L2 수신 트리거 자동응대** (PRD §2.2 목표) — Q9 확정·안전 게이트 테스트 후.
+  상대 메시지 수신 → 초안 → 화이트리스트면 twin 발송 + 사후 알림/되돌리기
+
 
 ##### B. 그다음 — 베타 품질
 - [~] FCM 푸시 연동 — 토큰 등록 + 에스컬레이션 시 `notifyUser` + `POST /admin/push-test`.
