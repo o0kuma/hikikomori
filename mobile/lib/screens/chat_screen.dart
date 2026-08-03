@@ -11,10 +11,11 @@ import '../theme/app_theme.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.conversationId, this.title});
+  const ChatScreen({super.key, required this.conversationId, this.title, this.isGroup = false});
 
   final int conversationId;
   final String? title;
+  final bool isGroup;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -31,10 +32,12 @@ class _ChatScreenState extends State<ChatScreen> {
   DraftResult? _pendingDraft;
   bool _busy = false;
   bool _loadingHistory = true;
+  late final ApiClient _api;
 
   @override
   void initState() {
     super.initState();
+    _api = context.read<SessionState>().api;
     _socket = ConversationSocket(widget.conversationId)..connect();
     _sub = _socket!.events.listen(_onEvent);
     _loadHistory();
@@ -52,12 +55,28 @@ class _ChatScreenState extends State<ChatScreen> {
         _loadingHistory = false;
       });
       _scrollToEnd();
+      // 읽음 마커는 화면에 들어올 때가 아니라 "나갈 때"(dispose) 찍는다 --
+      // 즉시 찍으면 그룹 채팅방을 여는 순간 안 본 메시지가 0이 되어 버려서
+      // "안 본 동안 요약" 버튼이 항상 빈 결과만 보여주게 된다(roadmap.md
+      // §2.7-A). 화면이 열려 있는 동안 실시간으로 온 새 메시지는 지금
+      // 보고 있는 것이니 그대로 마커를 따라가도 된다 (_onEvent 참고).
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _loadingHistory = false;
         _banner = '히스토리 로드 실패 (${e.statusCode})';
       });
+    }
+  }
+
+  /// 단톡 따라잡기(roadmap.md §2.7-A) 읽음 마커.
+  Future<void> _markLatestRead() async {
+    if (_messages.isEmpty) return;
+    final latestId = _messages.map((m) => m.id).reduce((a, b) => a > b ? a : b);
+    try {
+      await _api.markRead(widget.conversationId, latestId);
+    } on ApiException {
+      // Best-effort — an unread badge staying stale isn't worth surfacing an error for.
     }
   }
 
@@ -97,10 +116,15 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_messages.any((m) => m.id == msg.id)) return;
     setState(() => _messages.add(msg));
     _scrollToEnd();
+    _markLatestRead();
   }
 
   @override
   void dispose() {
+    // 화면을 나가는 시점에 읽음 마커를 찍는다 — _loadHistory()의 주석 참고.
+    // Fire-and-forget: dispose는 동기라 기다릴 수 없고, 실패해도 안 읽음
+    // 배지가 조금 늦게 갱신되는 정도라 굳이 에러를 보여줄 필요 없음.
+    _markLatestRead();
     _sub?.cancel();
     _socket?.dispose();
     _input.dispose();
@@ -176,13 +200,17 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _draftEdit.text.trim();
     if (text.isEmpty) return;
 
-    // L0: twin send is forbidden server-side — move text to human composer instead.
-    if (session.autonomyLevel == AutonomyLevel.L0) {
+    // L0: twin send is forbidden server-side — move text to human composer
+    // instead. 그룹 대화는 전역 자율성 레벨과 무관하게 항상 L0 취급
+    // (PRD.md §2.3-③, roadmap.md §2.7-A "이 시나리오는 L0 고정, 자동 발송 없음").
+    if (session.autonomyLevel == AutonomyLevel.L0 || widget.isGroup) {
       setState(() {
         _input.text = text;
         _pendingDraft = null;
         _draftEdit.clear();
-        _banner = 'L0(비서 모드)에서는 와카뷰로 보낼 수 없습니다. 아래 입력창에서 직접 보내거나, 자율성 설정을 L1으로 바꾸세요.';
+        _banner = widget.isGroup
+            ? '단톡에서는 와카뷰가 자동으로 보내지 않습니다. 초안을 검토하고 아래 입력창에서 직접 보내세요.'
+            : 'L0(비서 모드)에서는 와카뷰로 보낼 수 없습니다. 아래 입력창에서 직접 보내거나, 자율성 설정을 L1으로 바꾸세요.';
       });
       return;
     }
@@ -248,6 +276,57 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// 단톡 따라잡기(roadmap.md §2.7-A): 안 본 동안 온 메시지를 3~5줄로 요약해
+  /// 보여준다. 답장이 필요해 보이면 그 자리에서 초안 요청으로 이어갈 수 있음
+  /// — 발송은 항상 사람이 직접(이 화면의 L0 고정 규칙 그대로).
+  Future<void> _openSummary() async {
+    final session = context.read<SessionState>();
+    GroupSummaryResult? result;
+    String? error;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          if (result == null && error == null) {
+            session.api.getGroupSummary(widget.conversationId).then((r) {
+              setDialogState(() => result = r);
+            }).catchError((e) {
+              setDialogState(() => error = e is ApiException ? '요약 실패 (${e.statusCode})' : '요약 실패');
+            });
+          }
+          final r = result;
+          return AlertDialog(
+            title: const Text('안 본 동안 요약'),
+            content: SizedBox(
+              width: 320,
+              child: error != null
+                  ? Text(error!, style: TextStyle(color: Theme.of(ctx).colorScheme.error))
+                  : r == null
+                      ? const SizedBox(
+                          height: 60,
+                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        )
+                      : r.isEmpty
+                          ? const Text('안 본 메시지가 없습니다.')
+                          : Text(r.summary.isEmpty ? '요약할 내용이 없습니다.' : r.summary),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('닫기')),
+              if (r != null && !r.isEmpty && r.needsReply)
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _requestDraft();
+                  },
+                  child: const Text('초안 요청'),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildL1Panel(BuildContext context) {
     final theme = Theme.of(context);
     final draft = _pendingDraft;
@@ -291,7 +370,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     final level = context.watch<SessionState>().autonomyLevel;
-    final isL0 = level == AutonomyLevel.L0;
+    final isL0 = level == AutonomyLevel.L0 || widget.isGroup;
     final title = isL0
         ? '초안 (L0) — 직접 보내기'
         : level == AutonomyLevel.L1
@@ -319,7 +398,9 @@ class _ChatScreenState extends State<ChatScreen> {
           if (isL0) ...[
             const SizedBox(height: 6),
             Text(
-              'L0에서는 와카뷰 발송이 막혀 있습니다. 초안을 입력창으로 옮긴 뒤 직접 보내거나, 메뉴 → 자율성에서 L1으로 바꾸세요.',
+              widget.isGroup
+                  ? '단톡에서는 와카뷰 자동 발송이 항상 막혀 있습니다. 초안을 입력창으로 옮긴 뒤 직접 보내세요.'
+                  : 'L0에서는 와카뷰 발송이 막혀 있습니다. 초안을 입력창으로 옮긴 뒤 직접 보내거나, 메뉴 → 자율성에서 L1으로 바꾸세요.',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
@@ -362,6 +443,12 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text(widget.title ?? '대화방 #${widget.conversationId}'),
         actions: [
+          if (widget.isGroup)
+            IconButton(
+              tooltip: '안 본 동안 요약',
+              onPressed: _openSummary,
+              icon: const Icon(Icons.summarize_outlined),
+            ),
           IconButton(
             tooltip: '거부권 (와카뷰 자동응대 중단)',
             onPressed: _busy ? null : _veto,

@@ -83,67 +83,116 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   }
 
   Future<void> _createConversation() async {
-    final peerCtrl = TextEditingController();
     final session = context.read<SessionState>();
     final myId = session.user?.id;
+    // 그룹 대화 생성(roadmap.md §2.7-A "단톡 따라잡기"): 상대를 여러 명 추가하면
+    // 자동으로 그룹이 된다. 필드 1개(상대 1명)면 기존 1:1 흐름과 동일.
+    final peerCtrls = <TextEditingController>[TextEditingController()];
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('새 대화'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (myId != null) ...[
-              MyUserIdChip(userId: myId),
-              const SizedBox(height: 12),
-              Text(
-                '상대에게 위 ID를 알려 주고, 아래에 상대의 숫자 ID를 입력하세요.',
-                style: Theme.of(ctx).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: peerCtrl,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: '상대 사용자 ID (숫자)',
-                helperText: '이름/닉네임이 아니라 숫자 ID입니다. 연락처에 등록돼 있으면 연락처에서 시작하세요.',
-              ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('새 대화'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (myId != null) ...[
+                  MyUserIdChip(userId: myId),
+                  const SizedBox(height: 12),
+                  Text(
+                    '상대에게 위 ID를 알려 주고, 아래에 상대의 숫자 ID를 입력하세요. '
+                    '2명 이상 넣으면 그룹 대화로 만들어집니다.',
+                    style: Theme.of(ctx).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                for (var i = 0; i < peerCtrls.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: peerCtrls[i],
+                            keyboardType: TextInputType.number,
+                            autofocus: i == 0,
+                            decoration: InputDecoration(
+                              labelText: i == 0 ? '상대 사용자 ID (숫자)' : '상대 ${i + 1} 사용자 ID',
+                              helperText: i == 0 ? '이름/닉네임이 아니라 숫자 ID입니다.' : null,
+                            ),
+                          ),
+                        ),
+                        if (peerCtrls.length > 1)
+                          IconButton(
+                            tooltip: '삭제',
+                            onPressed: () => setDialogState(() => peerCtrls.removeAt(i)),
+                            icon: const Icon(Icons.close, size: 18),
+                          ),
+                      ],
+                    ),
+                  ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setDialogState(() => peerCtrls.add(TextEditingController())),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('상대 추가 (그룹으로)'),
+                  ),
+                ),
+              ],
             ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('만들기')),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('만들기')),
-        ],
       ),
     );
     if (ok != true || !mounted) return;
     final me = session.user;
-    final peer = int.tryParse(peerCtrl.text.trim());
     if (me == null) return;
-    if (peer == null) {
+
+    final peers = <int>[];
+    for (final ctrl in peerCtrls) {
+      final text = ctrl.text.trim();
+      if (text.isEmpty) continue;
+      final id = int.tryParse(text);
+      if (id == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('상대 사용자 ID는 숫자여야 합니다. (예: 12)')),
+        );
+        return;
+      }
+      if (id == me.id) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('자기 자신과는 대화를 만들 수 없습니다.')),
+        );
+        return;
+      }
+      if (!peers.contains(id)) peers.add(id);
+    }
+    if (peers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('상대 사용자 ID는 숫자여야 합니다. (예: 12)')),
+        const SnackBar(content: Text('상대 사용자 ID를 1명 이상 입력하세요.')),
       );
       return;
     }
-    if (peer == me.id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('자기 자신과는 대화를 만들 수 없습니다.')),
-      );
-      return;
-    }
+    final isGroup = peers.length > 1;
     try {
-      final conv = await session.api.createConversation(userIds: [me.id, peer]);
+      final conv = await session.api.createConversation(
+        userIds: [me.id, ...peers],
+        isGroup: isGroup,
+      );
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ChatScreen(
             conversationId: conv.id,
-            title: _peerNames[peer] ?? '상대 #$peer',
+            title: isGroup ? '그룹 #${conv.id}' : (_peerNames[peers.first] ?? '상대 #${peers.first}'),
+            isGroup: isGroup,
           ),
         ),
       );
@@ -292,6 +341,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                               builder: (_) => ChatScreen(
                                 conversationId: room.id,
                                 title: _titleFor(room, me),
+                                isGroup: room.isGroup,
                               ),
                             ),
                           );
@@ -343,6 +393,23 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                                   ],
                                 ),
                               ),
+                              if (room.unreadCount > 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    room.unreadCount > 99 ? '99+' : '${room.unreadCount}',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
                               Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.onSurfaceVariant),
                             ],
                           ),

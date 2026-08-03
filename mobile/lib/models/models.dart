@@ -40,6 +40,7 @@ class ConversationSummary {
     required this.isGroup,
     required this.userIds,
     required this.twinDisabledByPeer,
+    this.unreadCount = 0,
     this.createdAt,
   });
 
@@ -47,6 +48,7 @@ class ConversationSummary {
   final bool isGroup;
   final List<int> userIds;
   final bool twinDisabledByPeer;
+  final int unreadCount;
   final DateTime? createdAt;
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,7 @@ class ConversationSummary {
       isGroup: json['is_group'] as bool? ?? false,
       userIds: rawIds.map((e) => e as int).toList(),
       twinDisabledByPeer: json['twin_disabled_by_peer'] as bool? ?? false,
+      unreadCount: json['unread_count'] as int? ?? 0,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
     );
   }
@@ -164,6 +167,30 @@ class WhitelistRule {
         topicKeyword: json['topic_keyword'] as String? ?? '',
         contactId: json['contact_id'] as int?,
       );
+}
+
+/// 단톡 따라잡기(roadmap.md §2.7-A) — GET /conversations/:id/summary result.
+class GroupSummaryResult {
+  GroupSummaryResult({
+    required this.status,
+    required this.summary,
+    required this.unreadCount,
+    required this.needsReply,
+  });
+
+  final String status; // empty | ok
+  final String summary;
+  final int unreadCount;
+  final bool needsReply;
+
+  factory GroupSummaryResult.fromJson(Map<String, dynamic> json) => GroupSummaryResult(
+        status: json['status'] as String? ?? 'empty',
+        summary: json['summary'] as String? ?? '',
+        unreadCount: json['unread_count'] as int? ?? 0,
+        needsReply: json['needs_reply'] as bool? ?? false,
+      );
+
+  bool get isEmpty => status == 'empty' || unreadCount == 0;
 }
 
 class DraftResult {

@@ -193,12 +193,25 @@ func registerA1A2Routes(r *gin.Engine, db *gorm.DB) {
 			for _, pp := range pps {
 				participantIDs = append(participantIDs, pp.UserID)
 			}
+
+			// Unread count (roadmap.md §2.7-A "안 본 동안" badge) -- messages
+			// after this participant's read marker, excluding their own sends
+			// (sending a message means you've obviously seen it).
+			unreadQuery := db.Model(&Message{}).
+				Where("conversation_id = ? AND retracted = ? AND sender_id != ?", conv.ID, false, userID)
+			if p.LastReadMessageID != nil {
+				unreadQuery = unreadQuery.Where("id > ?", *p.LastReadMessageID)
+			}
+			var unreadCount int64
+			unreadQuery.Count(&unreadCount)
+
 			out = append(out, gin.H{
 				"id":                    conv.ID,
 				"is_group":              conv.IsGroup,
 				"twin_disabled_by_peer": conv.TwinDisabledByPeer,
 				"user_ids":              participantIDs,
 				"created_at":            conv.CreatedAt,
+				"unread_count":          unreadCount,
 			})
 		}
 		c.JSON(http.StatusOK, gin.H{"conversations": out})

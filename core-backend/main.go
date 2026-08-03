@@ -84,6 +84,7 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 	registerBRoutes(r, db)
 	registerInviteOpsRoutes(r, db)
 	registerDemoRoutes(r)
+	registerGroupSummaryRoutes(r, db, ai)
 
 	r.GET("/admin/metrics", func(c *gin.Context) {
 		if !requireAdmin(c) {
@@ -259,6 +260,16 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 			if conversation.TwinDisabledByPeer {
 				runtimeMetrics.recordTwinBlocked()
 				c.JSON(http.StatusForbidden, gin.H{"detail": "상대방이 와카뷰를 거부해서 이 대화방에서는 자동 발송이 꺼져 있습니다"})
+				return
+			}
+
+			// 단톡 따라잡기(PRD.md §2.3-③, roadmap.md §2.7-A): 이 시나리오는
+			// L0 고정, 자동 발송 없음 -- 사용자의 전역 자율성 레벨(L1/L2)과
+			// 무관하게 그룹 대화에서는 와카뷰 발송 자체를 막는다. 초안은
+			// 항상 사람이 검토해서 직접 보낸다.
+			if conversation.IsGroup {
+				runtimeMetrics.recordTwinBlocked()
+				c.JSON(http.StatusForbidden, gin.H{"detail": "그룹 대화에서는 와카뷰 자동 발송이 허용되지 않습니다 -- 초안만 생성하고 사람이 직접 보내세요"})
 				return
 			}
 

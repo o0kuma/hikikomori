@@ -90,3 +90,18 @@ def test_draft_rejects_both_style_sources():
 def test_draft_rejects_neither_style_source():
     resp = client.post("/draft", json={"context_lines": ["상대: 안녕"]})
     assert resp.status_code == 422
+
+
+def test_summarize_no_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    resp = client.post(
+        "/summarize",
+        json={
+            "my_display_name": "민수",
+            "context_lines": ["철수: 토요일 모임 3시로 하자", "영희: ㅇㅋ"],
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "no_key"
+    assert "토요일 모임 3시로 하자" in body["summary"]

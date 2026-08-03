@@ -133,18 +133,24 @@
 단톡 따라잡기는 v1의 2개 MVP 시나리오 중 하나인데 현재 0% 구현이라 완성도 공백이 가장 큼;
 페르소나는 1:1·단톡 양쪽 초안 품질에 영향; 스팸 감지는 P0지만 "최소 버전"이라 상대적으로 작음).
 
-**2.7-A 단톡 따라잡기** (`PRD.md` §2.3, 현재 미구현 — `isGroup`은 아이콘 표시용 플래그뿐, 요약
-로직·엔드포인트·UI 전부 없음)
-- [ ] 그룹 대화 생성 UI(복수 상대 추가) — `conversation_list_screen.dart`의 "새 대화" 다이얼로그가
-  상대 1명만 받음. 서버(`is_group`+복수 `user_ids`)는 이미 지원하므로 클라이언트만 필요
-- [ ] `GET /conversations/:id/summary` — 마지막 읽음 시점 이후 메시지를 모아 AI 서비스로 전달 —
-  `core-backend`(신규 라우트)
-- [ ] 요약 생성 — "나에게 멘션된 것/결정된 사항" 위주 3~5줄(`PRD.md` §2.3-②) — `ai-service/app/`
-  신규 모듈, `generate_draft.py`의 Gemini 호출 패턴 재사용
-- [ ] 요약 내 "답장 필요" 항목 → 초안 버튼 연결 — `chat_screen.dart`. **이 시나리오는 L0 고정,
-  자동발송 없음**(PRD §2.3-③) — 안전 불변식 그대로 유지, 우회 경로 만들지 않기
-- [ ] "안 본 동안" 배지(마지막 읽음 이후 새 메시지 수) — `conversation_list_screen.dart` +
-  서버 read-marker 필요
+**2.7-A 단톡 따라잡기** (`PRD.md` §2.3 — **완료** 2026-08-03)
+- [x] 그룹 대화 생성 UI(복수 상대 추가) — `conversation_list_screen.dart`의 "새 대화" 다이얼로그가
+  동적으로 상대 필드를 추가/삭제할 수 있게 됨. 2명 이상이면 자동으로 `is_group:true`로 생성
+- [x] `GET /conversations/:id/summary` — `core-backend/group_summary.go`. 참가자별 읽음 마커
+  (`ConversationParticipant.LastReadMessageID`)를 두고, 그 이후 메시지만 모아 AI 서비스로 전달.
+  `POST /conversations/:id/read`로 마커 갱신. `GET /conversations`에도 `unread_count` 추가
+- [x] 요약 생성 — `ai-service/app/summarize.py`(신규), "나에게 멘션된 것/결정된 사항" 위주 3~5줄
+  + 답장 필요 항목 표시(`PRD.md` §2.3-②). `POST /summarize` 엔드포인트. 읽기 전용이라 escalation/
+  identity 게이트 없음(아무것도 발송되지 않으므로)
+- [x] 요약 내 "답장 필요" 항목 → 초안 버튼 연결 — `chat_screen.dart`의 안 본 동안 요약 다이얼로그에서
+  바로 `_requestDraft()`로 이어감. **그룹 대화는 전역 자율성 레벨과 무관하게 서버(`main.go`)가
+  트윈 발송 자체를 항상 차단** — 클라이언트도 L0 취급으로 렌더링(PRD §2.3-③, 안전 불변식 유지)
+- [x] "안 본 동안" 배지(마지막 읽음 이후 새 메시지 수) — `conversation_list_screen.dart`, 서버가
+  계산한 `unread_count`를 그대로 표시
+- **주의**: 읽음 마커는 채팅방에 "들어올 때"가 아니라 "나갈 때"(`dispose()`) 찍는다 — 들어오는
+  순간 찍으면 그 방을 여는 즉시 안 본 게 0이 되어 "안 본 동안 요약"이 항상 빈 결과만 보여주는
+  버그가 생김(실제 Playwright로 스크린샷 찍어보다가 발견). 실시간 소켓 메시지는 화면이 열려
+  있는 동안은 계속 읽음으로 따라가도 됨
 
 **2.7-B 관계별 페르소나** (`PRD.md` §2.1-②·§3.1, 최소 2종: 가까운 사이/공식적인 사이 — 현재
 `TwinSettings`엔 `AutonomyLevel`만 있고 페르소나 필드 없음)

@@ -185,6 +185,18 @@ class ApiClient {
     await _json('POST', '/conversations/$conversationId/veto');
   }
 
+  /// 단톡 따라잡기(roadmap.md §2.7-A): advances the caller's read marker.
+  Future<void> markRead(int conversationId, int messageId) async {
+    await _json('POST', '/conversations/$conversationId/read', body: {
+      'message_id': messageId,
+    });
+  }
+
+  Future<GroupSummaryResult> getGroupSummary(int conversationId) async {
+    final json = await _getObject('/conversations/$conversationId/summary');
+    return GroupSummaryResult.fromJson(json);
+  }
+
   Future<void> retractMessage(int messageId) async {
     await _json('POST', '/messages/$messageId/retract');
   }

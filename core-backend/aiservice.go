@@ -53,6 +53,42 @@ func (c *AIServiceClient) requestDraft(req draftRequest) (*draftResponse, error)
 	return &out, nil
 }
 
+type summaryRequest struct {
+	MyDisplayName string   `json:"my_display_name"`
+	ContextLines  []string `json:"context_lines"`
+}
+
+type summaryResponse struct {
+	Status  string `json:"status"`
+	Summary string `json:"summary"`
+}
+
+// requestSummary calls ai-service's POST /summarize -- the "단톡 따라잡기"
+// catch-up summary (roadmap.md §2.7-A), separate from /draft since it never
+// produces something meant to be sent, only read.
+func (c *AIServiceClient) requestSummary(req summaryRequest) (*summaryResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.HTTP.Post(c.BaseURL+"/summarize", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("ai service unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ai service returned %d", resp.StatusCode)
+	}
+
+	var out summaryResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 type escalationCheckRequest struct {
 	Text string `json:"text"`
 }

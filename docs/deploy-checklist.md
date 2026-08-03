@@ -41,8 +41,10 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 - UI: **Soft Neutral + surface hierarchy** (`553cb62`) — GitHub `main` 머지 완료.
   프로덕션 web 재빌드는 이 세션에 SSH/`.env`가 없어 보류 → 서버에서
   `cd ~/project/ykavu && git pull && docker compose build web && docker compose up -d web`
-- **발견(2026-07-31): Track C 콘텐츠 갭** — `PRD.md` P0 대비 단톡 따라잡기·관계별 페르소나·
-  스팸 감지 미구현. Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 지금 바로 코드 착수 가능
+- **Track C 콘텐츠 갭**: C1(단톡 따라잡기) **완료** (2026-08-03) — 그룹 생성 UI, 안 본 동안 요약
+  (`GET /conversations/:id/summary`), 읽음 마커, 안 본 배지, 그룹 트윈 발송 서버측 차단까지.
+  다음은 C2(관계별 페르소나) → C3(스팸 감지). Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과
+  별개로 계속 진행 가능
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
 ### NEXT 순서
@@ -180,11 +182,11 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
-| **N4-C1a** | 그룹 대화 생성 UI(복수 상대) | todo | "새 대화" 다이얼로그가 상대 여러 명 입력 받아 `is_group:true`로 생성 |
-| **N4-C1b** | `GET /conversations/:id/summary` | todo | 마지막 읽음 이후 메시지 모아 AI 서비스로 전달하는 core-backend 라우트 |
-| **N4-C1c** | 단톡 요약 생성(멘션/결정사항 3~5줄) | todo | `ai-service/app/` 신규 모듈, `generate_draft.py` 패턴 재사용 |
-| **N4-C1d** | 요약→초안 버튼 연결 (L0 고정) | todo | `chat_screen.dart`. 자동발송 없음 — 안전 불변식 유지 |
-| **N4-C1e** | "안 본 동안" 배지 | todo | 대화 목록에 마지막 읽음 이후 새 메시지 수 표시, read-marker 필요 |
+| **N4-C1a** | 그룹 대화 생성 UI(복수 상대) | **done** (2026-08-03) | "새 대화" 다이얼로그가 상대 여러 명 입력 받아 `is_group:true`로 생성 |
+| **N4-C1b** | `GET /conversations/:id/summary` | **done** (2026-08-03) | `core-backend/group_summary.go` + 읽음 마커(`POST /conversations/:id/read`) |
+| **N4-C1c** | 단톡 요약 생성(멘션/결정사항 3~5줄) | **done** (2026-08-03) | `ai-service/app/summarize.py` + `POST /summarize` |
+| **N4-C1d** | 요약→초안 버튼 연결 (L0 고정) | **done** (2026-08-03) | `chat_screen.dart`. 서버가 그룹 대화 트윈 발송을 전역 레벨과 무관하게 항상 차단 |
+| **N4-C1e** | "안 본 동안" 배지 | **done** (2026-08-03) | 대화 목록에 서버 계산 `unread_count` 표시 |
 | **N4-C2a** | `relationship_tier` 필드(가까운/공식적) | todo | `core-backend/models.go` `TwinSettings` 확장 |
 | **N4-C2b** | 온보딩 관계 티어 선택 스텝 | todo | `onboarding_tone_screen.dart` |
 | **N4-C2c** | 연락처별 관계 티어 오버라이드 | todo | `contacts_screen.dart`, 자율성 레벨 상대별 예외와 동일 패턴 |
@@ -249,8 +251,9 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 2. ~~N1 스모크~~ **done** (E2E 16/16 + DEMO API 경로; 브라우저 UI 탭은 테스터)  
 3. ~~N2-B1~B7 이미지·compose~~ **done** (파일 랜딩·이미지 빌드)  
 4. ~~N2-B8~B12 컷오버~~ **done** (`msn.iykyka.com` 라이브)  
-5. ~~N3 안정화 + Track A/B~~ **done** — 다음: **Track C 콘텐츠 갭(N4-C1→C2→C3, 지금 착수 가능)**
-   병행하며 **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10)
+5. ~~N3 안정화 + Track A/B~~ **done**, ~~Track C1 단톡 따라잡기~~ **done** (2026-08-03) — 다음:
+   **Track C2 관계별 페르소나 → C3 스팸 감지** 병행하며 **Master FCM 시크릿(N4-1/3)** →
+   N4-4 스모크 → Android UI QA (N4-5~10)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

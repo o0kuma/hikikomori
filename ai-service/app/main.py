@@ -7,6 +7,7 @@ from pydantic import BaseModel, model_validator
 from .escalation_filter import check as check_escalation
 from .generation import draft_reply, last_incoming_text, load_dotenv_if_present
 from .retrieve_style import retrieve as retrieve_style_examples
+from .summarize import summarize_messages
 
 
 @asynccontextmanager
@@ -72,3 +73,22 @@ def draft(req: DraftRequest):
 
     status, text = draft_reply(style_examples, req.context_lines, model=req.model)
     return DraftResponse(status=status, text=text)
+
+
+class SummarizeRequest(BaseModel):
+    my_display_name: str
+    context_lines: List[str]
+    model: str = "gemini-2.5-flash"
+
+
+class SummarizeResponse(BaseModel):
+    status: str
+    summary: str
+
+
+@app.post("/summarize", response_model=SummarizeResponse)
+def summarize(req: SummarizeRequest):
+    """단톡 따라잡기 (roadmap.md §2.7-A) -- read-only catch-up summary, no
+    escalation/identity gating since nothing generated here is ever sent."""
+    status, text = summarize_messages(req.my_display_name, req.context_lines, model=req.model)
+    return SummarizeResponse(status=status, summary=text)

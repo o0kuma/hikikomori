@@ -50,6 +50,17 @@ func mockAIService(t *testing.T) *httptest.Server {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(out)
+		case "/summarize":
+			var req summaryRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(summaryResponse{
+				Status:  "ok",
+				Summary: "mock summary for " + req.MyDisplayName + ": " + strings.Join(req.ContextLines, " | "),
+			})
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}

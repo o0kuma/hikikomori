@@ -74,6 +74,10 @@ type ConversationParticipant struct {
 	ID             uint `gorm:"primaryKey"`
 	ConversationID uint `gorm:"not null;index"`
 	UserID         uint `gorm:"not null;index"`
+	// LastReadMessageID is this participant's read marker (roadmap.md
+	// §2.7-A "단톡 따라잡기") -- nil means nothing read yet. Drives the
+	// unread badge and GET /conversations/:id/summary's "안 본 동안" window.
+	LastReadMessageID *uint
 }
 
 type Message struct {
