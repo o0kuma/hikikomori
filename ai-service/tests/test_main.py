@@ -111,7 +111,9 @@ def test_summarize_no_key(monkeypatch):
 def test_draft_passes_relationship_tier_through_to_draft_reply(monkeypatch):
     captured = {}
 
-    def fake_draft_reply(style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None):
+    def fake_draft_reply(
+        style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None, relationship_note=None
+    ):
         captured["relationship_tier"] = relationship_tier
         return "ok", "네 알겠습니다"
 
@@ -131,7 +133,9 @@ def test_draft_passes_relationship_tier_through_to_draft_reply(monkeypatch):
 def test_draft_relationship_tier_defaults_to_none(monkeypatch):
     captured = {}
 
-    def fake_draft_reply(style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None):
+    def fake_draft_reply(
+        style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None, relationship_note=None
+    ):
         captured["relationship_tier"] = relationship_tier
         return "ok", "ㅇㅋ"
 
@@ -142,3 +146,43 @@ def test_draft_relationship_tier_defaults_to_none(monkeypatch):
     )
     assert resp.status_code == 200
     assert captured["relationship_tier"] is None
+
+
+def test_draft_passes_relationship_note_through_to_draft_reply(monkeypatch):
+    captured = {}
+
+    def fake_draft_reply(
+        style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None, relationship_note=None
+    ):
+        captured["relationship_note"] = relationship_note
+        return "ok", "네 알겠습니다"
+
+    monkeypatch.setattr(main_module, "draft_reply", fake_draft_reply)
+    resp = client.post(
+        "/draft",
+        json={
+            "context_lines": ["상대: 자기야 오늘 뭐해?"],
+            "style_examples": ["응 집이야"],
+            "relationship_note": "호칭: 자기야, 절대 언급 금지: 전 여친",
+        },
+    )
+    assert resp.status_code == 200
+    assert captured["relationship_note"] == "호칭: 자기야, 절대 언급 금지: 전 여친"
+
+
+def test_draft_relationship_note_defaults_to_none(monkeypatch):
+    captured = {}
+
+    def fake_draft_reply(
+        style_examples, context_lines, model="gemini-2.5-flash", relationship_tier=None, relationship_note=None
+    ):
+        captured["relationship_note"] = relationship_note
+        return "ok", "ㅇㅋ"
+
+    monkeypatch.setattr(main_module, "draft_reply", fake_draft_reply)
+    resp = client.post(
+        "/draft",
+        json={"context_lines": ["상대: 오늘 뭐해?"], "style_examples": ["ㅇㅋ"]},
+    )
+    assert resp.status_code == 200
+    assert captured["relationship_note"] is None

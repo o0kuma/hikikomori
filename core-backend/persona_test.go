@@ -153,6 +153,98 @@ func TestDraftWithoutAuthDefaultsToFormalTier(t *testing.T) {
 	}
 }
 
+func TestContactRelationshipNoteReachesDraftRequest(t *testing.T) {
+	server, _ := setupTestServer(t)
+	ownerID, ownerToken := mustSignup(t, server.URL, "민수")
+	peerID, _ := mustSignup(t, server.URL, "철수")
+
+	contactResp := postJSONAuth(t, server.URL+"/users/"+strconv.FormatUint(uint64(ownerID), 10)+"/contacts", ownerToken, createContactRequest{
+		DisplayName:      "철수",
+		ContactUserID:    &peerID,
+		RelationshipNote: "호칭: 자기야, 절대 언급 금지: 전 여친",
+	})
+	if contactResp.StatusCode != http.StatusOK {
+		t.Fatalf("create contact: %d", contactResp.StatusCode)
+	}
+
+	convResp := postJSONAuth(t, server.URL+"/conversations", ownerToken, createConversationRequest{
+		UserIDs: []uint{ownerID, peerID},
+	})
+	var conv map[string]interface{}
+	json.NewDecoder(convResp.Body).Decode(&conv)
+	convID := uint(conv["id"].(float64))
+
+	draftResp := postJSONAuth(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(convID), 10)+"/draft", ownerToken, draftMessageRequest{
+		ContextLines:  []string{"상대: 자기야 오늘 뭐해?"},
+		StyleExamples: []string{"응 그냥 집이야"},
+	})
+	if draftResp.StatusCode != http.StatusOK {
+		t.Fatalf("draft: %d", draftResp.StatusCode)
+	}
+	var draftOut draftResponse
+	json.NewDecoder(draftResp.Body).Decode(&draftOut)
+	if !strings.Contains(draftOut.Text, "[note=호칭: 자기야, 절대 언급 금지: 전 여친]") {
+		t.Fatalf("expected contact relationship note forwarded in mock draft, got %v", draftOut.Text)
+	}
+}
+
+func TestDraftWithoutRelationshipNoteHasNoNoteText(t *testing.T) {
+	server, _ := setupTestServer(t)
+	ownerID, ownerToken := mustSignup(t, server.URL, "민수")
+	peerID, _ := mustSignup(t, server.URL, "철수")
+
+	// Contact exists but with no RelationshipNote set (empty string, the
+	// zero value) -- must resolve to "" rather than injecting anything.
+	postJSONAuth(t, server.URL+"/users/"+strconv.FormatUint(uint64(ownerID), 10)+"/contacts", ownerToken, createContactRequest{
+		DisplayName:   "철수",
+		ContactUserID: &peerID,
+	})
+
+	convResp := postJSONAuth(t, server.URL+"/conversations", ownerToken, createConversationRequest{
+		UserIDs: []uint{ownerID, peerID},
+	})
+	var conv map[string]interface{}
+	json.NewDecoder(convResp.Body).Decode(&conv)
+	convID := uint(conv["id"].(float64))
+
+	draftResp := postJSONAuth(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(convID), 10)+"/draft", ownerToken, draftMessageRequest{
+		ContextLines:  []string{"상대: 내일 시간 되세요?"},
+		StyleExamples: []string{"네 됩니다"},
+	})
+	var draftOut draftResponse
+	json.NewDecoder(draftResp.Body).Decode(&draftOut)
+	if !strings.Contains(draftOut.Text, "[note=]") {
+		t.Fatalf("expected empty note to produce no note text, got %v", draftOut.Text)
+	}
+}
+
+func TestGroupConversationDraftAlwaysGetsEmptyNoteRegardlessOfContactNote(t *testing.T) {
+	server, _ := setupTestServer(t)
+	ownerID, ownerToken := mustSignup(t, server.URL, "민수")
+	peerID, _ := mustSignup(t, server.URL, "철수")
+
+	// A 1:1 relationship note exists for this same pair of users elsewhere,
+	// but a group conversation has more than one counterpart -- there is no
+	// single "the note" to pick, so it must always resolve to "".
+	postJSONAuth(t, server.URL+"/users/"+strconv.FormatUint(uint64(ownerID), 10)+"/contacts", ownerToken, createContactRequest{
+		DisplayName:      "철수",
+		ContactUserID:    &peerID,
+		RelationshipNote: "호칭: 자기야",
+	})
+
+	convID := createGroup(t, server.URL, ownerToken, []uint{ownerID, peerID})
+
+	draftResp := postJSONAuth(t, server.URL+"/conversations/"+strconv.FormatUint(uint64(convID), 10)+"/draft", ownerToken, draftMessageRequest{
+		ContextLines:  []string{"철수: 이번 주 토요일 모임 어때?"},
+		StyleExamples: []string{"ㅇㅇ 좋지"},
+	})
+	var draftOut draftResponse
+	json.NewDecoder(draftResp.Body).Decode(&draftOut)
+	if !strings.Contains(draftOut.Text, "[note=]") {
+		t.Fatalf("expected group draft to always get empty note despite existing 1:1 contact note, got %v", draftOut.Text)
+	}
+}
+
 func TestGroupConversationDraftUsesGlobalTierNotContactOverride(t *testing.T) {
 	server, _ := setupTestServer(t)
 	ownerID, ownerToken := mustSignup(t, server.URL, "민수")

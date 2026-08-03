@@ -98,6 +98,24 @@ def test_system_prompt_for_tier_formal_adds_instruction():
     assert RELATIONSHIP_TIER_INSTRUCTIONS["formal"] in prompt
 
 
+def test_system_prompt_for_tier_includes_relationship_note_when_present():
+    note = "호칭: 자기야, 절대 언급 금지: 전 여친"
+    prompt = system_prompt_for_tier("close", note)
+    assert prompt.startswith(SYSTEM_PROMPT)
+    assert RELATIONSHIP_TIER_INSTRUCTIONS["close"] in prompt
+    assert "[관계 메모]" in prompt
+    assert note in prompt
+
+
+def test_system_prompt_without_note_unaffected():
+    # No note passed at all (default None) must produce the exact same
+    # prompt as before this field existed.
+    assert system_prompt_for_tier("close", None) == system_prompt_for_tier("close")
+    assert "[관계 메모]" not in system_prompt_for_tier("close")
+    # Explicit empty string must behave the same as None (falsy check).
+    assert system_prompt_for_tier("formal", "") == system_prompt_for_tier("formal")
+
+
 def test_draft_reply_passes_relationship_tier_into_system_instruction(monkeypatch):
     fake_response = MagicMock()
     fake_response.text = "네 알겠습니다"
@@ -125,3 +143,34 @@ def test_draft_reply_passes_relationship_tier_into_system_instruction(monkeypatc
     assert status == "ok"
     _, kwargs = fake_client.models.generate_content.call_args
     assert RELATIONSHIP_TIER_INSTRUCTIONS["formal"] in kwargs["config"]["system_instruction"]
+
+
+def test_draft_reply_passes_relationship_note_into_system_instruction(monkeypatch):
+    fake_response = MagicMock()
+    fake_response.text = "네 알겠습니다"
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = fake_response
+
+    fake_genai = types.ModuleType("google.genai")
+    fake_genai.Client = MagicMock(return_value=fake_client)
+    fake_types = types.ModuleType("google.genai.types")
+    fake_types.GenerateContentConfig = MagicMock(side_effect=lambda **kw: kw)
+    fake_google = types.ModuleType("google")
+    fake_google.genai = fake_genai
+
+    monkeypatch.setitem(sys.modules, "google", fake_google)
+    monkeypatch.setitem(sys.modules, "google.genai", fake_genai)
+    monkeypatch.setitem(sys.modules, "google.genai.types", fake_types)
+
+    note = "호칭: 자기야, 절대 언급 금지: 전 여친"
+    status, text = draft_reply(
+        ["알겠습니다"],
+        ["상대: 내일 회의 시간 괜찮으세요?"],
+        api_key="fake-key",
+        relationship_tier="formal",
+        relationship_note=note,
+    )
+
+    assert status == "ok"
+    _, kwargs = fake_client.models.generate_content.call_args
+    assert note in kwargs["config"]["system_instruction"]

@@ -57,7 +57,12 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
   미배포) — `Contact.AutonomyLevel` 오버라이드 필드 + `resolveAutonomyLevel()`(연락처
   오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`와 동일 구조)로 `POST
   /conversations/:id/messages`의 자율성 게이트 교체, `contacts_screen.dart`에
-  `_AutonomyLevelPicker` 추가. C5(관계 메모 반영)·C6(답장 마감 알림)은 아직 todo.
+  `_AutonomyLevelPicker` 추가. C5(관계 메모 반영)도 **완료** (2026-08-03, 아직 GitHub `main`에만
+  있고 프로덕션 미배포) — `core-backend/aiservice.go` `draftRequest.RelationshipNote`,
+  `persona.go` `resolveRelationshipNote()`(그룹은 항상 빈 문자열 — 전역 기본 메모 개념 자체가
+  없어 티어/자율성과 다름), `ai-service/app/generation.py`가 메모를 `[관계 메모]` 프롬프트
+  문단으로 주입. 이 김에 세 resolver가 복붙하던 "1:1 상대 Contact 찾기" 루프를
+  `findCounterpartContact()` 공용 헬퍼로 추출. C6(답장 마감 알림)은 아직 todo.
   Master 액션(FCM 시크릿, 실기기 탭, 웹 재배포)과 별개로 계속 진행 가능
 - 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
 
@@ -213,9 +218,9 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-C4a** | `Contact.AutonomyLevel` 오버라이드 필드 | **done** (2026-08-03) | `core-backend/models.go`, `RelationshipTier`와 동일 패턴(nil = 전역 기본값) |
 | **N4-C4b** | 자율성 레벨 해석 함수 + 발송 게이트 교체 | **done** (2026-08-03) | `core-backend/autonomy_resolve.go` `resolveAutonomyLevel()`(연락처 오버라이드 → 전역 기본값 → `L0`, `resolveRelationshipTier`와 동일 구조). `main.go` `POST /conversations/:id/messages`가 전역값만 읽던 부분을 이 함수 호출로 교체 — peer-veto·그룹차단·도배 감지·에스컬레이션 순서는 그대로, "level" 계산만 교체. 그룹 대화는 이 함수 자체도 전역 기본값만 쓰고, 그 전에 걸리는 무조건 차단과 이중으로 안전 |
 | **N4-C4c** | 연락처별 자율성 오버라이드 UI | **done** (2026-08-03) | `contacts_screen.dart` `_AutonomyLevelPicker`(`_RelationshipTierPicker` 옆, 기본값 사용/L0/L1/L2 4-way 칩), 연락처 목록 서브타이틀에도 표시 |
-| **N4-C5a** | `draftRequest`에 `RelationshipNote` 필드 추가 | todo | `core-backend/aiservice.go` |
-| **N4-C5b** | draft 핸들러가 연락처 메모 조회해 전달 | todo | `main.go` `POST /conversations/:id/draft`, 그룹은 스킵 |
-| **N4-C5c** | 메모를 톤 프롬프트에 주입 | todo | `ai-service/app/generation.py`, 빈 값이면 무영향 |
+| **N4-C5a** | `draftRequest`에 `RelationshipNote` 필드 추가 | **done** (2026-08-03) | `core-backend/aiservice.go`, `relationship_tier` 옆 `omitempty`, 빈 문자열 = 무영향 |
+| **N4-C5b** | draft 핸들러가 연락처 메모 조회해 전달 | **done** (2026-08-03) | `main.go` `POST /conversations/:id/draft` + `core-backend/persona.go` `resolveRelationshipNote()`. 그룹은 항상 빈 문자열(전역 기본 메모 개념 자체가 없음, 티어/자율성과 다른 지점). `resolveRelationshipTier`/`resolveAutonomyLevel`과 공유하는 `findCounterpartContact()` 헬퍼로 3중 복붙 제거 |
+| **N4-C5c** | 메모를 톤 프롬프트에 주입 | **done** (2026-08-03) | `ai-service/app/generation.py` `system_prompt_for_tier(relationship_tier, relationship_note)`가 `"[관계 메모] {note} -- ..."` 문단 추가(빈 값/`None`이면 무영향, 관계 티어 지침과 별도 문단이라 안 섞임). 에스컬레이션/정체성 게이팅에는 영향 없음 |
 | **N4-C6a** | "이따 답장" 스누즈 저장 | todo | 온디바이스 우선 원칙에 맞는 저장 위치 결정 |
 | **N4-C6b** | 리마인드 로컬 알림(본인에게만) | todo | 다른 사람에게 노출되지 않음 |
 | **N4-C6c** | 스누즈 표시/취소 UI | todo | `chat_screen.dart`/`conversation_list_screen.dart` |
@@ -280,9 +285,10 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
 5. ~~N3 안정화 + Track A/B~~ **done**, ~~Track C1 단톡 따라잡기~~ **done** (2026-08-03),
    ~~Track C2 관계별 페르소나~~ **done** (2026-08-03), ~~Track C3 스팸/도배 감지~~ **done**
    (2026-08-03) — **Track C 콘텐츠 갭 A/B/C 전체 완료.** 2026-08-03 2차 재분석으로 D/E/F 추가
-   발견, ~~Track C4 자율성 상대별 예외~~ **done** (2026-08-03). 남은 것: Track C5(관계 메모
-   반영)·C6(답장 마감 알림), **Master FCM 시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA
-   (N4-5~10), Track C 프로덕션 재배포(C2/C3/C4는 아직 GitHub `main`에만 있음)
+   발견, ~~Track C4 자율성 상대별 예외~~ **done** (2026-08-03), ~~Track C5 관계 메모 반영~~
+   **done** (2026-08-03). 남은 것: Track C6(답장 마감 알림), **Master FCM 시크릿(N4-1/3)** →
+   N4-4 스모크 → Android UI QA (N4-5~10), Track C 프로덕션 재배포(C2/C3/C4/C5는 아직 GitHub
+   `main`에만 있음)
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

@@ -457,14 +457,20 @@ func setupRouter(db *gorm.DB, relay *ConnectionManager, ai *AIServiceClient) *gi
 		// tests, or a future anonymous path) still work exactly as before,
 		// just without tier resolution (falls back to "formal").
 		tier := RelationshipFormal
+		note := ""
 		if actor, ok := currentUser(c, db, false); ok {
 			tier = resolveRelationshipTier(db, actor.ID, convID)
+			// 관계 메모 실제 반영(roadmap.md §2.7-E): unlike tier/autonomy
+			// there is no global default note, so group conversations (or no
+			// matching Contact) just resolve to "" here.
+			note = resolveRelationshipNote(db, actor.ID, convID)
 		}
 
 		started := time.Now()
 		result, err := ai.requestDraft(draftRequest{
 			ContextLines:     req.ContextLines,
 			RelationshipTier: string(tier),
+			RelationshipNote: note,
 			StyleExamples:    req.StyleExamples,
 			History:          req.History,
 			K:                req.K,

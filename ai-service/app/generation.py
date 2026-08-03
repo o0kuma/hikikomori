@@ -57,8 +57,16 @@ RELATIONSHIP_TIER_INSTRUCTIONS = {
 }
 
 
-def system_prompt_for_tier(relationship_tier=None):
+def system_prompt_for_tier(relationship_tier=None, relationship_note=None):
+    """relationship_note (roadmap.md §2.7-E): a free-text per-contact note
+    like "호칭: 자기야, 절대 언급 금지: 전 여친" (Contact.RelationshipNote). Purely
+    a tone/content hint about *this specific person* -- distinct from the
+    close/formal tier instruction above, and never a bypass of the
+    escalation/identity gates in draft_reply(). Empty/None leaves the prompt
+    unchanged."""
     extra = RELATIONSHIP_TIER_INSTRUCTIONS.get(relationship_tier, "")
+    if relationship_note:
+        extra += f"\n\n[관계 메모] {relationship_note} -- 위 내용을 참고해 호칭/금기어 등을 지켜라."
     return SYSTEM_PROMPT + extra
 
 
@@ -76,7 +84,14 @@ def last_incoming_text(context_lines):
     return last.split(": ", 1)[1] if ": " in last else last
 
 
-def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key=None, relationship_tier=None):
+def draft_reply(
+    style_examples,
+    context_lines,
+    model="gemini-2.5-flash",
+    api_key=None,
+    relationship_tier=None,
+    relationship_note=None,
+):
     """Returns (status, text). status is one of "escalate" | "no_key" | "ok".
 
     "escalate": text is the escalation reason (금전/약속 확정/감정적으로 무거운 주제).
@@ -85,6 +100,10 @@ def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key
 
     relationship_tier: "close" | "formal" | None (roadmap.md §2.7-B). Only
     nudges tone -- escalation/identity gating above is unaffected by it.
+
+    relationship_note: free-text per-contact note (roadmap.md §2.7-E), e.g.
+    "호칭: 자기야, 절대 언급 금지: 전 여친". Also only a tone/content hint --
+    escalation/identity gating above is unaffected by it, same as tier.
     """
     incoming = last_incoming_text(context_lines)
     gate = check_escalation(incoming)
@@ -108,7 +127,8 @@ def draft_reply(style_examples, context_lines, model="gemini-2.5-flash", api_key
         model=model,
         contents=build_user_prompt(style_examples, context_lines),
         config=types.GenerateContentConfig(
-            system_instruction=system_prompt_for_tier(relationship_tier), max_output_tokens=300
+            system_instruction=system_prompt_for_tier(relationship_tier, relationship_note),
+            max_output_tokens=300,
         ),
     )
     return "ok", resp.text.strip()

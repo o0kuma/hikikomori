@@ -23,7 +23,12 @@ type draftRequest struct {
 	// RelationshipTier (roadmap.md §2.7-B): "close" | "formal". Empty is
 	// treated by ai-service as "no tier info" and falls back to its own
 	// default tone, same as before this field existed.
-	RelationshipTier string   `json:"relationship_tier,omitempty"`
+	RelationshipTier string `json:"relationship_tier,omitempty"`
+	// RelationshipNote (roadmap.md §2.7-E): the contact's free-text note
+	// (e.g. "호칭: 자기야, 절대 언급 금지: 전 여친"). Empty means "no note" and
+	// ai-service's prompt gets no extra injection, same as before this field
+	// existed.
+	RelationshipNote string   `json:"relationship_note,omitempty"`
 	StyleExamples    []string `json:"style_examples,omitempty"`
 	History          []string `json:"history,omitempty"`
 	K                int      `json:"k,omitempty"`

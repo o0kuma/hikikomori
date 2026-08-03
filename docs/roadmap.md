@@ -214,12 +214,23 @@
 
 **2.7-E 관계 메모 실제 반영** (`PRD.md` §3.2 P1, `Contact.RelationshipNote` 필드·CRUD는 이미
 있으나 `draftRequest`에 필드 자체가 없어 ai-service 프롬프트에 전혀 전달되지 않음 — 저장만 되는
-스텁, 2026-08-03 발견)
-- [ ] `core-backend/aiservice.go`의 `draftRequest`에 `RelationshipNote string` 필드 추가
-- [ ] `POST /conversations/:id/draft` 핸들러가 연락처의 `RelationshipNote`를 조회해 요청에 포함
-  (그룹 대화는 상대가 여럿이라 관계별 페르소나와 동일하게 스킵하거나 대표 로직 결정 필요)
-- [ ] `ai-service/app/generation.py`가 메모가 있으면 시스템 프롬프트에 "호칭/금기어" 지침으로
-  주입(빈 문자열이면 기존과 동일하게 무영향)
+스텁, 2026-08-03 발견 — **완료** 2026-08-03)
+- [x] `core-backend/aiservice.go`의 `draftRequest`에 `RelationshipNote string` 필드 추가
+  (`relationship_tier` 옆, 빈 문자열 = 메모 없음 = ai-service 프롬프트 무영향, `omitempty`)
+- [x] `POST /conversations/:id/draft` 핸들러가 연락처의 `RelationshipNote`를 조회해 요청에 포함 —
+  `core-backend/persona.go`의 `resolveRelationshipNote()`. 티어/자율성과 달리 메모는 순전히
+  개인별이라 "전역 기본 메모" 개념 자체가 없음 — 그룹 대화(상대가 여럿)나 매칭되는 `Contact`가
+  없는 경우 그냥 빈 문자열로 귀결(관계 티어의 "전역 기본값 폴백"과 다른 지점). 이 참에
+  `resolveRelationshipTier`/`resolveAutonomyLevel`/`resolveRelationshipNote` 셋이 거의 동일한
+  "1:1 대화에서 상대방의 Contact 행 찾기" 루프를 각자 복붙하고 있던 걸 `persona.go`의
+  `findCounterpartContact(db, actorID, conversationID) (Contact, bool)` 공용 헬퍼로 추출해서
+  셋 다 이걸 호출하도록 정리(중복 제거, 그룹 판정 로직도 한 곳에만 존재)
+- [x] `ai-service/app/generation.py`가 메모가 있으면 시스템 프롬프트에 "호칭/금기어" 지침으로
+  주입(빈 문자열/`None`이면 기존과 동일하게 무영향) — `system_prompt_for_tier(relationship_tier,
+  relationship_note)`에 `"\n\n[관계 메모] {note} -- 위 내용을 참고해 호칭/금기어 등을 지켜라."`
+  형태로 추가. 관계 티어(가까운/공식적) 지침과 분리된 별도 문단이라 서로 안 섞임. `draft_reply()`도
+  `relationship_note` 파라미터를 받아 그대로 전달 — 에스컬레이션/정체성 게이팅 로직 이전 단계라
+  이 둘에는 전혀 영향 없음(순수 톤/금기어 힌트, 안전 게이트 우회 아님)
 
 **2.7-F 답장 마감 알림** (`PRD.md` §3.2 P1: "내가 '이따 답장' 누르면 나에게만 리마인드" — 코드
 전무, 아이디어 회의 문서에만 존재, 2026-08-03 발견)
