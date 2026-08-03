@@ -235,7 +235,7 @@ API 계층은 프로덕션에서 검증됨 (`CORE_API_BASE=https://msn.iykyka.co
 | **N4-12** | 자연스러움 피드백 UI | **done (계측만)** (2026-08-03) | vision 지표. **PoC 실행/결론이 아니라 캡처 장치** — 실제 %는 N5 이후 실 사용 데이터로. 암묵 신호: `core-backend/models.go` `Message.DraftEdited`(nullable — 사람 메시지/구버전 클라는 nil, 트윈 승인-발송 경로에서 클라이언트가 `original_draft_text`를 같이 보내면 서버가 diff해 true/false) + `mobile/lib/screens/chat_screen.dart` `_sendTwinApproved`가 `_pendingDraft.text`(편집 전 원본)를 함께 전송. 명시 신호: `Message.NaturalnessRating`(nullable bool) + `POST /messages/:id/feedback`(트윈 메시지만, 400 아니면 재제출은 덮어씀 — 409 아님) + `chat_screen.dart`/`message_bubble.dart`의 "이 답장 나답아요?" 원탭 👍/👎(한 번 탭하면 그 세션에서 다시 안 보여줌, `_ratedMessageIds` + `message_sync.dart`의 `ratedMessageIdsFrom()`). `/admin/metrics`에 `draft_unedited_rate`/`naturalness_positive_rate`(둘 다 분모 0일 때 0으로 zero-guard, `peer_veto_rate`와 동일 패턴) 추가, `adminDashboardHTML`에 카드 2개 추가. 백엔드 테스트 8개(`core-backend/main_test.go`) + 모바일 테스트 5개(`mobile/test/`) 추가, 전부 통과 |
 | **N4-13** | `prototype.md` `SHARE_URL` | todo | Master 기입 |
 | **N4-14** | 내부 release APK | todo | `docs/android-release.md` |
-| **N4-15** | roadmap/`[~]` 동기화 | todo | 완료 시 체크 |
+| **N4-15** | roadmap/`[~]` 동기화 | **done** (2026-08-03) | `roadmap.md` §2.1 "푸시 알림 서비스 연동"(낡은 중복 표기 → §B/N4-1~4로 교차참조), §4-4번 "남은 것"(완료된 "C 배포 준비" 제거), §2.3 온보딩 뼈대(관계 티어 스텝 추가 반영), §2.5 수동 QA 항목(N4-5~10/N4-C6b/N4-11 교차참조)을 실제 코드 상태와 맞춤. 나머지 `[~]`(FCM 푸시, 멀티디바이스 동기화, 데이터 프라이버시, L2 카피/수신트리거)는 실제로 아직 Master 액션·Q9 확정 대기 중이라 그대로 유지 — 허위로 채우지 않음 |
 
 ---
 
