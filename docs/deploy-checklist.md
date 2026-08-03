@@ -184,9 +184,12 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 
 ### Track C — 콘텐츠 갭 (PRD P0 대비 미구현, 2026-07-31 발견)
 
-`roadmap.md` §2.7과 동일 항목. `PRD.md` §3.1 P0 표 대조 결과 발견. **우선순위: C1(단톡 따라잡기)
-→ C2(관계별 페르소나) → C3(스팸 감지)** — 단톡 따라잡기는 v1 MVP 시나리오 2개 중 하나인데 현재
-0% 구현이라 완성도 공백이 가장 큼.
+`roadmap.md` §2.7과 동일 항목. `PRD.md` §3.1 P0 표 대조 결과 발견(2026-07-31), 2026-08-03
+2차 재분석으로 D/E/F 추가. **우선순위: C1(단톡 따라잡기) → C2(관계별 페르소나) → C3(스팸 감지)
+→ C4(자율성 상대별 예외) → C5(관계 메모 반영) → C6(답장 마감 알림)** — 단톡 따라잡기는 v1 MVP
+시나리오 2개 중 하나인데 현재 0% 구현이라 완성도 공백이 가장 큼; C4는 P0 명시 항목이지만
+오버라이드 메커니즘 자체가 없어 C1~C3 다음; C5는 필드/UI가 이미 있고 프롬프트 주입만 빠져
+비용이 가장 작음; C6은 P1이자 신규 구현 분량이 가장 커서 맨 마지막.
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
@@ -201,6 +204,15 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-C2d** | 초안 생성 시 티어별 톤 프롬프트 분기 | **done** (2026-08-03) | `ai-service/app/generation.py` `RELATIONSHIP_TIER_INSTRUCTIONS` + `core-backend/persona.go` `resolveRelationshipTier()`(연락처 오버라이드 → 전역 기본값 → `formal`) |
 | **N4-C3a** | 짧은 시간 내 동일 상대 도배 감지 → 응대 일시중단 | **done** (2026-08-03) | `core-backend/flood_detect.go`(`floodMessageThreshold=5`건/`floodWindow=2분`, 안전 최소값 placeholder) + `main.go` `POST /conversations/:id/messages`의 peer-veto·그룹차단 다음, 에스컬레이션 이전 지점(우회 불가). `Conversation.TwinDisabledByFlood`로 대화방 단위 차단, `POST /conversations/:id/flood-reset`로 재개(거부권과 달리 되돌리기 가능) |
 | **N4-C3b** | 도배 중단 시 사후 알림 | **done** (2026-08-03) | 기존 `EscalationLog`/`InboxScreen` 그대로 재사용(신규 알림 경로 없음). 대화 목록·채팅방 배너에 상태 표시 + "자동응대 재개" one-tap undo 버튼 추가 |
+| **N4-C4a** | `Contact.AutonomyLevel` 오버라이드 필드 | todo | `core-backend/models.go`, `RelationshipTier`와 동일 패턴(nil = 전역 기본값) |
+| **N4-C4b** | 자율성 레벨 해석 함수 + 발송 게이트 교체 | todo | `resolveRelationshipTier`와 동일 구조, `main.go`의 전역값만 읽던 부분 교체 |
+| **N4-C4c** | 연락처별 자율성 오버라이드 UI | todo | `contacts_screen.dart`, `_RelationshipTierPicker` 옆에 자율성 피커 추가 |
+| **N4-C5a** | `draftRequest`에 `RelationshipNote` 필드 추가 | todo | `core-backend/aiservice.go` |
+| **N4-C5b** | draft 핸들러가 연락처 메모 조회해 전달 | todo | `main.go` `POST /conversations/:id/draft`, 그룹은 스킵 |
+| **N4-C5c** | 메모를 톤 프롬프트에 주입 | todo | `ai-service/app/generation.py`, 빈 값이면 무영향 |
+| **N4-C6a** | "이따 답장" 스누즈 저장 | todo | 온디바이스 우선 원칙에 맞는 저장 위치 결정 |
+| **N4-C6b** | 리마인드 로컬 알림(본인에게만) | todo | 다른 사람에게 노출되지 않음 |
+| **N4-C6c** | 스누즈 표시/취소 UI | todo | `chat_screen.dart`/`conversation_list_screen.dart` |
 
 ### FCM — [`fcm-setup.md`](./fcm-setup.md)
 
