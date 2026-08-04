@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -74,7 +75,9 @@ class DataFlowScreen extends StatelessWidget {
                     samples.isEmpty ? '(아직 없음 — 말투 샘플 화면에서 추가)' : samples.take(3).join(' · '),
                     session.localDbEncrypted
                         ? '저장: drift + SQLCipher(암호화)'
-                        : '저장: 메모리/웹 스텁(이 환경에 SQLCipher 없음 — Chrome·Linux 폴백)',
+                        : kIsWeb
+                            ? '저장: 브라우저 저장소(비암호화 · 웹 프리뷰 — 같은 프로필에서는 새로고침 후에도 유지)'
+                            : '저장: 메모리 폴백(이 환경에 SQLCipher 없음 — Linux CI 등)',
                   ].join('\n'),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

@@ -75,7 +75,8 @@ class SessionState extends ChangeNotifier {
     } catch (e) {
       // Linux CI / hosts without libsqlcipher.so — fall back to memory so the
       // app still boots; Android release path uses SQLCipher.
-      // Web uses an in-memory stub via conditional import (no FFI).
+      // Web uses SharedPreferences-backed AppDatabase via conditional import
+      // (docs/web-upgrade.md N4-W1); this catch is for native open failures.
       debugPrint('Encrypted DB unavailable ($e); using in-memory fallback');
       localDbEncrypted = false;
       return AppDatabase.memory();

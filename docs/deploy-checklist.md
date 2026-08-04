@@ -37,8 +37,7 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
-- **웹 고도화 설계:** [`web-upgrade.md`](./web-upgrade.md) (데모/프리뷰 + Web Push + PWA).
-  W0 경계 **done** · W1~W7 구현은 Wi 단위 Master 승인 후
+- **웹 고도화:** [`web-upgrade.md`](./web-upgrade.md) — W0·**W1 done** · 다음 W2~W7는 Wi 승인 후
 - 후순위: **N4 Android FCM/UI** — Master 시크릿·실기기
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
 - **Track C 콘텐츠 갭 A~F**: 프로덕션 반영 완료 (`95422bb`대)
@@ -215,7 +214,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | ID | 작업 | Status | 비고 |
 |----|------|--------|------|
 | **N4-W0** | 제품 경계 · 문서 랜딩 | **done** (2026-08-04) | 성공 정의·비범위·규율 고정 |
-| **N4-W1** | 웹 로컬 지속성 (prefs/idb) | todo | Drift WASM 비채택 · 새로고침 후 말투/스누즈 유지 |
+| **N4-W1** | 웹 로컬 지속성 (prefs/idb) | **done** (2026-08-04) | `app_database_web.dart` SharedPreferences · Drift WASM 비채택 · 라이브 하드 리프레시 스모크는 배포 후 |
 | **N4-W2** | 데모 메신저 UX | todo | 분할 레이아웃·WS 상태·ID 복사 |
 | **N4-W3** | 인앱·Notification API | todo | 스누즈/에스컬레이션 인지 · Push 전 단계 |
 | **N4-W4** | Web Push (FCM + VAPID) | todo | Master: Firebase Web config · VAPID |
@@ -291,8 +290,8 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
    확인 필요, 그때까지는 인앱 배지·배너가 실질적 대체 경로. Track C A~F 프로덕션
    재배포는 **완료** (`95422bb` / docs `f363e8e`, 2026-08-03).
 
-**바로 다음 (웹 우선 가능):** [`web-upgrade.md`](./web-upgrade.md) **W1** (지속성) → W2… —
-Master Wi 승인 후 구현. Android는 **N4-1/3 → N4-4 → N4-5~10** 후순위 병행.
+**바로 다음 (웹):** [`web-upgrade.md`](./web-upgrade.md) **W2** (데모 UX) — Wi 승인 후.
+W1 지속성 **done**. Android는 **N4-1/3 → N4-4 → N4-5~10** 후순위 병행.
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

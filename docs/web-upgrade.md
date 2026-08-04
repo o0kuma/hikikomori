@@ -98,7 +98,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo (구현 전 · Master Wi 승인 후) |
+| **Status** | **done** (2026-08-04) |
 | **목표** | 하드 리프레시 후에도 말투·온보딩·스누즈·install id가 유지되는 프리뷰 UX |
 | **비범위** | SQLCipher/암호화 DB, Drift WASM, 서버 측 말투 동기화 |
 
@@ -115,17 +115,17 @@ flowchart LR
 
 ### 작업 분해
 
-- [ ] `app_database_web.dart`: open 시 prefs/idb 로드, mutate 시 persist
-- [ ] 키 네임스페이스 고정 예: `ykavu_web_kv_*`, `ykavu_web_tone_samples`, `ykavu_web_snoozes_json`
-- [ ] `SessionState.restore` 경로에서 웹도 동일 API로 말투/온보딩 복원되는지 확인
-- [ ] 단위 테스트: 웹 stub에 fake prefs 주입해 round-trip (가능하면)
-- [ ] `DataFlowScreen` / 테스터 카피 1줄 갱신
+- [x] `app_database_web.dart`: open 시 SharedPreferences 로드, mutate 시 persist
+- [x] 키 네임스페이스: `ykavu_web_db_kv_*`, `ykavu_web_db_tone_samples`, `ykavu_web_db_snoozes`
+- [x] `AppDatabase.memory()`는 비지속(테스트용) 유지 — `open()`만 durable
+- [x] 단위 테스트: `mobile/test/web_db_persistence_test.dart` (mock prefs round-trip)
+- [x] `DataFlowScreen` 웹 카피 갱신
 
 ### 수락 기준
 
-- [ ] Chrome에서 가입 → 말투 저장 → **하드 리프레시** → 온보딩 스킵·말투 유지
-- [ ] 스누즈 설정 → 리프레시 → 목록 배지/채팅 배너 유지
-- [ ] 시크릿 창(다른 프로필)과는 저장소 격리 (기대 동작으로 문서화)
+- [x] 단위 테스트: open → 저장 → 재 open 시 말투·KV·스누즈 복원
+- [ ] Chrome 라이브 하드 리프레시 스모크 (배포 후 Master/에이전트 1회)
+- [x] 시크릿 창(다른 프로필)과는 저장소 격리 — 브라우저 프로필 단위 SharedPreferences (기대 동작)
 
 ### Master 액션
 

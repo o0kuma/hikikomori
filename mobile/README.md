@@ -67,7 +67,7 @@ sudo apt-get install -y libsqlite3-dev libsqlcipher1
 
 ## 웹 (데모/프리뷰)
 
-- 로컬 DB: `lib/db/app_database_web.dart` — 현재 **메모리 스텁**(새로고침 유실) → **W1**에서 prefs/idb 지속성
+- 로컬 DB: `lib/db/app_database_web.dart` — **W1 done**: SharedPreferences 지속성(비암호화 프리뷰)
 - 스누즈 OS 알림: 웹 no-op → **W3** Notification API / 인앱
 - 푸시: 웹에서 FCM skip → **W4** Web Push + VAPID ([`docs/fcm-setup.md`](../docs/fcm-setup.md) Web 절)
 - PWA: `web/manifest.json` 골격 있음 → **W5** 테마·설치·셸 캐시
