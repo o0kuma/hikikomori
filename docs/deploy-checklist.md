@@ -217,7 +217,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-W1** | 웹 로컬 지속성 (prefs/idb) | **done** (2026-08-04) | `app_database_web.dart` SharedPreferences · Drift WASM 비채택 · 라이브 하드 리프레시 스모크는 배포 후 |
 | **N4-W2** | 데모 메신저 UX | **done** (2026-08-04) | ≥900px 분할·WS 상태·ID 복사·웹 안내 배너 |
 | **N4-W3** | 인앱·Notification API | **done** (2026-08-04) | 웹 Timer+Notification · 포커스 past-due · 설정 권한 |
-| **N4-W4** | Web Push (FCM + VAPID) | **code** (2026-08-04) | dart-define+SW shipped · **live**는 Master `.env` FIREBASE_*/VAPID + `web` rebuild |
+| **N4-W4** | Web Push (FCM + VAPID) | **live-injected** (2026-08-04) | 서버 `.env` 동기·SW populated · **accept:** APP_ID를 `:web:`로 교체 후 push-test |
 | **N4-W5** | PWA | **done** (2026-08-04) | manifest 테마 · nginx no-cache · OfflineBanner |
 | **N4-W6** | 테스터 가이드 | **done** (2026-08-04) | `tester-guide.md` 웹 절 |
 | **N4-W7** | 품질 | **done** (2026-08-04) | `scripts/e2e_web_smoke.sh` + 부록 QA (Playwright는 후속) |
@@ -290,8 +290,8 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
    확인 필요, 그때까지는 인앱 배지·배너가 실질적 대체 경로. Track C A~F 프로덕션
    재배포는 **완료** (`95422bb` / docs `f363e8e`, 2026-08-03).
 
-**바로 다음:** 웹 **W4 live** — Master가 Firebase Web config + VAPID를 서버 `.env`에 넣고 `docker compose up -d --build web` · 또는 Android N4-1/3.
-웹 W0~W7 코드 경로 **done** (W4 live accept만 시크릿 대기).
+**바로 다음:** 웹 **W4 accept** — Firebase Console에서 **Web** 앱(`:web:` APP_ID) 확인·`.env` 교체·`web` 재빌드·하드 리프레시·`/admin/push-test` · 또는 Android N4-1/3.
+웹 W0~W7 코드·시크릿 주입 **done** (W4 browser token accept만 남음).
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.
