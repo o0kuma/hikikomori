@@ -23,7 +23,8 @@ class ConversationListScreen extends StatefulWidget {
   State<ConversationListScreen> createState() => _ConversationListScreenState();
 }
 
-class _ConversationListScreenState extends State<ConversationListScreen> {
+class _ConversationListScreenState extends State<ConversationListScreen>
+    with WidgetsBindingObserver {
   List<ConversationSummary> _rooms = [];
   Map<int, String> _peerNames = {};
   // 답장 마감 알림(roadmap.md §2.7-F) — 대화방 id별 "이따 답장" 스누즈 마감 시각.
@@ -41,7 +42,28 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // N4-W3 — tab/app focus: refresh list badges + optional web Notification.
+    if (state == AppLifecycleState.resumed) {
+      _onFocus();
+    }
+  }
+
+  Future<void> _onFocus() async {
+    final controller = context.read<SessionState>().snoozeController;
+    await controller?.notifyPastDueOnFocus();
+    if (mounted) await _load();
   }
 
   Future<void> _load() async {

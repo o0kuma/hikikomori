@@ -1,9 +1,10 @@
 import '../db/app_database.dart';
 import 'snooze_notification_service.dart';
+import 'snooze_service.dart';
 
 /// 답장 마감 알림(roadmap.md §2.7-F) 오케스트레이션 — 온디바이스 DB(스누즈 시각 저장)와
-/// 알림 스케줄러(OS 로컬 알림) 호출을 한 곳에 묶는다. `chat_screen.dart`/
-/// `conversation_list_screen.dart`가 공유해서 쓴다.
+/// 알림 스케줄러(OS 로컬 알림 / 웹 Notification) 호출을 한 곳에 묶는다.
+/// `chat_screen.dart` / `conversation_list_screen.dart`가 공유해서 쓴다.
 ///
 /// 서버 호출은 전혀 없다 — AGENTS.md "Tone/style learning: on-device first"와 동일한
 /// 이유로, 이 리마인드는 순전히 이 기기·이 사용자만을 위한 것이라 서버에 올라갈 이유가
@@ -35,5 +36,19 @@ class SnoozeController {
   Future<void> clearSnooze(int conversationId) async {
     await _db.clearSnooze(conversationId);
     await _scheduler.cancelReminder(conversationId);
+  }
+
+  /// Web N4-W3: when the tab/app resumes, surface past-due snoozes once via
+  /// [SnoozeNotificationScheduler.showImmediate] (no-op on native).
+  Future<void> notifyPastDueOnFocus({DateTime? now}) async {
+    final all = await loadAllSnoozes();
+    final t = now ?? DateTime.now();
+    for (final e in all.entries) {
+      if (!isSnoozePastDue(t, e.value)) continue;
+      await _scheduler.showImmediate(
+        title: '답장 마감',
+        body: '대화 #${e.key} — 답장할 시간입니다',
+      );
+    }
   }
 }

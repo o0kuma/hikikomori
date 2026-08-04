@@ -96,6 +96,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     // 안전망). 실기기에서 OS가 실제로 어떻게 동작하는지는 QA 대상.
     if (state == AppLifecycleState.resumed) {
       _catchUp();
+      // N4-W3 — past-due snooze Notification on web focus (badges already refresh).
+      context.read<SessionState>().snoozeController?.notifyPastDueOnFocus();
+      _loadSnooze();
     }
   }
 

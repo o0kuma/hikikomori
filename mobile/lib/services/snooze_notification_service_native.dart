@@ -20,6 +20,11 @@ abstract class SnoozeNotificationScheduler {
   });
 
   Future<void> cancelReminder(int conversationId);
+
+  /// Immediate notification (web past-due catch-up). Native uses OS schedule only.
+  Future<void> showImmediate({required String title, required String body}) async {}
+
+  Future<bool> ensurePermission() async => true;
 }
 
 class LocalSnoozeNotificationScheduler implements SnoozeNotificationScheduler {
@@ -77,4 +82,12 @@ class LocalSnoozeNotificationScheduler implements SnoozeNotificationScheduler {
   Future<void> cancelReminder(int conversationId) async {
     await _plugin.cancel(id: conversationId);
   }
+
+  @override
+  Future<void> showImmediate({required String title, required String body}) async {
+    // Native path relies on zonedSchedule; no separate immediate channel here.
+  }
+
+  @override
+  Future<bool> ensurePermission() async => true;
 }

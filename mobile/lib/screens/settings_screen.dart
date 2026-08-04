@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../services/snooze_notification_service.dart';
 import '../state/session_state.dart';
 import 'autonomy_settings_screen.dart';
 import 'data_flow_screen.dart';
@@ -127,6 +129,26 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
+          if (kIsWeb)
+            ListTile(
+              leading: const Icon(Icons.notifications_active_outlined),
+              title: const Text('브라우저 알림'),
+              subtitle: const Text('답장 마감 리마인드 (허용 시)'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final ok = await LocalSnoozeNotificationScheduler().ensurePermission();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? '브라우저 알림이 허용되었습니다'
+                          : '알림이 거부되었거나 지원되지 않습니다. 인앱 배지는 그대로 동작합니다.',
+                    ),
+                  ),
+                );
+              },
+            ),
           const Divider(height: 24),
           ListTile(
             leading: Icon(Icons.logout, color: theme.colorScheme.error),

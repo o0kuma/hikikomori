@@ -416,7 +416,7 @@ Claude/Cursor 통합 DONE 목록과 항목 ID(N1-1 … N5-5, **N4-W0…W7**)는 
 - [x] **W0** 제품 경계 문서화 (2026-08-04) — 데모/프리뷰 · Q9 비범위 · Wi 규율
 - [x] **W1** 웹 로컬 지속성 (prefs/idb · Drift WASM 비채택) — 2026-08-04
 - [x] **W2** 데모 UX (분할·WS 상태·ID 복사) — 2026-08-04
-- [ ] **W3** 인앱 + Notification API
+- [x] **W3** 인앱 + Notification API — 2026-08-04
 - [ ] **W4** Web Push (FCM + VAPID) — Master Firebase Web 설정
 - [ ] **W5** PWA (manifest 테마 · 셸 캐시)
 - [ ] **W6** 테스터 가이드

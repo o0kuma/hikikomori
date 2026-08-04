@@ -203,7 +203,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo |
+| **Status** | **done** (2026-08-04) |
 | **목표** | 웹에서 스누즈/에스컬레이션을 OS 로컬알림 없이 **인지 가능**하게 |
 | **비범위** | FCM Web Push 본구현(W4), Android `flutter_local_notifications` 변경 |
 
@@ -222,16 +222,17 @@ flowchart LR
 
 ### 작업 분해
 
-- [ ] `snooze_notification_service_web.dart`: Notification API 래퍼 + permission 요청 UX
-- [ ] 앱 포그라운드/visibility 복귀 시 `isSnoozePastDue` 일괄 검사 → 배너/Notification
-- [ ] 에스컬레이션 수신 시 포그라운드 SnackBar/배지 (WS 이벤트 훅)
-- [ ] 설정 화면에 “브라우저 알림” 토글/상태 (선택)
+- [x] `snooze_notification_service_web.dart`: Notification API + in-tab Timer
+- [x] 포그라운드 복귀 시 `notifyPastDueOnFocus` → Notification (허용 시)
+- [x] 설정 → 「브라우저 알림」권한 요청
+- [x] 거부 시 인앱 배지/배너 유지 (기존 C6c)
+- [ ] 에스컬레이션 전용 포그라운드 SnackBar — Inbox/기존 배너로 충분, W4 푸시와 연계
 
 ### 수락 기준
 
-- [ ] 권한 허용 + 탭 포커스 상황에서 스누즈 마감 인지 가능
-- [ ] 권한 거부 시에도 인앱 배지로 동일 정보
-- [ ] W4 없이도 데모 스크립트에 “알림 허용” 선택 단계로 설명 가능
+- [x] 단위: past-due만 `showImmediate` 호출
+- [x] 권한 거부 경로 문서화 (인앱 배지)
+- [ ] 라이브 Chrome에서 알림 허용 후 스누즈 마감 스모크 (배포 후)
 
 ### Master 액션
 

@@ -1,7 +1,13 @@
-/// Web 빌드 스텁 — `flutter_local_notifications`는 웹을 지원하지 않고, 이 프로젝트의
-/// 웹 빌드는 프리뷰 서피스일 뿐 릴리스 타깃이 아니다(`app_database_web.dart` 주석 참고).
-/// 스누즈 저장(`AppDatabase`)은 웹에서도 동작하지만, 실제 OS 알림 스케줄링만 no-op —
-/// 대화 목록/채팅방의 "마감 지남" 배지·배너는 이 스텁과 무관하게 그대로 동작한다.
+import 'dart:async';
+// Web-only conditional import target (see snooze_notification_service.dart).
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html;
+
+/// Web reminder scheduler (docs/web-upgrade.md N4-W3).
+///
+/// Uses the browser Notification API when permission is granted. Scheduling is
+/// in-tab [Timer]-based (no SW alarm) — if the tab is closed before [at], the
+/// in-app past-due badge/banner remains the source of truth after reopen.
 abstract class SnoozeNotificationScheduler {
   Future<void> scheduleReminder({
     required int conversationId,
@@ -11,17 +17,68 @@ abstract class SnoozeNotificationScheduler {
   });
 
   Future<void> cancelReminder(int conversationId);
+
+  Future<void> showImmediate({required String title, required String body});
+
+  Future<bool> ensurePermission();
 }
 
 class LocalSnoozeNotificationScheduler implements SnoozeNotificationScheduler {
+  final Map<int, Timer> _timers = {};
+
+  bool get permissionGranted {
+    try {
+      return html.Notification.permission == 'granted';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> ensurePermission() async {
+    try {
+      final current = html.Notification.permission;
+      if (current == 'granted') return true;
+      if (current == 'denied') return false;
+      final result = await html.Notification.requestPermission();
+      return result == 'granted';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> showImmediate({required String title, required String body}) async {
+    try {
+      if (!permissionGranted) return;
+      html.Notification(title, body: body);
+    } catch (_) {
+      // Unsupported browser — ignore.
+    }
+  }
+
   @override
   Future<void> scheduleReminder({
     required int conversationId,
     required String title,
     required String body,
     required DateTime at,
-  }) async {}
+  }) async {
+    await ensurePermission();
+    await cancelReminder(conversationId);
+    final delay = at.toUtc().difference(DateTime.now().toUtc());
+    if (delay.isNegative || delay == Duration.zero) {
+      await showImmediate(title: title, body: body);
+      return;
+    }
+    _timers[conversationId] = Timer(delay, () {
+      _timers.remove(conversationId);
+      showImmediate(title: title, body: body);
+    });
+  }
 
   @override
-  Future<void> cancelReminder(int conversationId) async {}
+  Future<void> cancelReminder(int conversationId) async {
+    _timers.remove(conversationId)?.cancel();
+  }
 }

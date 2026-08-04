@@ -9,6 +9,7 @@ import 'package:ykavu_mobile/services/snooze_notification_service.dart';
 class _FakeScheduler implements SnoozeNotificationScheduler {
   final scheduledCalls = <Map<String, Object?>>[];
   final cancelledIds = <int>[];
+  final immediateCalls = <Map<String, Object?>>[];
 
   @override
   Future<void> scheduleReminder({
@@ -29,6 +30,14 @@ class _FakeScheduler implements SnoozeNotificationScheduler {
   Future<void> cancelReminder(int conversationId) async {
     cancelledIds.add(conversationId);
   }
+
+  @override
+  Future<void> showImmediate({required String title, required String body}) async {
+    immediateCalls.add({'title': title, 'body': body});
+  }
+
+  @override
+  Future<bool> ensurePermission() async => true;
 }
 
 void main() {
@@ -82,5 +91,17 @@ void main() {
 
     expect(await controller.loadAllSnoozes(), {1: until1, 2: until2});
     expect(scheduler.scheduledCalls, hasLength(2));
+  });
+
+  test('notifyPastDueOnFocus shows immediate only for past-due snoozes', () async {
+    final past = DateTime.utc(2026, 8, 1, 12, 0);
+    final future = DateTime.utc(2026, 8, 10, 12, 0);
+    await controller.applySnooze(conversationId: 1, until: past, title: 't', body: 'b');
+    await controller.applySnooze(conversationId: 2, until: future, title: 't', body: 'b');
+
+    await controller.notifyPastDueOnFocus(now: DateTime.utc(2026, 8, 3, 12, 0));
+
+    expect(scheduler.immediateCalls, hasLength(1));
+    expect(scheduler.immediateCalls.single['body'], contains('#1'));
   });
 }
