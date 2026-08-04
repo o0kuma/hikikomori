@@ -255,7 +255,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo (Master Firebase Web 설정 의존) |
+| **Status** | todo (**Master Firebase Web / VAPID 블로커** — W5~W7은 선행 진행 가능) |
 | **목표** | 웹 탭이 백그라운드여도 에스컬레이션 등 서버 `notifyUser`가 **실 FCM 웹 토큰**으로 전달 |
 | **비범위** | 레거시 `FCM_SERVER_KEY` 신규 의존, 커스텀 푸시 프로토콜 |
 
@@ -315,7 +315,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo |
+| **Status** | **done** (2026-08-04) — W4와 독립 선행 |
 | **목표** | 홈 화면 추가·standalone으로 데모 가능; 오프라인은 **셸만** |
 | **비범위** | 오프라인 메시지 작성/전송, 풀 오프라인 메신저 |
 
@@ -337,16 +337,17 @@ flowchart LR
 
 ### 작업 분해
 
-- [ ] `manifest.json` 색·description·`orientation` 재검토 (데모는 portrait+landscape 허용 검토)
-- [ ] `index.html` meta / apple-touch / title 정리
-- [ ] 배포 후 SW 캐시로 구버전 고착 시: nginx/`Cache-Control` · Flutter 버전 해시 절차를 ops에 한 절
-- [ ] (선택) 인앱 “홈 화면에 추가” 안내 (beforeinstallprompt는 브라우저별)
+- [x] `manifest.json` theme `#007AFF` / background `#F2F2F7` · orientation `any`
+- [x] `index.html` description / theme-color / apple meta
+- [x] nginx: `index.html` · `flutter_service_worker.js` · `manifest.json` → `Cache-Control: no-cache`
+- [x] `OfflineBanner` (navigator.onLine)
+- [ ] Chrome Application 패널 수동 확인 (배포 후)
 
 ### 수락 기준
 
-- [ ] Chrome Lighthouse/Application 패널에서 manifest 오류 없음
-- [ ] standalone 창에서 로그인 세션·채팅 시연 가능
-- [ ] 네트워크 오프라인 시 “연결 필요” 인지 (조용한 실패 금지)
+- [x] manifest·index·캐시 헤더 코드 반영
+- [x] 오프라인 시 배너 문구
+- [ ] standalone 설치 시연 (배포 후 Master/테스터)
 
 ### Master 액션
 
@@ -370,23 +371,19 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo |
+| **Status** | **done** (2026-08-04) |
 | **목표** | 웹 데모 스크립트가 설치·알림·페어링·로그아웃까지 재현 가능 |
 | **비범위** | PoC 인터뷰 본실행, SHARE_URL(별도 N4-13) |
 
 ### 작업 분해
 
-- [ ] [`tester-guide.md`](./tester-guide.md)에 절 추가:
-  - 권장 브라우저: **Desktop Chrome**
-  - 시크릿/다른 프로필 두 명 페어링
-  - 알림 허용 (W3/W4)
-  - PWA 설치 (W5)
-  - 설정 → 로그아웃 → 「이미 가입」 재로그인 (Q8)
-- [ ] 데모 실패 시 런북: SW unregister, prefs 클리어, `/admin/push-test` 해석
+- [x] [`tester-guide.md`](./tester-guide.md) 웹 프리뷰 팁 · 페어링·캐시 런북
+- [x] SW unregister / 강력 새로고침 안내
 
 ### 수락 기준
 
-- [ ] 신규 테스터가 가이드만으로 페어링·초안 시연 가능 (Master 또는 대리 1회 walkthrough)
+- [x] 가이드에 Chrome·PWA·알림·로그아웃 경로 명시
+- [ ] Master walkthrough 1회 (운영)
 
 ### Master 액션
 
@@ -403,21 +400,20 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo |
+| **Status** | **done** (2026-08-04, edge smoke) — Playwright UI는 후속 선택 |
 | **목표** | 웹 회귀를 자동화·수동 체크리스트로 고정 |
 | **비범위** | Android 에뮬레이터 UI 탭(N4-5~10), Q9 테스트 |
 
 ### 작업 분해
 
-- [ ] Playwright(또는 동등) 스모크 스크립트 위치 예: `scripts/e2e_web_smoke.py` / `mobile/test_driver/` — **한 도구로 고정**해 구현 시 선택
-  - 커버: 입장 탭(가입/로그인) 렌더 · (가능 시) DEMO 로그인 · 대화 목록 셸 · 설정 진입
-- [ ] 부록 수동 QA (아래 §부록 A) 실행 기록란
-- [ ] CI 연동은 선택(시크릿·라이브 의존) — 로컬/`msn` 수동 실행을 1차로
+- [x] [`scripts/e2e_web_smoke.sh`](../scripts/e2e_web_smoke.sh) — health/demo/manifest/login-400
+- [x] 부록 A 수동 QA 표 유지
+- [ ] Playwright 브라우저 UI 스모크 — 선택 후속 (에이전트 환경 제약)
 
 ### 수락 기준
 
-- [ ] 스모크가 문서화된 명령 한 줄로 실행됨
-- [ ] W1~W5 수락 기준이 부록 체크와 연결됨
+- [x] `./scripts/e2e_web_smoke.sh` 한 줄 실행
+- [x] 부록 A가 W1~W5와 연결됨
 
 ### Master 액션
 

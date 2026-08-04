@@ -7,6 +7,7 @@ import '../services/snooze_service.dart';
 import '../state/session_state.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/my_user_id_chip.dart';
+import '../widgets/offline_banner.dart';
 import '../widgets/web_preview_banner.dart';
 import 'chat_screen.dart';
 import 'contacts_screen.dart';
@@ -343,6 +344,7 @@ class _ConversationListScreenState extends State<ConversationListScreen>
       ),
       body: Column(
         children: [
+          const OfflineBanner(),
           const WebPreviewBanner(),
           Expanded(
             child: RefreshIndicator(

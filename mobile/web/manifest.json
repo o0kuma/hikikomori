@@ -3,10 +3,10 @@
     "short_name": "와카뷰",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#7C6FF0",
-    "theme_color": "#7C6FF0",
+    "background_color": "#F2F2F7",
+    "theme_color": "#007AFF",
     "description": "나를 대신해 답하는, 나만의 와카뷰",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
