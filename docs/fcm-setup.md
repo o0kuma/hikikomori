@@ -1,4 +1,4 @@
-# FCM 설정 (N4-1 ~ N4-4)
+# FCM 설정 (N4-1 ~ N4-4 · N4-W4)
 
 서버·클라이언트의 푸시 **코드 경로는 준비됨**.  
 새 Firebase 프로젝트는 **레거시 서버 키가 비활성**인 경우가 많아, **HTTP v1 + 서비스 계정 JSON**을 쓴다.
@@ -9,6 +9,7 @@
 |------|------|
 | Flutter | `PushTokenService` — Firebase 가능하면 실 FCM 토큰, 아니면 `install:` 플레이스홀더 |
 | Android | `google-services.json`이 있을 때만 Google Services 플러그인 적용 |
+| Web (N4-W4) | `FirebaseWebConfig` + `FIREBASE_*`/`VAPID` dart-define · SW template · 미설정 시 `install:` |
 | core-backend | `notifyUser` + `POST /admin/push-test` — **FCM HTTP v1**(서비스 계정) 우선, 레거시 `FCM_SERVER_KEY`는 폴백 |
 
 ## Master가 할 일
@@ -73,20 +74,55 @@ curl -sS -X POST https://msn.iykyka.com/admin/push-test \
 `only_placeholder_tokens` → Android에 `google-services.json` 넣고 재설치.  
 `fcm_not_configured` → 서버에 서비스 계정 파일 경로 확인.
 
-## Web
+## Web (N4-W4)
 
-Web Push(FCM Web + VAPID)는 **웹 고도화 트랙 N4-W4**에서 다룬다.
+설계·수락: [`web-upgrade.md`](./web-upgrade.md) §N4-W4 · 실행 표: [`deploy-checklist.md`](./deploy-checklist.md) §N4-W.
 
-- 설계·작업 분해·수락 기준: [`web-upgrade.md`](./web-upgrade.md) §N4-W4
-- 실행 표: [`deploy-checklist.md`](./deploy-checklist.md) §N4-W
-- Android N4(실기기)와 **병행 가능**. 서버 서비스 계정(HTTP v1)은 공유하고,
-  클라이언트는 `google-services.json`(Android) vs Firebase Web config + VAPID(Web)로 분리.
-- 코드 as-is: `PushTokenService`가 `kIsWeb`이면 토큰을 건너뛰고 `install:`만 등록 —
-  W4 구현 전까지 웹 `/admin/push-test`는 `only_placeholder_tokens`가 정상.
+Android N4(실기기)와 **병행 가능**. 서버 서비스 계정(HTTP v1)은 공유하고,  
+클라이언트는 `google-services.json`(Android) vs Firebase Web config + VAPID(Web)로 분리.
 
-### W4 Master 준비물 (요약)
+**코드 shipped.** define이 비어 있으면 웹은 계속 `install:`만 등록 → `/admin/push-test`의 `only_placeholder_tokens`는 정상.
 
-1. Firebase Console → Web 앱 (`msn.iykyka.com`)
-2. Cloud Messaging → Web Push 인증서 / **VAPID key**
-3. 빌드 시크릿으로 config 주입 (git 금지) — 상세는 `web-upgrade.md` 부록 B
-4. 스모크: 실 웹 토큰 등록 후 `POST /admin/push-test` → `sent >= 1`
+### Master 준비물 (live accept)
+
+1. Firebase Console → **Web** 앱 추가 (authorized domain: `msn.iykyka.com`) — SA 프로젝트와 동일
+2. Cloud Messaging → Web Push certificates / **VAPID public key**
+3. 배포 호스트 `~/project/ykavu/.env`에 기입 (`.env.example` 키 이름 — **값 git 금지**):
+
+```bash
+FIREBASE_API_KEY=
+FIREBASE_AUTH_DOMAIN=          # 비우면 {projectId}.firebaseapp.com
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=       # 비우면 {projectId}.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_APP_ID=
+FIREBASE_VAPID_KEY=
+```
+
+4. 웹 재빌드 후 하드 리프레시:
+
+```bash
+docker compose up -d --build web
+```
+
+5. 로그인 → 알림 허용 → device_tokens에 실 토큰(`platform=web`) → `/admin/push-test` → `sent >= 1`
+
+### 로컬 Flutter web
+
+```bash
+cd mobile
+flutter run -d chrome \
+  --dart-define=CORE_API_BASE=http://localhost:8080 \
+  --dart-define=FIREBASE_API_KEY=... \
+  --dart-define=FIREBASE_APP_ID=... \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID=... \
+  --dart-define=FIREBASE_PROJECT_ID=... \
+  --dart-define=FIREBASE_VAPID_KEY=...
+```
+
+### 구현 위치
+
+- `mobile/lib/config/firebase_web_config.dart`
+- `mobile/lib/services/push_token_service.dart` (`_tryFirebaseWebToken`)
+- `mobile/web/firebase-messaging-sw.js` (+ `.template`, Dockerfile 치환)
+- `mobile/Dockerfile` / `docker-compose.yml` build-args

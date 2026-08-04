@@ -255,59 +255,56 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo (**Master Firebase Web / VAPID 블로커** — W5~W7은 선행 진행 가능) |
+| **Status** | **code shipped** (2026-08-04) — **live accept**는 Master Firebase Web config + VAPID를 서버 `.env`에 넣고 `web` 재빌드 후 |
 | **목표** | 웹 탭이 백그라운드여도 에스컬레이션 등 서버 `notifyUser`가 **실 FCM 웹 토큰**으로 전달 |
 | **비범위** | 레거시 `FCM_SERVER_KEY` 신규 의존, 커스텀 푸시 프로토콜 |
 
-### As-is
+### As-is → shipped
 
-- `_tryFirebaseToken()`이 `kIsWeb`이면 즉시 `null`
-- DB device_tokens는 `install:…` / `platform=web`만 → `only_placeholder_tokens`
+- `FirebaseWebConfig` + `--dart-define=FIREBASE_*` / `FIREBASE_VAPID_KEY`
+- `PushTokenService` 웹 분기: config 없으면 `install:` soft-fallback, 있으면 `initializeApp` + `getToken(vapidKey:)`
+- `mobile/web/firebase-messaging-sw.js` (+ Dockerfile이 template로 치환) · `index.html` SW 등록
+- compose `web` build-args · `.env.example` 키 이름만 · nginx no-cache for SW
 
-### To-be
+### Master 액션 (live accept 블로커)
 
-- Firebase **Web** 앱 + Messaging + **VAPID 키**
-- `Firebase.initializeApp(options: …)` + `FirebaseMessaging.instance.getToken(vapidKey: …)`
-- 성공 시 `platform=web` **실토큰** 등록 (서버 v1 전송 경로 재사용)
-- 실패 시 기존처럼 `install:` soft-fallback (앱 기동 막지 않음)
-
-### Master 액션 (블로커)
-
-1. Firebase Console에 Web 앱 추가 (`msn.iykyka.com`)
+1. Firebase Console에 Web 앱 추가 (`msn.iykyka.com`) — 프로젝트 `iykyka` SA와 동일 프로젝트
 2. Cloud Messaging Web Push 인증서/VAPID 키 발급
-3. Web config (`apiKey`, `authDomain`, `projectId`, `messagingSenderId`, `appId`, `vapidKey`)를 **빌드 시크릿**으로 전달 (git 금지)
-4. (권장) `firebase-messaging-sw.js` 요구사항 확인 — FlutterFire 문서에 맞게 `web/`에 스켈레톤
+3. 서버 `~/project/ykavu/.env`에 `FIREBASE_API_KEY` … `FIREBASE_VAPID_KEY` 기입 (git 금지)
+4. `docker compose up -d --build web` 후 하드 리프레시 → 로그인 → `/admin/push-test`
 
 ### 작업 분해
 
-- [ ] 빌드 주입 방식 확정: `--dart-define=FIREBASE_…` 및/또는 생성 `firebase_options_web.dart` (gitignore)
-- [ ] `PushTokenService._tryFirebaseToken` 웹 분기 구현 + permission
-- [ ] Docker web 빌드에 define 전달 (`mobile/Dockerfile` / compose)
-- [ ] `/admin/push-test`로 user 지정 → Chrome 백그라운드 수신
-- [ ] `docs/fcm-setup.md` Web 절을 본 W4와 동기화
-- [ ] `DataFlowScreen` 푸시 문구 갱신
+- [x] 빌드 주입: `--dart-define=FIREBASE_…` + SW template 치환 (gitignore/시크릿 미커밋)
+- [x] `PushTokenService` 웹 분기 + permission
+- [x] Docker web 빌드에 define 전달 (`mobile/Dockerfile` / compose)
+- [ ] `/admin/push-test`로 user 지정 → Chrome 백그라운드 수신 (**Master 시크릿 후**)
+- [x] `docs/fcm-setup.md` Web 절 동기화
+- [x] `DataFlowScreen` 푸시 문구 갱신
 
 ### 수락 기준
 
-- [ ] device_tokens에 `install:`이 아닌 토큰 + `platform=web`
-- [ ] `POST /admin/push-test` → `sent >= 1`, 브라우저 알림 표시
-- [ ] 시크릿이 git history에 없음
+- [ ] device_tokens에 `install:`이 아닌 토큰 + `platform=web` (**시크릿 후**)
+- [ ] `POST /admin/push-test` → `sent >= 1`, 브라우저 알림 표시 (**시크릿 후**)
+- [x] 시크릿이 git history에 없음 (define/env만)
 
 ### 위험
 
-- SW 등록 순서/캐시로 토큰 null → 배포 후 hard refresh 절차를 W6에 적음
+- SW 등록 순서/캐시로 토큰 null → 배포 후 hard refresh 절차를 W6/tester-guide에 적음
 - Android `google-services.json`과 Web config 혼동 → 문서에서 경로 분리
 
-### 예상 터치 파일
+### 터치 파일
 
+- `mobile/lib/config/firebase_web_config.dart`
 - `mobile/lib/services/push_token_service.dart`
 - `mobile/web/` (messaging SW, index 훅)
-- `mobile/Dockerfile` / `.env.example` (define 이름만)
+- `mobile/Dockerfile` / `docker-compose.yml` / `.env.example`
 - `docs/fcm-setup.md`, `docs/web-upgrade.md`
 
 ### 서버
 
-- **코드 변경 최소.** 기존 `notifyUser` / HTTP v1. 웹 토큰도 동일 messages:send
+- **코어 코드 변경 없음.** 기존 `notifyUser` / HTTP v1. 웹 토큰도 동일 messages:send
+- 클라이언트 시크릿만 host `.env` → compose build-args
 
 ---
 
@@ -473,7 +470,7 @@ Wi를 끝낼 때마다:
 
 - [ ] Firebase Web app 등록 (도메인 `msn.iykyka.com`)
 - [ ] VAPID key
-- [ ] 빌드 환경에 define/options 주입 (git 미포함)
+- [ ] 서버 `~/project/ykavu/.env`에 `FIREBASE_*` / `FIREBASE_VAPID_KEY` (git 미포함) → `docker compose up -d --build web`
 - [ ] 서버 `secrets/firebase-service-account.json` 유지 (Android와 공유)
 - [ ] push-test로 `sent >= 1` 확인
 

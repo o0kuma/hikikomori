@@ -16,6 +16,11 @@ echo "==> GET $BASE/manifest.json (PWA)"
 curl -fsS "$BASE/manifest.json" | head -c 300
 echo
 
+echo "==> GET $BASE/firebase-messaging-sw.js (W4 SW)"
+code=$(curl -sS -o /tmp/ykavu_fcm_sw.js -w '%{http_code}' "$BASE/firebase-messaging-sw.js")
+echo "HTTP $code ($(wc -c </tmp/ykavu_fcm_sw.js) bytes)"
+test "$code" = "200"
+
 echo "==> POST /auth/login DEMO without display_name (expect 400)"
 code=$(curl -sS -o /tmp/ykavu_login.json -w '%{http_code}' \
   -X POST "$BASE/auth/login" \

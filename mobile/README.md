@@ -69,7 +69,7 @@ sudo apt-get install -y libsqlite3-dev libsqlcipher1
 
 - 로컬 DB: `lib/db/app_database_web.dart` — **W1 done**: SharedPreferences 지속성(비암호화 프리뷰)
 - 스누즈 OS 알림: 웹 no-op → **W3** Notification API / 인앱
-- 푸시: 웹에서 FCM skip → **W4** Web Push + VAPID ([`docs/fcm-setup.md`](../docs/fcm-setup.md) Web 절)
+- 푸시: 웹은 `FIREBASE_*` + `FIREBASE_VAPID_KEY` dart-define 시 실 FCM 토큰 · 없으면 `install:` ([`docs/fcm-setup.md`](../docs/fcm-setup.md) Web 절)
 - PWA: `web/manifest.json` 골격 있음 → **W5** 테마·설치·셸 캐시
 - **Q9**(수신 자동응대)는 웹 트랙 비범위
 

@@ -21,6 +21,15 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- FCM Web SW (N4-W4). Scope matches FlutterFire messaging defaults. -->
+  <script src="flutter_bootstrap.js" async>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('firebase-messaging-sw.js', {
+          scope: '/firebase-cloud-messaging-push-scope',
+        });
+      });
+    }
+  </script>
 </body>
 </html>
