@@ -19,6 +19,7 @@ class ChatScreen extends StatefulWidget {
     this.title,
     this.isGroup = false,
     this.twinDisabledByFlood = false,
+    this.embedded = false,
   });
 
   final int conversationId;
@@ -28,6 +29,9 @@ class ChatScreen extends StatefulWidget {
   // 받아, 채팅방을 열자마자 (실패한 발송을 기다리지 않고) 배너 + 재개 버튼을
   // 보여줄 수 있게 한다.
   final bool twinDisabledByFlood;
+
+  /// When true, shown inside the wide master-detail pane (N4-W2) — no back affordance.
+  final bool embedded;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -46,6 +50,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   // 호출한다는 것만 여기서 보장하고, 나머지(진짜 네트워크 단절, 백그라운드
   // 전환에서 OS가 소켓을 실제로 끊는지)는 실기기 QA 대상이다.
   StreamSubscription? _reconnectSub;
+  StreamSubscription? _linkSub;
+  WsLinkState _linkState = WsLinkState.connecting;
   String? _banner;
   DraftResult? _pendingDraft;
   bool _busy = false;
@@ -70,10 +76,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _banner = '도배 감지로 이 대화방의 와카뷰 자동응대가 일시중단되었습니다.';
     }
     _socket = ConversationSocket(widget.conversationId)..connect();
+    _linkState = _socket!.linkState;
     _sub = _socket!.events.listen(_onEvent);
     // 소켓이 끊겼다가 다시 붙으면(백그라운드, 네트워크 hiccup 등) 그 사이에
     // 놓친 메시지를 REST since_id로 다시 받아온다 — ws_client.dart 참고.
     _reconnectSub = _socket!.reconnects.listen((_) => _catchUp());
+    _linkSub = _socket!.linkStates.listen((s) {
+      if (!mounted) return;
+      setState(() => _linkState = s);
+    });
     _loadHistory();
     _loadSnooze();
   }
@@ -299,6 +310,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     _reconnectSub?.cancel();
+    _linkSub?.cancel();
     _socket?.dispose();
     _input.dispose();
     _draftEdit.dispose();
@@ -649,7 +661,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title ?? '대화방 #${widget.conversationId}'),
+        automaticallyImplyLeading: !widget.embedded,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.title ?? '대화방 #${widget.conversationId}'),
+            Text(
+              wsLinkStateLabel(_linkState),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: _linkState == WsLinkState.live
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
         actions: [
           if (widget.isGroup)
             IconButton(
@@ -673,6 +700,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       ),
       body: Column(
         children: [
+          if (_linkState == WsLinkState.reconnecting)
+            Material(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+              child: SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Text(
+                    '연결이 끊겼습니다. 다시 연결하는 중…',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (_banner != null)
             MaterialBanner(
               leading: Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),

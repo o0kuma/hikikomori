@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session_state.dart';
@@ -65,11 +66,19 @@ class SettingsScreen extends StatelessWidget {
               ),
               title: Text(user.displayName),
               subtitle: Text(
-                'user #${user.id}',
+                'user #${user.id} · 탭하여 ID 복사',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              trailing: const Icon(Icons.copy_rounded, size: 18),
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: '${user.id}'));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('내 사용자 ID ${user.id} 를 복사했습니다')),
+                );
+              },
             ),
           const Divider(height: 1),
           ListTile(

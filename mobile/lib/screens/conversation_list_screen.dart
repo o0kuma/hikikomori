@@ -7,10 +7,14 @@ import '../services/snooze_service.dart';
 import '../state/session_state.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/my_user_id_chip.dart';
+import '../widgets/web_preview_banner.dart';
 import 'chat_screen.dart';
 import 'contacts_screen.dart';
 import 'inbox_screen.dart';
 import 'settings_screen.dart';
+
+/// Breakpoint for list | chat master-detail (docs/web-upgrade.md N4-W2).
+const double kMessengerSplitBreakpoint = 900;
 
 class ConversationListScreen extends StatefulWidget {
   const ConversationListScreen({super.key});
@@ -27,6 +31,12 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   Map<int, DateTime> _snoozes = {};
   bool _loading = true;
   String? _error;
+
+  /// Wide-layout selection (narrow width still uses Navigator.push).
+  int? _selectedId;
+  String? _selectedTitle;
+  bool _selectedIsGroup = false;
+  bool _selectedFlood = false;
 
   @override
   void initState() {
@@ -76,6 +86,39 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     if (controller != null) await controller.clearSnooze(conversationId);
     if (!mounted) return;
     setState(() => _snoozes.remove(conversationId));
+  }
+
+  bool get _useSplit {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= kMessengerSplitBreakpoint;
+  }
+
+  Future<void> _openChat({
+    required int conversationId,
+    required String title,
+    required bool isGroup,
+    bool twinDisabledByFlood = false,
+  }) async {
+    if (_useSplit) {
+      setState(() {
+        _selectedId = conversationId;
+        _selectedTitle = title;
+        _selectedIsGroup = isGroup;
+        _selectedFlood = twinDisabledByFlood;
+      });
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          conversationId: conversationId,
+          title: title,
+          isGroup: isGroup,
+          twinDisabledByFlood: twinDisabledByFlood,
+        ),
+      ),
+    );
+    if (mounted) await _load();
   }
 
   String _titleFor(ConversationSummary room, int? me) {
@@ -204,16 +247,13 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
         isGroup: isGroup,
       );
       if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(
-            conversationId: conv.id,
-            title: isGroup ? '그룹 #${conv.id}' : (_peerNames[peers.first] ?? '상대 #${peers.first}'),
-            isGroup: isGroup,
-          ),
-        ),
-      );
       await _load();
+      if (!mounted) return;
+      await _openChat(
+        conversationId: conv.id,
+        title: isGroup ? '그룹 #${conv.id}' : (_peerNames[peers.first] ?? '상대 #${peers.first}'),
+        isGroup: isGroup,
+      );
     } on ApiException catch (e) {
       setState(() => _error = '대화 생성 실패 (${e.statusCode}): ${e.body}');
     }
@@ -240,8 +280,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     final session = context.watch<SessionState>();
     final theme = Theme.of(context);
     final me = session.user?.id;
+    final split = _useSplit;
 
-    return Scaffold(
+    final listPane = Scaffold(
       appBar: AppBar(
         title: GradientText('와카뷰', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
         actions: [
@@ -278,94 +319,128 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
         tooltip: '새 대화',
         child: const Icon(Icons.chat_outlined),
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _loading
-            ? ListView(children: const [SizedBox(height: 160), Center(child: CircularProgressIndicator())])
-            : ListView(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                    child: Text(
-                      session.user == null ? '' : '안녕하세요, ${session.user!.displayName}님',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-                  if (me != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: MyUserIdChip(userId: me),
-                    ),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-                    ),
-                  if (_rooms.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
-                      child: Column(
-                        children: [
-                          Text('대화방이 없습니다', style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 8),
-                          Text(
-                            '1) 내 ID를 상대에게 알려 주세요\n'
-                            '2) 연락처에 상대의 숫자 ID를 넣고 추가\n'
-                            '3) 연락처에서 「대화」또는 행을 탭하세요',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.5,
+      body: Column(
+        children: [
+          const WebPreviewBanner(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: _loading
+                  ? ListView(children: const [SizedBox(height: 160), Center(child: CircularProgressIndicator())])
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                          child: Text(
+                            session.user == null ? '' : '안녕하세요, ${session.user!.displayName}님',
+                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                        if (me != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: MyUserIdChip(userId: me),
+                          ),
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+                          ),
+                        if (_rooms.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
+                            child: Column(
+                              children: [
+                                Text('대화방이 없습니다', style: theme.textTheme.titleMedium),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '1) 아래 「내 사용자 ID」를 탭해 복사한 뒤 상대에게 알려 주세요\n'
+                                  '2) 연락처에 상대의 숫자 ID를 넣고 추가\n'
+                                  '3) 연락처에서 「대화」또는 행을 탭하세요',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                OutlinedButton(
+                                  onPressed: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(builder: (_) => const ContactsScreen()),
+                                    );
+                                    await _load();
+                                  },
+                                  child: const Text('연락처 열기'),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 18),
-                          OutlinedButton(
-                            onPressed: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const ContactsScreen()),
-                              );
-                              await _load();
-                            },
-                            child: const Text('연락처 열기'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  for (final room in _rooms)
-                    Builder(
-                      builder: (context) {
-                        final snoozedUntil = _snoozes[room.id];
-                        final snoozePastDue = isSnoozePastDue(DateTime.now(), snoozedUntil);
-                        return _ConversationRow(
-                          room: room,
-                          me: me,
-                          title: _titleFor(room, me),
-                          subtitle: _subtitleFor(room, me),
-                          avatarColor: _avatarColor(context, room.id),
-                          onAvatarColor: _onAvatarColor(context, room.id),
-                          snoozePastDue: snoozePastDue,
-                          onClearSnooze: () => _clearSnoozeFromList(room.id),
-                          onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ChatScreen(
+                        for (final room in _rooms)
+                          Builder(
+                            builder: (context) {
+                              final snoozedUntil = _snoozes[room.id];
+                              final snoozePastDue = isSnoozePastDue(DateTime.now(), snoozedUntil);
+                              return _ConversationRow(
+                                room: room,
+                                me: me,
+                                title: _titleFor(room, me),
+                                subtitle: _subtitleFor(room, me),
+                                avatarColor: _avatarColor(context, room.id),
+                                onAvatarColor: _onAvatarColor(context, room.id),
+                                snoozePastDue: snoozePastDue,
+                                selected: split && _selectedId == room.id,
+                                onClearSnooze: () => _clearSnoozeFromList(room.id),
+                                onTap: () => _openChat(
                                   conversationId: room.id,
                                   title: _titleFor(room, me),
                                   isGroup: room.isGroup,
                                   twinDisabledByFlood: room.twinDisabledByFlood,
                                 ),
-                              ),
-                            );
-                            await _load();
-                          },
-                        );
-                      },
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 72),
+                      ],
                     ),
-                  const SizedBox(height: 72),
-                ],
-              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (!split) return listPane;
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 360,
+          child: listPane,
+        ),
+        VerticalDivider(width: 1, thickness: 1, color: theme.dividerColor),
+        Expanded(
+          child: _selectedId == null
+              ? Scaffold(
+                  body: Center(
+                    child: Text(
+                      '왼쪽에서 대화를 선택하세요',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                )
+              : ChatScreen(
+                  key: ValueKey(_selectedId),
+                  conversationId: _selectedId!,
+                  title: _selectedTitle,
+                  isGroup: _selectedIsGroup,
+                  twinDisabledByFlood: _selectedFlood,
+                  embedded: true,
+                ),
+        ),
+      ],
     );
   }
 }
@@ -381,6 +456,7 @@ class _ConversationRow extends StatelessWidget {
     required this.snoozePastDue,
     required this.onClearSnooze,
     required this.onTap,
+    this.selected = false,
   });
 
   final ConversationSummary room;
@@ -390,6 +466,7 @@ class _ConversationRow extends StatelessWidget {
   final Color avatarColor;
   final Color onAvatarColor;
   final bool snoozePastDue;
+  final bool selected;
   final VoidCallback onClearSnooze;
   final VoidCallback onTap;
 
@@ -398,7 +475,7 @@ class _ConversationRow extends StatelessWidget {
     final theme = Theme.of(context);
     final blockedColor = room.twinDisabledByPeer || room.twinDisabledByFlood;
     return Material(
-      color: Colors.transparent,
+      color: selected ? theme.colorScheme.primary.withValues(alpha: 0.08) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -421,7 +498,10 @@ class _ConversationRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: selected ? theme.colorScheme.primary : null,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(

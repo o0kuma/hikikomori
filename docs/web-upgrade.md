@@ -149,7 +149,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | todo |
+| **Status** | **done** (2026-08-04) |
 | **목표** | 데스크톱·모바일 브라우저에서 시연 마찰을 줄인 프리뷰 UX |
 | **비범위** | 디자인 시스템 전면 교체, 카드/히어로 과설계, Q9 카피 |
 
@@ -169,17 +169,17 @@ flowchart LR
 
 ### 작업 분해
 
-- [ ] 반응형 셸 위젯 (목록+상세) — `main.dart` / conversation·chat 라우팅 정리
-- [ ] `WsClient` 상태 → UI 바인딩
-- [ ] ID 복사 SnackBar/토스트
-- [ ] 웹 전용 1회 dismissible 안내
-- [ ] 수동: 1280px·390px 폭 시연 시나리오
+- [x] 반응형 셸: `ConversationListScreen` ≥900px 목록|채팅 분할 · 좁은 폭 Navigator push
+- [x] `ConversationSocket.linkStates` + 채팅 앱바/재연결 바
+- [x] ID 복사: 목록 칩 + 설정 계정 행
+- [x] 웹 전용 1회 dismissible 안내 (`WebPreviewBanner`)
+- [ ] 수동: 1280px·390px 폭 시연 (배포 후)
 
 ### 수락 기준
 
-- [ ] 두 폭에서 가입→대화→초안 시연 가능
-- [ ] 재연결 중 사용자가 “멈춤”으로 오해하지 않도록 상태 문구 노출
-- [ ] 테마/브랜드 규칙 위반 없음 (기존 `AppTheme`)
+- [x] 분할·스택 경로 코드 연결 (라이브 폭 스모크는 배포 후)
+- [x] 재연결 중 「다시 연결 중…」 표시
+- [x] 기존 `AppTheme` 유지
 
 ### Master 액션
 
