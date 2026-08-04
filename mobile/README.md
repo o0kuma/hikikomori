@@ -69,8 +69,8 @@ sudo apt-get install -y libsqlite3-dev libsqlcipher1
 
 - 로컬 DB: `lib/db/app_database_web.dart` — **W1 done**: SharedPreferences 지속성(비암호화 프리뷰)
 - 스누즈 OS 알림: 웹 no-op → **W3** Notification API / 인앱
-- 푸시: 웹은 `FIREBASE_*` + `FIREBASE_VAPID_KEY` dart-define 시 실 FCM 토큰 · 없으면 `install:` ([`docs/fcm-setup.md`](../docs/fcm-setup.md) Web 절)
-- PWA: `web/manifest.json` 골격 있음 → **W5** 테마·설치·셸 캐시
+- 푸시: 프로덕션은 `FIREBASE_*` + VAPID 주입됨 · 로컬은 dart-define 없으면 `install:` ([`docs/fcm-setup.md`](../docs/fcm-setup.md) Web 절)
+- PWA: **W5 done** — manifest 테마·설치·셸 캐시
 - **Q9**(수신 자동응대)는 웹 트랙 비범위
 
 ```bash
@@ -86,8 +86,8 @@ cd mobile && flutter run -d chrome --dart-define=CORE_API_BASE=http://localhost:
 
 ## 아직 없는 것
 
-- 웹 W1~W7 구현 ([`docs/web-upgrade.md`](../docs/web-upgrade.md) — 설계만 완료, Wi 승인 후)
-- Master Firebase Android 시크릿 후 실기기 푸시 스모크 (N4-1/3/4)
+- 웹 W4 **accept** — 브라우저 실 FCM 토큰·`/admin/push-test` (코드·`:web:` 배포는 완료, [`web-upgrade.md`](../docs/web-upgrade.md))
+- Android: `google-services.json` PC 배치 후 실기기 푸시 스모크 (N4-1/4; 서버 SA는 N4-3 done)
 - 멀티디바이스 실시간 설정 동기화 고도화
 - 온보딩 말투 UX 디테일 (PoC #1 결과는 맨 마지막에 반영)
 - iOS 빌드 (v1 범위 밖)

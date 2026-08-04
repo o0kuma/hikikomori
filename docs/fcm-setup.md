@@ -3,14 +3,15 @@
 서버·클라이언트의 푸시 **코드 경로는 준비됨**.  
 새 Firebase 프로젝트는 **레거시 서버 키가 비활성**인 경우가 많아, **HTTP v1 + 서비스 계정 JSON**을 쓴다.
 
-## 이미 된 것 (코드)
+## 이미 된 것 (코드 · 프로덕션)
 
 | 계층 | 동작 |
 |------|------|
 | Flutter | `PushTokenService` — Firebase 가능하면 실 FCM 토큰, 아니면 `install:` 플레이스홀더 |
 | Android | `google-services.json`이 있을 때만 Google Services 플러그인 적용 |
-| Web (N4-W4) | `FirebaseWebConfig` + `FIREBASE_*`/`VAPID` dart-define · SW template · 미설정 시 `install:` |
-| core-backend | `notifyUser` + `POST /admin/push-test` — **FCM HTTP v1**(서비스 계정) 우선, 레거시 `FCM_SERVER_KEY`는 폴백 |
+| Web (N4-W4) | `FirebaseWebConfig` + 프로덕션 `.env` `FIREBASE_*`/`VAPID` 주입 · SW populated (`:web:` APP_ID) |
+| core-backend | `notifyUser` + `POST /admin/push-test` — **FCM HTTP v1**(서비스 계정) 우선 |
+| 서버 SA (N4-3) | 프로덕션 `secrets/firebase-service-account.json` 마운트 **done** |
 
 ## Master가 할 일
 
@@ -18,44 +19,35 @@
 
 1. [Firebase Console](https://console.firebase.google.com/) → Android 앱 추가  
    package: **`com.ykavu.ykavu_mobile`**
-2. `google-services.json`을 로컬에만 배치 (git 금지):
+2. `google-services.json`을 **Android 빌드 PC**에만 배치 (git 금지):
 
 ```bash
 cp ~/Downloads/google-services.json mobile/android/app/google-services.json
 ```
 
-### N4-3 — 서비스 계정 JSON (HTTP v1)
+### N4-3 — 서비스 계정 JSON (HTTP v1) — **프로덕션 done**
 
-레거시 **서버 키**가 Cloud Messaging 탭에서 `사용 중지됨`이면 정상이다. 아래를 쓴다.
+레거시 **서버 키**가 Cloud Messaging 탭에서 `사용 중지됨`이면 정상이다.
 
-1. Google Cloud → 사용자 인증 정보 → 서비스 계정 만들기  
-   (API: Firebase Cloud Messaging API, 데이터: **애플리케이션 데이터**)
-2. 역할: **Firebase Cloud Messaging Admin** (없으면 Firebase 관리자 / 임시 소유자)
-3. 키 유형 **JSON** 다운로드
-4. 서버(또는 이 워크스페이스)에 배치:
+프로덕션 호스트에 이미 배치됨:
 
 ```bash
-# 파일명 고정
+# ~/project/ykavu/secrets/firebase-service-account.json
+# compose: ./secrets → /secrets, FCM_SERVICE_ACCOUNT_FILE=/secrets/firebase-service-account.json
+```
+
+새 환경에 다시 놓을 때:
+
+```bash
 mkdir -p secrets
 mv ~/Downloads/iykyka-*.json secrets/firebase-service-account.json
 chmod 600 secrets/firebase-service-account.json
-```
-
-5. 프로덕션 호스트에도 동일 파일:
-
-```bash
-# 예: scp 후
-cd ~/project/ykavu
-# secrets/firebase-service-account.json 존재 확인
 docker compose up -d --build core-backend
 ```
 
-`docker-compose.yml`이 `./secrets` → 컨테이너 `/secrets`로 마운트하고  
-`FCM_SERVICE_ACCOUNT_FILE=/secrets/firebase-service-account.json`을 읽는다.
-
 **git / 채팅에 JSON 내용을 붙여넣지 않는다.**
 
-### N4-2 / N4-4 — 실기기 스모크
+### N4-2 / N4-4 — Android 실기기 스모크
 
 ```bash
 cd mobile
@@ -72,24 +64,27 @@ curl -sS -X POST https://msn.iykyka.com/admin/push-test \
 
 기대: `sent >= 1`.  
 `only_placeholder_tokens` → Android에 `google-services.json` 넣고 재설치.  
-`fcm_not_configured` → 서버에 서비스 계정 파일 경로 확인.
+`fcm_not_configured` → 서비스 계정 경로 확인.
 
 ## Web (N4-W4)
 
 설계·수락: [`web-upgrade.md`](./web-upgrade.md) §N4-W4 · 실행 표: [`deploy-checklist.md`](./deploy-checklist.md) §N4-W.
 
-Android N4(실기기)와 **병행 가능**. 서버 서비스 계정(HTTP v1)은 공유하고,  
-클라이언트는 `google-services.json`(Android) vs Firebase Web config + VAPID(Web)로 분리.
+**프로덕션:** Firebase Web config + VAPID + `:web:` APP_ID가 서버 `.env`에 있고 `web` 이미지에 빌드 주입됨.  
+SW(`firebase-messaging-sw.js`) populated. 서버 SA는 Android와 공유.
 
-**코드 shipped.** define이 비어 있으면 웹은 계속 `install:`만 등록 → `/admin/push-test`의 `only_placeholder_tokens`는 정상.
+### 남은 accept (브라우저)
 
-### Master 준비물 (live accept)
+1. `https://msn.iykyka.com` **하드 리프레시** (또는 사이트 데이터 삭제)
+2. 알림 **허용** → 로그인
+3. device_tokens에 실 토큰(`platform=web`, `install:` 아님)
+4. `/admin/push-test` → `sent >= 1` (탭 백그라운드에서도 알림)
 
-1. Firebase Console → **Web** 앱 추가 (authorized domain: `msn.iykyka.com`) — SA 프로젝트와 동일  
-   - `FIREBASE_APP_ID`는 **`1:…:web:…` 형태**여야 함. Android(`:android:`) / `google-services.json`의 mobilesdk_app_id를 넣으면 웹 토큰 발급이 실패할 수 있음.
-2. Cloud Messaging → Web Push certificates / **VAPID public key**
-3. 배포 호스트 **`~/project/ykavu/.env`**(클라우드 에이전트 `/workspace/.env`가 아님)에 기입  
-   (`.env.example` 키 이름 — **값 git 금지**):
+로컬/스테이징에서 define이 비어 있으면 웹은 `install:`만 등록 → `only_placeholder_tokens`가 정상.
+
+### 새 환경에 Web 시크릿을 넣을 때
+
+배포 호스트 **`~/project/ykavu/.env`**(클라우드 에이전트 `/workspace/.env`와 별개):
 
 ```bash
 FIREBASE_API_KEY=
@@ -97,17 +92,13 @@ FIREBASE_AUTH_DOMAIN=          # 비우면 {projectId}.firebaseapp.com
 FIREBASE_PROJECT_ID=
 FIREBASE_STORAGE_BUCKET=       # 비우면 {projectId}.appspot.com
 FIREBASE_MESSAGING_SENDER_ID=
-FIREBASE_APP_ID=               # must be :web: app id
+FIREBASE_APP_ID=               # must be 1:…:web:…  (not :android:)
 FIREBASE_VAPID_KEY=
 ```
-
-4. 웹 재빌드 후 하드 리프레시:
 
 ```bash
 docker compose up -d --build web
 ```
-
-5. 로그인 → 알림 허용 → device_tokens에 실 토큰(`platform=web`) → `/admin/push-test` → `sent >= 1`
 
 ### 로컬 Flutter web
 
@@ -126,5 +117,5 @@ flutter run -d chrome \
 
 - `mobile/lib/config/firebase_web_config.dart`
 - `mobile/lib/services/push_token_service.dart` (`_tryFirebaseWebToken`)
-- `mobile/web/firebase-messaging-sw.js` (+ `.template`, Dockerfile 치환)
+- `mobile/web/firebase-messaging-sw.js` (+ `.template`, `scripts/docker_build_web.sh`)
 - `mobile/Dockerfile` / `docker-compose.yml` build-args

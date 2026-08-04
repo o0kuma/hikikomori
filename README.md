@@ -73,8 +73,9 @@
 
 - Phase 1 **A~C** + Track A/B/C + **Q8**(로그인·설정·로그아웃) 코드 완료
 - 라이브: [`https://msn.iykyka.com`](https://msn.iykyka.com) · 데모 코드 **`DEMO-YKAVU`**
-- **진행 중 (설계 완료·구현 Wi 승인 대기):** 웹 고도화 [`docs/web-upgrade.md`](./docs/web-upgrade.md) (W0 경계 done · W1~W7 todo)
-- **후순위 (Master):** Android N4 — `google-services.json` · 실기기 FCM · UI 탭 · APK · `SHARE_URL`
+- **웹 고도화 (W0~W7):** 구현·배포 완료 — [`docs/web-upgrade.md`](./docs/web-upgrade.md).  
+  **남은 것:** W4 **accept** (하드 리프레시·알림 허용·로그인 후 `/admin/push-test` → `sent >= 1`)
+- **후순위 (Master):** Android N4 — `google-services.json` PC 배치 · 실기기 FCM · UI 탭 · APK · `SHARE_URL`
 - **결정 대기:** Q9 — L2 의미 (카피 정렬 ± 수신 자동응대) — 웹 트랙에도 **비범위**
 - **맨 마지막:** N5 / D — 사람 PoC. §3 기본값 추측 금지
 
