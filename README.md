@@ -48,7 +48,7 @@
 | [`docs/deploy-portainer.md`](./docs/deploy-portainer.md) | Portainer·컷오버 |
 | [`docs/ops-backup.md`](./docs/ops-backup.md) | 백업 |
 | [`docs/invite-ops.md`](./docs/invite-ops.md) | 초대 코드 운영 |
-| [`docs/fcm-setup.md`](./docs/fcm-setup.md) | FCM Android N4-1~4 · Web Push는 `web-upgrade` W4 |
+| [`docs/fcm-setup.md`](./docs/fcm-setup.md) | FCM Android N4-1~4 · Web Push(W4) dart-define 주입 |
 | [`docs/android-release.md`](./docs/android-release.md) | 내부 release APK 서명 |
 | [`docs/tester-guide.md`](./docs/tester-guide.md) | 테스터 안내 · `DEMO-YKAVU` |
 

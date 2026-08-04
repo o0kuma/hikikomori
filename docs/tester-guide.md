@@ -42,7 +42,9 @@ API 메타: `GET https://msn.iykyka.com/demo` — `pairing_steps` / `notes` 포�
 
 - **초안(AI)**: Gemini 키가 서버에 설정되어 있어 **실제 초안**이 생성됩니다.
 - **L0(비서)**: 와카뷰 발송이 서버에서 막혀 있습니다. 초안 → 입력창 → 직접 전송.
-- 푸시: Android·Web Push는 Master Firebase 설정 후 (`docs/fcm-setup.md`, `web-upgrade` W4). 그전엔 `install:` 플레이스홀더.
+- 푸시: Android·Web Push는 Master Firebase 설정 후 (`docs/fcm-setup.md`, `web-upgrade` W4).  
+  웹은 서버 `.env`에 `FIREBASE_*`/`VAPID`가 있고 `web` 이미지를 그 값으로 빌드한 뒤에야 실 토큰이 등록됩니다. 그전엔 `install:` 플레이스홀더.  
+  Web Push 배포 직후엔 **하드 리프레시**(또는 사이트 데이터 삭제)로 `firebase-messaging-sw.js`를 갱신하세요.
 - 문제/스크린샷은 Master에게 전달해 주세요.
 - 민감 정보·실명 대화는 베타 특성상 최소화해 주세요.
 

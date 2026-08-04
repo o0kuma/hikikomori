@@ -417,7 +417,7 @@ Claude/Cursor 통합 DONE 목록과 항목 ID(N1-1 … N5-5, **N4-W0…W7**)는 
 - [x] **W1** 웹 로컬 지속성 (prefs/idb · Drift WASM 비채택) — 2026-08-04
 - [x] **W2** 데모 UX (분할·WS 상태·ID 복사) — 2026-08-04
 - [x] **W3** 인앱 + Notification API — 2026-08-04
-- [ ] **W4** Web Push (FCM + VAPID) — **Master Firebase Web/VAPID 대기**
+- [x] **W4** Web Push 코드 경로 (FCM + VAPID dart-define) — **live accept:** Master `.env` 시크릿 후
 - [x] **W5** PWA (manifest 테마 · 셸 캐시) — 2026-08-04 (W4와 독립 선행)
 - [x] **W6** 테스터 가이드 — 2026-08-04
 - [x] **W7** edge 스모크 (`e2e_web_smoke.sh`) — 2026-08-04; Playwright UI는 후속

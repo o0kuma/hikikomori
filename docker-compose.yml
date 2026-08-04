@@ -72,6 +72,14 @@ services:
       dockerfile: mobile/Dockerfile
       args:
         CORE_API_BASE: ${PUBLIC_API_BASE:-https://msn.iykyka.com}
+        # N4-W4 Web Push — set in host .env (never commit). Empty → install: fallback.
+        FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
+        FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN:-}
+        FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+        FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET:-}
+        FIREBASE_MESSAGING_SENDER_ID: ${FIREBASE_MESSAGING_SENDER_ID:-}
+        FIREBASE_APP_ID: ${FIREBASE_APP_ID:-}
+        FIREBASE_VAPID_KEY: ${FIREBASE_VAPID_KEY:-}
     ports:
       - "${WEB_HOST_PORT:-8088}:80"
     depends_on:
