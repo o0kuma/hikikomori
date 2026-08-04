@@ -35,9 +35,10 @@
 | 문서 | 용도 |
 |------|------|
 | [`docs/roadmap.md`](./docs/roadmap.md) | Phase 체크리스트 (`[x]` / `[~]` / `[ ]`) |
-| [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) | **배포·잔여 실행 트랙** (DONE/NOW/NEXT · Track A~C · N1~N5) |
+| [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) | **배포·잔여 실행 트랙** (DONE/NOW/NEXT · Track A~C · N1~N5 · N4-W) |
+| [`docs/web-upgrade.md`](./docs/web-upgrade.md) | **웹 고도화** (데모/프리뷰 · W0~W7 · Web Push · PWA). Q9 비범위 |
 
-남은 일(Android/FCM·실기기 QA·APK·SHARE_URL·PoC)은 `deploy-checklist.md` §N4·§N5를 본다.
+남은 일: 웹은 `web-upgrade.md` / `deploy-checklist` §N4-W. Android/FCM 실기기·APK·SHARE_URL·PoC는 §N4·§N5.
 
 ### 배포 · 운영
 
@@ -47,7 +48,7 @@
 | [`docs/deploy-portainer.md`](./docs/deploy-portainer.md) | Portainer·컷오버 |
 | [`docs/ops-backup.md`](./docs/ops-backup.md) | 백업 |
 | [`docs/invite-ops.md`](./docs/invite-ops.md) | 초대 코드 운영 |
-| [`docs/fcm-setup.md`](./docs/fcm-setup.md) | FCM N4-1~4 (클라이언트 JSON + 서버 서비스 계정) |
+| [`docs/fcm-setup.md`](./docs/fcm-setup.md) | FCM Android N4-1~4 · Web Push는 `web-upgrade` W4 |
 | [`docs/android-release.md`](./docs/android-release.md) | 내부 release APK 서명 |
 | [`docs/tester-guide.md`](./docs/tester-guide.md) | 테스터 안내 · `DEMO-YKAVU` |
 
@@ -72,9 +73,10 @@
 
 - Phase 1 **A~C** + Track A/B/C + **Q8**(로그인·설정·로그아웃) 코드 완료
 - 라이브: [`https://msn.iykyka.com`](https://msn.iykyka.com) · 데모 코드 **`DEMO-YKAVU`**
-- **다음 (Master):** N4 — `google-services.json` · 실기기 FCM 수신 · Android UI 탭 · APK · `SHARE_URL`
-- **결정 대기:** Q9 — L2 의미 (카피 정렬 ± 수신 자동응대)
-- **맨 마지막:** N5 / D — 사람 PoC. §3 기본값(자율성 시작점·화이트리스트 주제·신뢰 카피) 추측 금지
+- **진행 중 (설계 완료·구현 Wi 승인 대기):** 웹 고도화 [`docs/web-upgrade.md`](./docs/web-upgrade.md) (W0 경계 done · W1~W7 todo)
+- **후순위 (Master):** Android N4 — `google-services.json` · 실기기 FCM · UI 탭 · APK · `SHARE_URL`
+- **결정 대기:** Q9 — L2 의미 (카피 정렬 ± 수신 자동응대) — 웹 트랙에도 **비범위**
+- **맨 마지막:** N5 / D — 사람 PoC. §3 기본값 추측 금지
 
 상세 현황: [`docs/deploy-checklist.md`](./docs/deploy-checklist.md) §0.
 

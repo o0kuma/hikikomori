@@ -1,7 +1,9 @@
 # 와카뷰 mobile (Flutter)
 
-Phase 1 클라이언트 (`docs/roadmap.md` §2.3 / A3). **v1은 Android 빌드만** 대상으로 한다
-(`docs/tech-design.md` §8).
+Phase 1 클라이언트 (`docs/roadmap.md` §2.3 / A3).  
+**릴리즈 타깃(암호화 DB·OS 알림):** Android.  
+**데모/프리뷰 1차 표면:** Flutter **Web** (`https://msn.iykyka.com`) —
+고도화 설계·단계: [`docs/web-upgrade.md`](../docs/web-upgrade.md) (W0~W7).
 
 ## 지금 있는 것
 
@@ -63,14 +65,29 @@ HTTP로 검증한다.
 sudo apt-get install -y libsqlite3-dev libsqlcipher1
 ```
 
+## 웹 (데모/프리뷰)
+
+- 로컬 DB: `lib/db/app_database_web.dart` — 현재 **메모리 스텁**(새로고침 유실) → **W1**에서 prefs/idb 지속성
+- 스누즈 OS 알림: 웹 no-op → **W3** Notification API / 인앱
+- 푸시: 웹에서 FCM skip → **W4** Web Push + VAPID ([`docs/fcm-setup.md`](../docs/fcm-setup.md) Web 절)
+- PWA: `web/manifest.json` 골격 있음 → **W5** 테마·설치·셸 캐시
+- **Q9**(수신 자동응대)는 웹 트랙 비범위
+
+```bash
+# 웹 로컬 (core-backend 기동 후)
+cd mobile && flutter run -d chrome --dart-define=CORE_API_BASE=http://localhost:8080
+```
+
 ## 푸시 (FCM)
 
 - 코드: `lib/services/push_token_service.dart` — Firebase 가능 시 실 토큰, 아니면 `install:`
-- Master 설정: [`docs/fcm-setup.md`](../docs/fcm-setup.md) (`google-services.json` + `FCM_SERVER_KEY`)
+- Android: [`docs/fcm-setup.md`](../docs/fcm-setup.md) (`google-services.json`)
+- Web: [`docs/web-upgrade.md`](../docs/web-upgrade.md) W4 + 동일 `fcm-setup` Web 절
 
 ## 아직 없는 것
 
-- Master Firebase 시크릿 주입 후 실기기 푸시 스모크 (N4-1/3/4)
-- 오프라인 메시지 큐 / 멀티디바이스 실시간 설정 동기화 고도화
+- 웹 W1~W7 구현 ([`docs/web-upgrade.md`](../docs/web-upgrade.md) — 설계만 완료, Wi 승인 후)
+- Master Firebase Android 시크릿 후 실기기 푸시 스모크 (N4-1/3/4)
+- 멀티디바이스 실시간 설정 동기화 고도화
 - 온보딩 말투 UX 디테일 (PoC #1 결과는 맨 마지막에 반영)
 - iOS 빌드 (v1 범위 밖)

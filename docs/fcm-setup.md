@@ -75,4 +75,18 @@ curl -sS -X POST https://msn.iykyka.com/admin/push-test \
 
 ## Web
 
-Web 푸시는 별도 VAPID 설정이 필요하며 이번 N4는 **Android 실푸시** 우선.
+Web Push(FCM Web + VAPID)는 **웹 고도화 트랙 N4-W4**에서 다룬다.
+
+- 설계·작업 분해·수락 기준: [`web-upgrade.md`](./web-upgrade.md) §N4-W4
+- 실행 표: [`deploy-checklist.md`](./deploy-checklist.md) §N4-W
+- Android N4(실기기)와 **병행 가능**. 서버 서비스 계정(HTTP v1)은 공유하고,
+  클라이언트는 `google-services.json`(Android) vs Firebase Web config + VAPID(Web)로 분리.
+- 코드 as-is: `PushTokenService`가 `kIsWeb`이면 토큰을 건너뛰고 `install:`만 등록 —
+  W4 구현 전까지 웹 `/admin/push-test`는 `only_placeholder_tokens`가 정상.
+
+### W4 Master 준비물 (요약)
+
+1. Firebase Console → Web 앱 (`msn.iykyka.com`)
+2. Cloud Messaging → Web Push 인증서 / **VAPID key**
+3. 빌드 시크릿으로 config 주입 (git 금지) — 상세는 `web-upgrade.md` 부록 B
+4. 스모크: 실 웹 토큰 등록 후 `POST /admin/push-test` → `sent >= 1`

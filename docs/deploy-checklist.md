@@ -37,19 +37,23 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
-- 진행 중: **N4 FCM 코드 경로** → Master 시크릿 대기 → Android UI QA
+- **웹 고도화 설계:** [`web-upgrade.md`](./web-upgrade.md) (데모/프리뷰 + Web Push + PWA).
+  W0 경계 **done** · W1~W7 구현은 Wi 단위 Master 승인 후
+- 후순위: **N4 Android FCM/UI** — Master 시크릿·실기기
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
 - **Track C 콘텐츠 갭 A~F**: 프로덕션 반영 완료 (`95422bb`대)
 - **Q8 계정·설정 IA (2026-08-03 확정·구현):** 로그인 탭 · 설정 허브 · 로그아웃
 - **문서 갭 잔여:** L2 의미 [`decision-log.md`](./decision-log.md) Q9 **제안** —
   [`account-settings-ia.md`](./account-settings-ia.md) §3. Master 확정 전 Q9 구현 금지
-- 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음
+  (**웹 트랙에도 Q9 비범위**)
+- 실 FCM 기기 수신 · Android 실기기 탭 · 사람 PoC 실행은 남음 (Android 트랙)
 
 ### NEXT 순서
 
 ```
 N1 스모크 → N2 Docker(msn.iykyka.com) → N3 배포 안정화
-         → N4 FCM·Android QA 등 → N5 사람 PoC(D) → 실제 베타 오픈
+         → N4-W 웹 고도화(W1→…→W7) 병행 가능
+         → N4 Android FCM·UI QA 등 → N5 사람 PoC(D) → 실제 베타 오픈
 ```
 
 ### LOCKED
@@ -204,14 +208,29 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-C6b** | 리마인드 로컬 알림(본인에게만) | **done (부분 검증)** (2026-08-03) | `flutter_local_notifications`+`timezone` 실제 연동(`mobile/lib/services/snooze_notification_service_native.dart` `zonedSchedule`/`cancel`) — **단, 이 샌드박스에는 실기기/에뮬레이터가 없어 알림이 실제로 울리는지/탭 동작은 검증 불가**. 검증한 건 스케줄러를 목(mock)으로 바꿔 id·시각·페이로드가 올바른지뿐(`test/snooze_controller_test.dart`). 웹 빌드는 플러그인이 웹 미지원이라 `snooze_notification_service_web.dart` no-op 스텁. 실기기 검증 전까지는 대화 목록/채팅방의 인앱 배지·배너(C6c)가 실질적인 리마인드 경로 |
 | **N4-C6c** | 스누즈 표시/취소 UI | **done** (2026-08-03) | `chat_screen.dart`(앱바 아이콘 상태 + 마감 지난 스누즈 배너 + 해제 버튼), `conversation_list_screen.dart`(서브타이틀 아래 "답장 마감" 배지, 탭하여 바로 해제). 마감 판정은 순수 함수 `isSnoozePastDue()`로 분리해 고정 시각 단위 테스트(`test/snooze_service_test.dart`) |
 
-### FCM — [`fcm-setup.md`](./fcm-setup.md)
+### N4-W — 웹 고도화 — [`web-upgrade.md`](./web-upgrade.md)
+
+데모/프리뷰 표면 유지. **Q9 비범위.** Wi 단위 승인 후 구현. 서버 FCM SA는 Android와 공유.
+
+| ID | 작업 | Status | 비고 |
+|----|------|--------|------|
+| **N4-W0** | 제품 경계 · 문서 랜딩 | **done** (2026-08-04) | 성공 정의·비범위·규율 고정 |
+| **N4-W1** | 웹 로컬 지속성 (prefs/idb) | todo | Drift WASM 비채택 · 새로고침 후 말투/스누즈 유지 |
+| **N4-W2** | 데모 메신저 UX | todo | 분할 레이아웃·WS 상태·ID 복사 |
+| **N4-W3** | 인앱·Notification API | todo | 스누즈/에스컬레이션 인지 · Push 전 단계 |
+| **N4-W4** | Web Push (FCM + VAPID) | todo | Master: Firebase Web config · VAPID |
+| **N4-W5** | PWA | todo | manifest 테마 정렬 · 셸 캐시만 |
+| **N4-W6** | 테스터 가이드 | todo | `tester-guide.md` 웹 절 |
+| **N4-W7** | 품질 (Playwright 등) | todo | 스모크 + 부록 수동 QA |
+
+### FCM (Android) — [`fcm-setup.md`](./fcm-setup.md)
 
 | ID | 작업 | Status | 완료 조건 |
 |----|------|--------|-----------|
 | **N4-1** | Firebase + `google-services.json` | doing | Master: 앱 등록됨 · JSON을 Android 빌드 PC에 배치 |
 | **N4-2** | 실 FCM registration token | done* | `PushTokenService` — Firebase 있으면 실 토큰, 없으면 `install:` (*전송은 N4-1 후) |
-| **N4-3** | 서버 FCM 자격증명 (HTTP v1) | doing | Master: `secrets/firebase-service-account.json` (레거시 서버 키 대신) |
-| **N4-4** | 푸시 수신 | blocked | N4-1+N4-3 후 `/admin/push-test` + 기기 수신 |
+| **N4-3** | 서버 FCM 자격증명 (HTTP v1) | doing | Master: `secrets/firebase-service-account.json` (레거시 서버 키 대신). 웹 W4와 공유 |
+| **N4-4** | 푸시 수신 (Android) | blocked | N4-1+N4-3 후 `/admin/push-test` + 기기 수신 |
 
 ### Android UI 탭 (`mobile/README.md`)
 
@@ -269,9 +288,11 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
    **2026-08-03 2차 갭 분석 배치(C4/C5/C6) 전체 구현 완료.** C6은 온디바이스 스누즈
    저장·UI는 완전히 검증(단위 테스트)됐지만, 실제 OS 로컬 알림이 실기기에서 울리는지는
    이 샌드박스(실기기/에뮬레이터 없음)에서 검증 불가 — Android UI QA(N4-5~10)에서 처음
-   확인 필요, 그때까지는 인앱 배지·배너가 실질적 대체 경로. 남은 것: **Master FCM
-   시크릿(N4-1/3)** → N4-4 스모크 → Android UI QA (N4-5~10, 답장 마감 알림 실기기 확인
-   포함). Track C A~F 프로덕션 재배포는 **완료** (`95422bb` / docs `f363e8e`, 2026-08-03)
+   확인 필요, 그때까지는 인앱 배지·배너가 실질적 대체 경로. Track C A~F 프로덕션
+   재배포는 **완료** (`95422bb` / docs `f363e8e`, 2026-08-03).
+
+**바로 다음 (웹 우선 가능):** [`web-upgrade.md`](./web-upgrade.md) **W1** (지속성) → W2… —
+Master Wi 승인 후 구현. Android는 **N4-1/3 → N4-4 → N4-5~10** 후순위 병행.
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

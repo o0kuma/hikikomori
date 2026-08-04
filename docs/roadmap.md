@@ -406,9 +406,23 @@ Master 합의 착수 순서: **A → B → C → D(맨 마지막)**. E는 Phase 
 
 단일 실행 체크리스트: **[`deploy-checklist.md`](./deploy-checklist.md)**.
 
-순서: **N1 스모크 → N2 Docker(`msn.iykyka.com`) → N3 안정화 → N4 FCM/Android QA → N5 사람 PoC(D)**.
-Claude/Cursor 통합 DONE 목록과 항목 ID(N1-1 … N5-5)는 해당 문서를 본다. 완료 시 그 문서와
-본 로드맵 §2/§5의 `[~]`/`[ ]`를 함께 갱신한다.
+순서: **N1 스모크 → N2 Docker(`msn.iykyka.com`) → N3 안정화 → N4-W 웹 고도화(병행) /
+N4 Android FCM·UI QA → N5 사람 PoC(D)**.
+Claude/Cursor 통합 DONE 목록과 항목 ID(N1-1 … N5-5, **N4-W0…W7**)는 해당 문서를 본다.
+완료 시 그 문서와 본 로드맵 §2/§5의 `[~]`/`[ ]`를 함께 갱신한다.
+
+##### 웹 고도화 (데모/프리뷰) — [`web-upgrade.md`](./web-upgrade.md)
+
+- [x] **W0** 제품 경계 문서화 (2026-08-04) — 데모/프리뷰 · Q9 비범위 · Wi 규율
+- [ ] **W1** 웹 로컬 지속성 (prefs/idb · Drift WASM 비채택)
+- [ ] **W2** 데모 UX (분할·WS 상태·ID 복사)
+- [ ] **W3** 인앱 + Notification API
+- [ ] **W4** Web Push (FCM + VAPID) — Master Firebase Web 설정
+- [ ] **W5** PWA (manifest 테마 · 셸 캐시)
+- [ ] **W6** 테스터 가이드
+- [ ] **W7** Playwright 등 품질 스모크
+
+구현은 **Wi 단위 Master 승인 후**. Android N4 실기기 트랙과 일정 충돌 시 서버 SA만 공유.
 
 
 ## Phase 2 — L3 확장 + 베타 확대
