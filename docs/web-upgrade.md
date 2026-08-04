@@ -255,7 +255,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | **code shipped** (2026-08-04) — **live accept**는 Master Firebase Web config + VAPID를 서버 `.env`에 넣고 `web` 재빌드 후 |
+| **Status** | **live injected** (2026-08-04) — 서버 `.env`+SW populated · **accept 대기:** `FIREBASE_APP_ID`가 `:android:`로 보여 Web 앱(`:web:`) 교체 후 브라우저 토큰·push-test 확인 |
 | **목표** | 웹 탭이 백그라운드여도 에스컬레이션 등 서버 `notifyUser`가 **실 FCM 웹 토큰**으로 전달 |
 | **비범위** | 레거시 `FCM_SERVER_KEY` 신규 의존, 커스텀 푸시 프로토콜 |
 

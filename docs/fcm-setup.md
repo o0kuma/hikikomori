@@ -85,9 +85,11 @@ Android N4(실기기)와 **병행 가능**. 서버 서비스 계정(HTTP v1)은 
 
 ### Master 준비물 (live accept)
 
-1. Firebase Console → **Web** 앱 추가 (authorized domain: `msn.iykyka.com`) — SA 프로젝트와 동일
+1. Firebase Console → **Web** 앱 추가 (authorized domain: `msn.iykyka.com`) — SA 프로젝트와 동일  
+   - `FIREBASE_APP_ID`는 **`1:…:web:…` 형태**여야 함. Android(`:android:`) / `google-services.json`의 mobilesdk_app_id를 넣으면 웹 토큰 발급이 실패할 수 있음.
 2. Cloud Messaging → Web Push certificates / **VAPID public key**
-3. 배포 호스트 `~/project/ykavu/.env`에 기입 (`.env.example` 키 이름 — **값 git 금지**):
+3. 배포 호스트 **`~/project/ykavu/.env`**(클라우드 에이전트 `/workspace/.env`가 아님)에 기입  
+   (`.env.example` 키 이름 — **값 git 금지**):
 
 ```bash
 FIREBASE_API_KEY=
@@ -95,7 +97,7 @@ FIREBASE_AUTH_DOMAIN=          # 비우면 {projectId}.firebaseapp.com
 FIREBASE_PROJECT_ID=
 FIREBASE_STORAGE_BUCKET=       # 비우면 {projectId}.appspot.com
 FIREBASE_MESSAGING_SENDER_ID=
-FIREBASE_APP_ID=
+FIREBASE_APP_ID=               # must be :web: app id
 FIREBASE_VAPID_KEY=
 ```
 

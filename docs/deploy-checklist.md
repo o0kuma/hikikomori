@@ -37,7 +37,7 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
-- **웹 고도화:** [`web-upgrade.md`](./web-upgrade.md) — W0~W3·W5~W7 **done** · **W4 code shipped** (live: Master `.env`에 FIREBASE_*/VAPID 후 `web` 재빌드)
+- **웹 고도화:** [`web-upgrade.md`](./web-upgrade.md) — W0~W3·W5~W7 **done** · **W4 live injected** (SW populated · accept: Web `:web:` APP_ID + push-test)
 - 후순위: **N4 Android FCM/UI** — Master 시크릿·실기기
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
 - **Track C 콘텐츠 갭 A~F**: 프로덕션 반영 완료 (`95422bb`대)
