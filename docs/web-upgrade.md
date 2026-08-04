@@ -255,7 +255,7 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | **live injected** (2026-08-04) — 서버 `.env`+SW populated · **accept 대기:** `FIREBASE_APP_ID`가 `:android:`로 보여 Web 앱(`:web:`) 교체 후 브라우저 토큰·push-test 확인 |
+| **Status** | **web APP_ID live** (2026-08-04) — SW `:web:` · **accept 대기:** 하드 리프레시→알림 허용→로그인 후 실 토큰·`/admin/push-test` |
 | **목표** | 웹 탭이 백그라운드여도 에스컬레이션 등 서버 `notifyUser`가 **실 FCM 웹 토큰**으로 전달 |
 | **비범위** | 레거시 `FCM_SERVER_KEY` 신규 의존, 커스텀 푸시 프로토콜 |
 
