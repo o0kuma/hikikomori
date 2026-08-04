@@ -8,6 +8,17 @@ import '../state/session_state.dart';
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
 
+  /// Formats API `expires_at` (UTC RFC3339) for the device local timezone.
+  static String formatExpiresAtLocal(Object? raw) {
+    if (raw == null) return '';
+    final parsed = DateTime.tryParse(raw.toString());
+    if (parsed == null) return raw.toString();
+    final local = parsed.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
+
   @override
   State<SessionsScreen> createState() => _SessionsScreenState();
 }
@@ -104,7 +115,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
                         s['is_current'] == true ? '이 기기 (현재)' : '세션 #${s['id']}',
                         style: theme.textTheme.titleSmall,
                       ),
-                      subtitle: Text('만료: ${s['expires_at'] ?? ''}', style: theme.textTheme.bodySmall),
+                      subtitle: Text(
+                        '만료: ${SessionsScreen.formatExpiresAtLocal(s['expires_at'])}',
+                        style: theme.textTheme.bodySmall,
+                      ),
                       trailing: IconButton(
                         tooltip: '세션 종료',
                         icon: const Icon(Icons.logout),
