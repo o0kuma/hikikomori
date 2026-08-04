@@ -37,8 +37,8 @@ Phase 1 **A~C** 이후 실행 트랙. 작업 단위를 하나씩 처리한다.
 
 - 앱 코드는 클로즈드 베타 직전 수준
 - **`https://msn.iykyka.com` 라이브 + N3 완료 + Gemini 실초안 OK + Track A/B 완료**
-- **웹 고도화:** [`web-upgrade.md`](./web-upgrade.md) — W0~W3·W5~W7 **done** · **W4 web APP_ID live** (accept: 브라우저 하드 리프레시·알림 허용·push-test)
-- 후순위: **N4 Android FCM/UI** — Master 시크릿·실기기
+- **웹 고도화:** [`web-upgrade.md`](./web-upgrade.md) — W0~W7 구현·배포 **done** · **W4 accept만** (하드 리프레시·알림·push-test)
+- 후순위: **N4 Android FCM/UI** — `google-services.json` PC 배치·실기기 (서버 SA는 배치됨)
 - UI: **iMessage-inspired light default** + soft charcoal dark 프로덕션 반영
 - **Track C 콘텐츠 갭 A~F**: 프로덕션 반영 완료 (`95422bb`대)
 - **Q8 계정·설정 IA (2026-08-03 확정·구현):** 로그인 탭 · 설정 허브 · 로그아웃
@@ -217,7 +217,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 | **N4-W1** | 웹 로컬 지속성 (prefs/idb) | **done** (2026-08-04) | `app_database_web.dart` SharedPreferences · Drift WASM 비채택 · 라이브 하드 리프레시 스모크는 배포 후 |
 | **N4-W2** | 데모 메신저 UX | **done** (2026-08-04) | ≥900px 분할·WS 상태·ID 복사·웹 안내 배너 |
 | **N4-W3** | 인앱·Notification API | **done** (2026-08-04) | 웹 Timer+Notification · 포커스 past-due · 설정 권한 |
-| **N4-W4** | Web Push (FCM + VAPID) | **web-live** (2026-08-04) | `:web:` APP_ID·SW populated · **accept:** 하드 리프레시 후 실 토큰·push-test |
+| **N4-W4** | Web Push (FCM + VAPID) | **web-live** (2026-08-04) | 시크릿·`:web:`·SW 배포 done · **accept만:** 하드 리프레시·알림·실 토큰·push-test |
 | **N4-W5** | PWA | **done** (2026-08-04) | manifest 테마 · nginx no-cache · OfflineBanner |
 | **N4-W6** | 테스터 가이드 | **done** (2026-08-04) | `tester-guide.md` 웹 절 |
 | **N4-W7** | 품질 | **done** (2026-08-04) | `scripts/e2e_web_smoke.sh` + 부록 QA (Playwright는 후속) |
@@ -228,7 +228,7 @@ N2-A 전체 확정. 다음 구현 트랙은 **N1 스모크 → N2-B (Dockerfile/
 |----|------|--------|-----------|
 | **N4-1** | Firebase + `google-services.json` | doing | Master: 앱 등록됨 · JSON을 Android 빌드 PC에 배치 |
 | **N4-2** | 실 FCM registration token | done* | `PushTokenService` — Firebase 있으면 실 토큰, 없으면 `install:` (*전송은 N4-1 후) |
-| **N4-3** | 서버 FCM 자격증명 (HTTP v1) | doing | Master: `secrets/firebase-service-account.json` (레거시 서버 키 대신). 웹 W4와 공유 |
+| **N4-3** | 서버 FCM 자격증명 (HTTP v1) | **done** (2026-08) | 프로덕션 `secrets/firebase-service-account.json` 마운트됨. 웹 W4와 공유 |
 | **N4-4** | 푸시 수신 (Android) | blocked | N4-1+N4-3 후 `/admin/push-test` + 기기 수신 |
 
 ### Android UI 탭 (`mobile/README.md`)
@@ -290,8 +290,8 @@ N1~N4(배포·품질에 필요한 최소분) 이후에만 착수. `roadmap.md` P
    확인 필요, 그때까지는 인앱 배지·배너가 실질적 대체 경로. Track C A~F 프로덕션
    재배포는 **완료** (`95422bb` / docs `f363e8e`, 2026-08-03).
 
-**바로 다음:** 웹 **W4 accept** — `msn.iykyka.com` 하드 리프레시·알림 허용·로그인 후 `/admin/push-test` · 또는 Android N4-1/3.
-웹 W0~W7 코드·`:web:` 시크릿 배포 **done** (브라우저 실토큰 확인만 남음).
+**바로 다음:** 웹 **W4 accept** — `msn.iykyka.com` 하드 리프레시·알림 허용·로그인 후 `/admin/push-test` · 또는 Android N4-1/4.
+웹 W0~W7 코드·`:web:` 시크릿 배포·서버 SA **done** (브라우저 실토큰·push-test만 남음).
 
 
 완료 시 본 표의 Status를 `done`으로 바꾸고, [`roadmap.md`](./roadmap.md) §4/§5의 대응 `[~]`/`[ ]`도 같이 갱신한다.

@@ -255,38 +255,38 @@ flowchart LR
 
 | | |
 |--|--|
-| **Status** | **web APP_ID live** (2026-08-04) — SW `:web:` · **accept 대기:** 하드 리프레시→알림 허용→로그인 후 실 토큰·`/admin/push-test` |
+| **Status** | **web-live** (2026-08-04) — `:web:` APP_ID·VAPID·SW 프로덕션 주입 완료 · **accept 대기:** 하드 리프레시→알림→로그인→실 토큰·`/admin/push-test` |
 | **목표** | 웹 탭이 백그라운드여도 에스컬레이션 등 서버 `notifyUser`가 **실 FCM 웹 토큰**으로 전달 |
 | **비범위** | 레거시 `FCM_SERVER_KEY` 신규 의존, 커스텀 푸시 프로토콜 |
 
-### As-is → shipped
+### Shipped (프로덕션)
 
-- `FirebaseWebConfig` + `--dart-define=FIREBASE_*` / `FIREBASE_VAPID_KEY`
-- `PushTokenService` 웹 분기: config 없으면 `install:` soft-fallback, 있으면 `initializeApp` + `getToken(vapidKey:)`
-- `mobile/web/firebase-messaging-sw.js` (+ Dockerfile이 template로 치환) · `index.html` SW 등록
-- compose `web` build-args · `.env.example` 키 이름만 · nginx no-cache for SW
+- `FirebaseWebConfig` + compose/`Dockerfile` build-args · SW template 치환
+- `PushTokenService` 웹 분기 · `msn.iykyka.com`에 `:web:` APP_ID·VAPID 주입·재배포됨
+- 서버 SA(`secrets/firebase-service-account.json`) 공유 · 시크릿 git 미커밋
 
-### Master 액션 (live accept 블로커)
+### Master 액션 (accept만)
 
-1. Firebase Console에 Web 앱 추가 (`msn.iykyka.com`) — 프로젝트 `iykyka` SA와 동일 프로젝트
-2. Cloud Messaging Web Push 인증서/VAPID 키 발급
-3. 서버 `~/project/ykavu/.env`에 `FIREBASE_API_KEY` … `FIREBASE_VAPID_KEY` 기입 (git 금지)
-4. `docker compose up -d --build web` 후 하드 리프레시 → 로그인 → `/admin/push-test`
+1. Chrome에서 `https://msn.iykyka.com` **하드 리프레시** (또는 사이트 데이터 삭제)
+2. 알림 **허용** → DEMO/계정 로그인
+3. device_tokens에 `platform=web` 실 토큰 확인 후 `POST /admin/push-test` → `sent >= 1`
 
 ### 작업 분해
 
 - [x] 빌드 주입: `--dart-define=FIREBASE_…` + SW template 치환 (gitignore/시크릿 미커밋)
 - [x] `PushTokenService` 웹 분기 + permission
 - [x] Docker web 빌드에 define 전달 (`mobile/Dockerfile` / compose)
-- [ ] `/admin/push-test`로 user 지정 → Chrome 백그라운드 수신 (**Master 시크릿 후**)
+- [x] 프로덕션 `.env`에 `FIREBASE_*` / VAPID · `:web:` APP_ID · `web` 재빌드
+- [ ] `/admin/push-test`로 user 지정 → Chrome 백그라운드 수신 (**브라우저 accept**)
 - [x] `docs/fcm-setup.md` Web 절 동기화
 - [x] `DataFlowScreen` 푸시 문구 갱신
 
 ### 수락 기준
 
-- [ ] device_tokens에 `install:`이 아닌 토큰 + `platform=web` (**시크릿 후**)
-- [ ] `POST /admin/push-test` → `sent >= 1`, 브라우저 알림 표시 (**시크릿 후**)
+- [ ] device_tokens에 `install:`이 아닌 토큰 + `platform=web` (**브라우저 로그인 후**)
+- [ ] `POST /admin/push-test` → `sent >= 1`, 브라우저 알림 표시
 - [x] 시크릿이 git history에 없음 (define/env만)
+- [x] 프로덕션 SW populated (`firebase.initializeApp`, appId `:web:`)
 
 ### 위험
 
@@ -466,13 +466,13 @@ Wi를 끝낼 때마다:
 
 ---
 
-## 부록 B — Master 시크릿 체크리스트 (W4)
+## 부록 B — Master 시크릿·accept 체크리스트 (W4)
 
-- [ ] Firebase Web app 등록 (도메인 `msn.iykyka.com`)
-- [ ] VAPID key
-- [ ] 서버 `~/project/ykavu/.env`에 `FIREBASE_*` / `FIREBASE_VAPID_KEY` (git 미포함) → `docker compose up -d --build web`
-- [ ] 서버 `secrets/firebase-service-account.json` 유지 (Android와 공유)
-- [ ] push-test로 `sent >= 1` 확인
+- [x] Firebase Web app 등록 (도메인 `msn.iykyka.com`, APP_ID `:web:`)
+- [x] VAPID key
+- [x] 서버 `~/project/ykavu/.env`에 `FIREBASE_*` / `FIREBASE_VAPID_KEY` (git 미포함) → `web` 재빌드
+- [x] 서버 `secrets/firebase-service-account.json` 유지 (Android와 공유)
+- [ ] 하드 리프레시·알림 허용·로그인 후 push-test로 `sent >= 1` 확인
 
 ---
 
